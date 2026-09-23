@@ -1,6 +1,6 @@
 /**
  * ملف: weekly_match_rankings.js
- * الوظيفة: شاشة الترتيب الكاملة (مضغوطة لملائمة شاشات الهواتف)
+ * الوظيفة: شاشة الترتيب الكاملة (معالجة بالكامل ومؤمنة ضد أخطاء التحميل)
  */
 
 const generateLegendaryAvatar = (name, photoUrl, size = '35px') => {
@@ -12,62 +12,75 @@ const generateLegendaryAvatar = (name, photoUrl, size = '35px') => {
     }
 };
 
-window.openLegendaryRankingScreen = function() {
-    const existingScreen = document.getElementById('ranking-full-screen');
-    if (existingScreen) existingScreen.remove();
+window.openLegendaryRankingScreen = async function() {
+    try {
+        const existingScreen = document.getElementById('ranking-full-screen');
+        if (existingScreen) existingScreen.remove();
 
-    const isAr = userState.lang === 'ar';
-    const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
+        // التأكد من وجود المتغيرات العامة بآمان
+        const state = window.userState || {};
+        const isAr = state.lang === 'ar';
+        const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
 
-    const screen = document.createElement('div');
-    screen.id = 'ranking-full-screen';
-    
-    screen.style.cssText = `
-        position: fixed !important; 
-        top: 0 !important; 
-        left: 0 !important; 
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important; 
-        height: 100vh !important; 
-        background: var(--bg-dark, #0d0d12) !important; 
-        z-index: 99999 !important; 
-        padding: 15px 15px 25px 15px; 
-        box-sizing: border-box; 
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto !important; 
-        -webkit-overflow-scrolling: touch;
-        color: white;
-        direction: ${isAr ? 'rtl' : 'ltr'}; 
-        text-align: ${isAr ? 'right' : 'left'};
-    `;
+        const screen = document.createElement('div');
+        screen.id = 'ranking-full-screen';
+        
+        screen.style.cssText = `
+            position: fixed !important; 
+            top: 0 !important; 
+            left: 0 !important; 
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important; 
+            height: 100vh !important; 
+            background: var(--bg-dark, #0d0d12) !important; 
+            z-index: 99999 !important; 
+            padding: 15px 15px 25px 15px; 
+            box-sizing: border-box; 
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto !important; 
+            -webkit-overflow-scrolling: touch;
+            color: white;
+            direction: ${isAr ? 'rtl' : 'ltr'}; 
+            text-align: ${isAr ? 'right' : 'left'};
+        `;
 
-    screen.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; flex-shrink: 0;">
-            <h2 style="margin:0; color:var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.3rem;">🏆 ${title}</h2>
-            <button onclick="document.getElementById('ranking-full-screen').remove()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; transition: 0.2s;">✕</button>
-        </div>
-        <div id="full-ranking-container" style="display: flex; flex-direction: column; overflow: visible; width: 100%;">
-            <div style="text-align:center; color: #888; padding: 30px; font-size: 1rem;">
-                ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
+        screen.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; flex-shrink: 0;">
+                <h2 style="margin:0; color:var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.3rem;">🏆 ${title}</h2>
+                <button onclick="document.getElementById('ranking-full-screen').remove()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; transition: 0.2s;">✕</button>
             </div>
-        </div>
-    `;
+            <div id="full-ranking-container" style="display: flex; flex-direction: column; overflow: visible; width: 100%;">
+                <div style="text-align:center; color: #888; padding: 30px; font-size: 1rem;">
+                    ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
+                </div>
+            </div>
+        `;
 
-    document.body.appendChild(screen);
-    window.renderHomeRankingWidget('full-ranking-container');
+        document.body.appendChild(screen);
+        await window.renderHomeRankingWidget('full-ranking-container');
+    } catch (err) {
+        console.error("Error in openLegendaryRankingScreen:", err);
+    }
 };
 
 window.renderHomeRankingWidget = async function(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const currentUserId = userState.userId || userState.telegram_id;
-    const isAr = userState.lang === 'ar'; 
+    const state = window.userState || {};
+    const client = window.supabaseClient;
+    const currentUserId = state.userId || state.telegram_id;
+    const isAr = state.lang === 'ar'; 
+
+    if (!client) {
+        container.innerHTML = `<div style="text-align:center; color:#fd1d1d; padding:20px;">Supabase client not found</div>`;
+        return;
+    }
 
     try {
-        const { data: rankings, error: topError } = await supabaseClient
+        const { data: rankings, error: topError } = await client
             .from('weekly_match_rankings')
             .select('*')
             .eq('is_eliminated', false)
@@ -75,30 +88,42 @@ window.renderHomeRankingWidget = async function(containerId) {
             .order('points_earned', { ascending: false })
             .limit(50);
 
-        if (topError) throw topError;
+        if (topError) console.warn("Top rankings error:", topError);
 
-        const { data: myRank } = await supabaseClient.rpc('get_user_rank', {
-            p_telegram_id: currentUserId,
-            p_category: 'weekly'
-        });
+        let myRank = null;
+        if (currentUserId) {
+            const { data: rankData } = await client.rpc('get_user_rank', {
+                p_telegram_id: currentUserId,
+                p_category: 'weekly'
+            });
+            myRank = rankData;
+        }
 
-        const { data: myData } = await supabaseClient
-            .from('weekly_match_rankings')
-            .select('points_earned')
-            .eq('telegram_id', currentUserId)
-            .eq('category', 'weekly')
-            .maybeSingle();
+        let myData = null;
+        if (currentUserId) {
+            const { data: userData } = await client
+                .from('weekly_match_rankings')
+                .select('points_earned')
+                .eq('telegram_id', currentUserId)
+                .eq('category', 'weekly')
+                .maybeSingle();
+            myData = userData;
+        }
 
-        const { data: predictions } = await supabaseClient
-            .from('match_predictions')
-            .select('*')
-            .eq('telegram_id', currentUserId)
-            .order('created_at', { ascending: false });
+        let predictions = [];
+        if (currentUserId) {
+            const { data: predsData } = await client
+                .from('match_predictions')
+                .select('*')
+                .eq('telegram_id', currentUserId)
+                .order('created_at', { ascending: false });
+            predictions = predsData || [];
+        }
 
         let matches = [];
         if (predictions && predictions.length > 0) {
             const matchIds = predictions.map(p => p.match_id);
-            const { data: matchesData } = await supabaseClient
+            const { data: matchesData } = await client
                 .from('matches')
                 .select('*')
                 .in('id', matchIds);
@@ -245,7 +270,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     gap: 6px;
                 }
 
-                /* المنصة المدمجة السفلية */
                 .podium-container { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; gap: 8px; width: 100%; }
                 .podium-card { background: var(--bg-card, #1c1c22); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; text-align: center; padding: 8px 4px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
                 .rank-1 { border-color: var(--accent-gold, #fcb045); background: linear-gradient(180deg, rgba(252, 176, 69, 0.15) 0%, rgba(28, 28, 34, 1) 100%); height: 110px; transform: translateY(-5px); }
@@ -256,7 +280,6 @@ window.renderHomeRankingWidget = async function(containerId) {
             </style>
         `;
 
-        // ================= المنصة المصغرة =================
         let topHtml = `<div style="display: flex; flex-direction: column; align-items: center; width: 100%;">`;
         
         if (rankings && rankings.length > 0) {
@@ -279,17 +302,17 @@ window.renderHomeRankingWidget = async function(containerId) {
             topHtml += `</div>`;
         }
 
-        const userInitial = userState.username ? String(userState.username).charAt(0).toUpperCase() : '👤';
-        const userImageHtml = userState.photoUrl ? `<img src="${userState.photoUrl}" alt="User">` : `${userInitial}`;
+        const userName = state.username || 'User';
+        const userInitial = userName.charAt(0).toUpperCase();
+        const userImageHtml = state.photoUrl ? `<img src="${state.photoUrl}" alt="User">` : `${userInitial}`;
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
-        // ================= كارت المستخدم المصغر =================
         topHtml += `
             <div class="legendary-card">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
                 <div class="legendary-avatar-wrapper"><div class="legendary-avatar-inner">${userImageHtml}</div></div>
-                <div class="legendary-name">${userState.username || 'User'}</div>
+                <div class="legendary-name">${userName}</div>
                 <div class="legendary-points">
                     <span style="font-size: 1rem;">🏆</span>
                     <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.1rem;">${myData ? myData.points_earned : 0}</span>
@@ -312,20 +335,19 @@ window.renderHomeRankingWidget = async function(containerId) {
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.7rem; font-weight: bold;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
-                <button class="btn-my-predictions" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
+                <button class="btn-my-predictions" onclick="const sec = document.getElementById('predictions-history-section'); if(sec) sec.scrollIntoView({behavior: 'smooth'});">
                     📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
                 </button>
             </div>
         </div>`;
 
-        // ================= القسم السفلي للتوقعات والمتصدرين =================
         let bottomHtml = `<div style="width: 100%; padding-bottom: 30px; margin-top: 10px;" id="scrollable-content">`;
 
         let historyCards = '';
         if (predictions && predictions.length > 0) {
             const recentPredictions = predictions.slice(0, 10); 
             historyCards = recentPredictions.map(pred => {
-                const match = matches.find(m => m.id === pred.match_id);
+                const match = matches.find(m => String(m.id) === String(pred.match_id));
                 if (!match) return ''; 
 
                 let statusColor = '', statusBg = '', statusText = '', resultUi = '';
@@ -365,11 +387,4 @@ window.renderHomeRankingWidget = async function(containerId) {
 
         let rankingListHtml = '';
         if (rankings && rankings.length > 0) {
-            rankingListHtml = rankings.map((user, index) => {
-                const uName = user.username || user.telegram_id;
-                const isMe = String(user.telegram_id) === String(currentUserId);
-                const activeBg = isMe ? 'background: rgba(252, 176, 69, 0.15); border: 1px solid var(--accent-gold, #fcb045);' : 'background: var(--bg-card, #1c1c22); border: 1px solid rgba(255,255,255,0.03);';
-                return `
-                    <div style="${activeBg} padding:10px 12px; border-radius:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-weight:900; color:${index < 3 ? 'var(--accent-gold, 
+            rankingListHtml = rankings.map((user, ind
