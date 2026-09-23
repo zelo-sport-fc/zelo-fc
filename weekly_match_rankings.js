@@ -37,7 +37,7 @@ window.openLegendaryRankingScreen = function() {
         box-sizing: border-box; 
         display: flex;
         flex-direction: column;
-        overflow: hidden; 
+        overflow-y: auto; 
         color: white;
         direction: ${isAr ? 'rtl' : 'ltr'}; 
         text-align: ${isAr ? 'right' : 'left'};
