@@ -122,25 +122,25 @@ window.renderHomeRankingWidget = async function(containerId) {
                     50% { transform: translate(-50%, -6px); }
                     100% { transform: translate(-50%, 0px); }
                 }
+
                 @keyframes glowPulse {
                     0% { box-shadow: 0 0 15px rgba(252, 176, 69, 0.4), inset 0 0 10px rgba(252, 176, 69, 0.1); }
                     50% { box-shadow: 0 0 30px rgba(253, 29, 29, 0.6), inset 0 0 20px rgba(253, 29, 29, 0.2); }
                     100% { box-shadow: 0 0 15px rgba(252, 176, 69, 0.4), inset 0 0 10px rgba(252, 176, 69, 0.1); }
                 }
 
-                /* تم تصغير البطاقة المركزية بنسبة 40% */
                 .legendary-card {
                     position: relative;
                     background: rgba(22, 22, 30, 0.8);
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
-                    border-radius: 20px;
-                    padding: 33px 15px 15px 15px; 
-                    margin: 33px 0 15px 0; 
+                    border-radius: 25px;
+                    padding: 35px 12px 15px 12px; 
+                    margin: 35px auto 10px auto; 
                     border: 1px solid rgba(255, 255, 255, 0.08);
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 2px 10px rgba(255,255,255,0.05);
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 2px 15px rgba(255,255,255,0.05);
                     text-align: center;
-                    width: 100%;
+                    width: 60%;
                     box-sizing: border-box;
                 }
                 
@@ -149,41 +149,48 @@ window.renderHomeRankingWidget = async function(containerId) {
                     position: absolute;
                     top: 0; left: 0; right: 0; bottom: 0;
                     background: radial-gradient(circle at 50% 0%, rgba(131, 58, 180, 0.2) 0%, transparent 70%);
-                    border-radius: 20px;
+                    border-radius: 25px;
                     pointer-events: none;
                     z-index: 0;
                 }
 
-                /* تصغير شارة الترتيب */
                 .legendary-rank-badge {
                     position: absolute;
-                    top: -10px;
+                    top: -15px;
                     ${isAr ? 'left: -5px;' : 'right: -5px;'}
                     color: white;
                     font-weight: 900;
-                    font-size: 1rem;
-                    padding: 5px 12px;
-                    border-radius: 10px;
-                    border: 2px solid rgba(255,255,255,0.9);
+                    font-size: 1.4rem;
+                    padding: 8px 18px;
+                    border-radius: 12px;
+                    border: 3px solid rgba(255,255,255,0.9);
                     transform: rotate(${isAr ? '-8deg' : '8deg'});
                     z-index: 10;
                     letter-spacing: 1px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
                     text-shadow: 0 2px 4px rgba(0,0,0,0.4);
                 }
-                .badge-top { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); box-shadow: 0 8px 25px rgba(253, 160, 133, 0.5); color: #fff; }
-                .badge-normal { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); box-shadow: 0 8px 25px rgba(255, 8, 68, 0.5); }
 
-                /* تصغير الصورة الشخصية 40% */
+                .badge-top {
+                    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+                    box-shadow: 0 8px 25px rgba(253, 160, 133, 0.5);
+                    color: #fff;
+                }
+
+                .badge-normal {
+                    background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+                    box-shadow: 0 8px 25px rgba(255, 8, 68, 0.5);
+                }
+
                 .legendary-avatar-wrapper {
                     position: absolute;
-                    top: -35px; 
+                    top: -42px; 
                     left: 50%;
                     transform: translateX(-50%);
                     width: 60px;
                     height: 60px;
                     border-radius: 50%;
-                    padding: 3px;
+                    padding: 5px;
                     background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
                     animation: floatAvatar 4s ease-in-out infinite, glowPulse 3s infinite;
                     z-index: 2;
@@ -195,52 +202,58 @@ window.renderHomeRankingWidget = async function(containerId) {
                     border-radius: 50%;
                     background: #111;
                     overflow: hidden;
-                    border: 2px solid #16161e; 
+                    border: 4px solid #16161e; 
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 1.5rem;
+                    font-size: 2.5rem;
                     font-weight: bold;
                 }
 
-                .legendary-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
+                .legendary-avatar-inner img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
 
-                /* صف أفقي يحتوي على الاسم والنقاط */
                 .legendary-info-row {
                     position: relative;
                     z-index: 1;
                     display: flex;
-                    justify-content: space-between;
                     align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                    direction: ltr;
                     width: 100%;
-                    direction: ltr; 
-                    margin-bottom: 12px;
-                    margin-top: 5px;
                 }
 
                 .legendary-name {
+                    position: relative;
+                    z-index: 1;
                     font-size: 1.1rem;
                     font-weight: 900;
                     color: #fff;
                     margin: 0;
-                    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+                    text-shadow: 0 3px 15px rgba(0,0,0,0.8);
+                    flex: 1;
                     text-align: left;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
-                    max-width: 55%;
                 }
 
                 .legendary-points {
+                    position: relative;
+                    z-index: 1;
                     display: inline-flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 10px;
                     background: rgba(0, 0, 0, 0.4);
-                    padding: 5px 12px;
-                    border-radius: 10px;
+                    padding: 6px 10px;
+                    border-radius: 15px;
                     border: 1px solid rgba(255, 215, 0, 0.3);
-                    margin: 0;
+                    flex-shrink: 0;
                 }
 
                 .legendary-stats-grid {
@@ -248,68 +261,121 @@ window.renderHomeRankingWidget = async function(containerId) {
                     z-index: 1;
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 8px;
-                    margin-top: 10px;
+                    gap: 12px;
+                    margin-top: 20px;
                 }
 
                 .legendary-stat-box {
                     background: rgba(0, 0, 0, 0.3);
-                    border-radius: 12px;
-                    padding: 8px 4px;
+                    border-radius: 16px;
+                    padding: 14px 5px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
 
-                .stat-correct { border-bottom: 3px solid #10b981; }
-                .stat-pending { border-bottom: 3px solid #fcb045; }
-                .stat-wrong   { border-bottom: 3px solid #fd1d1d; }
+                .stat-correct {
+                    border-bottom: 4px solid #10b981;
+                }
 
-                /* تصغير الزر قليلاً */
+                .stat-pending {
+                    border-bottom: 4px solid #fcb045;
+                }
+
+                .stat-wrong {
+                    border-bottom: 4px solid #fd1d1d;
+                }
+
                 .btn-my-predictions {
                     position: relative;
                     z-index: 1;
-                    margin-top: 15px;
+                    margin-top: 25px;
                     background: linear-gradient(90deg, #fd1d1d, #fcb045);
                     color: white;
                     border: none;
-                    padding: 8px 20px;
-                    border-radius: 20px;
-                    font-size: 0.95rem;
+                    padding: 12px 30px;
+                    border-radius: 30px;
+                    font-size: 1.1rem;
                     font-weight: 900;
                     cursor: pointer;
                     width: 85%;
-                    max-width: 250px;
+                    max-width: 280px;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 8px;
+                    gap: 10px;
                 }
 
-                /* المنصة أصبحت أفقية (مرتبة عمودياً كصفوف) */
-                .podium-container { 
-                    display: flex; 
-                    flex-direction: column; 
-                    margin-bottom: 10px; 
-                    margin-top: 10px; 
-                    gap: 10px; 
-                    width: 100%; 
+                .podium-container {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                    margin-top: 10px;
+                    gap: 10px;
+                    width: 100%;
                 }
-                .podium-card { 
-                    background: var(--bg-card, #1c1c22); 
-                    border: 1px solid rgba(255,255,255,0.05); 
-                    border-radius: 12px; 
-                    padding: 10px 15px; 
-                    display: flex; 
-                    flex-direction: row; 
-                    align-items: center; 
-                    justify-content: space-between; 
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-                    direction: ltr; /* إجبار الترتيب من اليسار: صورة، اسم، نقاط، تاج */
+
+                .podium-card {
+                    background: var(--bg-card, #1c1c22);
+                    border: 1px solid rgba(255,255,255,0.05);
+                    border-radius: 16px;
+                    text-align: center;
+                    padding: 10px 8px;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 8px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    direction: ltr;
+                    min-height: 70px;
+                    box-sizing: border-box;
                 }
-                .rank-1 { border-color: var(--accent-gold, #fcb045); background: linear-gradient(90deg, rgba(252, 176, 69, 0.15) 0%, rgba(28, 28, 34, 1) 100%); }
-                .rank-2 { border-color: #c0c0c0; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, rgba(28, 28, 34, 1) 100%); }
-                .rank-3 { border-color: #cd7f32; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1) 0%, rgba(28, 28, 34, 1) 100%); }
-                .podium-name { font-size: 1rem; font-weight: bold; margin: 0 12px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; text-align: left; }
-                .podium-pts { font-size: 1.1rem; font-weight: 900; margin-right: 12px; }
+
+                .rank-1 {
+                    border-color: var(--accent-gold, #fcb045);
+                    background: linear-gradient(180deg, rgba(252, 176, 69, 0.15) 0%, rgba(28, 28, 34, 1) 100%);
+                    height: auto;
+                    transform: translateY(-5px);
+                }
+
+                .rank-2 {
+                    border-color: #c0c0c0;
+                    background: linear-gradient(180deg, rgba(192, 192, 192, 0.1) 0%, rgba(28, 28, 34, 1) 100%);
+                    height: auto;
+                }
+
+                .rank-3 {
+                    border-color: #cd7f32;
+                    background: linear-gradient(180deg, rgba(205, 127, 50, 0.1) 0%, rgba(28, 28, 34, 1) 100%);
+                    height: auto;
+                }
+
+                .podium-name {
+                    font-size: 0.78rem;
+                    font-weight: bold;
+                    margin: 0;
+                    color: #fff;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    direction: ltr;
+                    flex: 1;
+                    text-align: left;
+                }
+
+                .podium-pts {
+                    font-size: 0.95rem;
+                    font-weight: 900;
+                    flex-shrink: 0;
+                }
+
+                .podium-card > div:first-child {
+                    font-size: 1.1rem !important;
+                    margin: 0 !important;
+                    order: 4;
+                    flex-shrink: 0;
+                }
             </style>
         `;
 
@@ -320,42 +386,43 @@ window.renderHomeRankingWidget = async function(containerId) {
             const firstPlace = rankings[0], secondPlace = rankings[1], thirdPlace = rankings[2];
             topHtml += `<div class="podium-container">`;
 
-            // المركز الأول
-            if (firstPlace) {
-                const name1 = firstPlace.username || firstPlace.telegram_id;
-                topHtml += `
-                    <div class="podium-card rank-1">
-                        ${generateLegendaryAvatar(name1, firstPlace.photo_url, '45px')}
-                        <div class="podium-name">${name1}</div>
-                        <div class="podium-pts" style="color: var(--accent-gold, #fcb045);">${firstPlace.points_earned}</div>
-                        <div style="font-size: 1.6rem;">👑</div>
-                    </div>`;
-            }
-
-            // المركز الثاني
             if (secondPlace) {
                 const name2 = secondPlace.username || secondPlace.telegram_id;
-                topHtml += `
-                    <div class="podium-card rank-2">
-                        ${generateLegendaryAvatar(name2, secondPlace.photo_url, '40px')}
-                        <div class="podium-name">${name2}</div>
-                        <div class="podium-pts" style="color: #c0c0c0;">${secondPlace.points_earned}</div>
-                        <div style="font-size: 1.3rem;">🥈</div>
-                    </div>`;
+
+                topHtml += `<div class="podium-card rank-2">
+                    ${generateLegendaryAvatar(name2, secondPlace.photo_url, '40px')}
+                    <div class="podium-name">${name2}</div>
+                    <div class="podium-pts" style="color: #c0c0c0;">${secondPlace.points_earned}</div>
+                    <div style="font-size: 1.1rem; margin: 0;">🥈</div>
+                </div>`;
+            } else {
+                topHtml += `<div style="flex: 1;"></div>`;
             }
 
-            // المركز الثالث
+            if (firstPlace) {
+                const name1 = firstPlace.username || firstPlace.telegram_id;
+
+                topHtml += `<div class="podium-card rank-1">
+                    ${generateLegendaryAvatar(name1, firstPlace.photo_url, '55px')}
+                    <div class="podium-name">${name1}</div>
+                    <div class="podium-pts" style="color: var(--accent-gold, #fcb045);">${firstPlace.points_earned}</div>
+                    <div style="font-size: 1.3rem; margin: 0;">👑</div>
+                </div>`;
+            }
+
             if (thirdPlace) {
                 const name3 = thirdPlace.username || thirdPlace.telegram_id;
-                topHtml += `
-                    <div class="podium-card rank-3">
-                        ${generateLegendaryAvatar(name3, thirdPlace.photo_url, '40px')}
-                        <div class="podium-name">${name3}</div>
-                        <div class="podium-pts" style="color: #cd7f32;">${thirdPlace.points_earned}</div>
-                        <div style="font-size: 1.3rem;">🥉</div>
-                    </div>`;
+
+                topHtml += `<div class="podium-card rank-3">
+                    ${generateLegendaryAvatar(name3, thirdPlace.photo_url, '35px')}
+                    <div class="podium-name">${name3}</div>
+                    <div class="podium-pts" style="color: #cd7f32;">${thirdPlace.points_earned}</div>
+                    <div style="font-size: 1.1rem; margin: 0;">🥉</div>
+                </div>`;
+            } else {
+                topHtml += `<div style="flex: 1;"></div>`;
             }
-            
+
             topHtml += `</div>`;
         } else {
             // رفع نص "لا توجد بيانات ترتيب حالياً" للأعلى عبر تقليل المساحة
@@ -370,10 +437,14 @@ window.renderHomeRankingWidget = async function(containerId) {
         topHtml += `
             <div class="legendary-card">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
-                <div class="legendary-avatar-wrapper"><div class="legendary-avatar-inner">${userImageHtml}</div></div>
-                
+
+                <div class="legendary-avatar-wrapper">
+                    <div class="legendary-avatar-inner">${userImageHtml}</div>
+                </div>
+
                 <div class="legendary-info-row">
                     <div class="legendary-name">${userState.username || 'User'}</div>
+
                     <div class="legendary-points">
                         <span style="font-size: 1rem;">🏆</span>
                         <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.1rem;">${myData ? myData.points_earned : 0}</span>
@@ -383,38 +454,21 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 <div class="legendary-stats-grid">
                     <div class="legendary-stat-box stat-correct">
-                        <div style="font-size: 1.1rem; margin-bottom: 3px;">✅</div>
-                        <div style="color: #10b981; font-size: 1.1rem; font-weight: 900;">${correctCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'صحيح' : 'Correct'}</div>
+                        <div style="font-size: 1.6rem; margin-bottom: 5px;">✅</div>
+                        <div style="color: #10b981; font-size: 1.5rem; font-weight: 900;">${correctCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'صحيح' : 'Correct'}</div>
                     </div>
+
                     <div class="legendary-stat-box stat-pending">
-                        <div style="font-size: 1.1rem; margin-bottom: 3px;">⏳</div>
-                        <div style="color: #fcb045; font-size: 1.1rem; font-weight: 900;">${pendingCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'انتظار' : 'Pending'}</div>
+                        <div style="font-size: 1.6rem; margin-bottom: 5px;">⏳</div>
+                        <div style="color: #fcb045; font-size: 1.5rem; font-weight: 900;">${pendingCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'انتظار' : 'Pending'}</div>
                     </div>
+
                     <div class="legendary-stat-box stat-wrong">
-                        <div style="font-size: 1.1rem; margin-bottom: 3px;">❌</div>
+                        <div style="font-size: 1.6rem; margin-bottom: 5px;">❌</div>
                         <!-- تم التعديل هنا ليكون الرقم مفتوح بدون / 2 -->
-                        <div style="color: #fff; font-size: 1.1rem; font-weight: 900;">${wrongCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
+                        <div style="color: #fff; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
-                <button class="btn-my-predictions" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
-                    📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
-                </button>
-            </div>
-        </div>`; // إغلاق القسم العلوي
-
-        // ================= القسم السفلي القابل للتمرير =================
-        let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
-
-        let historyHtml = '';
-        if (predictions && predictions.length > 0) {
-            const recentPredictions = predictions.slice(0, 10); 
-            historyHtml = recentPredictions.map(pred => {
-                const match = matches.find(m => m.id === pred.match_id);
-                if (!match) return ''; 
-
-                let statusColor = '', statusBg = '', statusText = '', resultUi = '';
-                if (pred.prediction_status === 'correct') {
-                    statusColor = '#10b981'; statusBg = 'rgba(16, 185, 129, 0.05)'; statusText = `+3 ${isAr ? 'نقاط' : 'Pts'} 
