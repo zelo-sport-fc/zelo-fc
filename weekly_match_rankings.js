@@ -1,6 +1,6 @@
- /**
+/**
  * ملف: weekly_match_rankings.js
- * الوظيفة: شاشة الترتيب الكاملة (المنصة + البطاقة الأسطورية الشاملة + سجل التوقعات + الترتيب العام)
+ * الوظيفة: شاشة الترتيب الكاملة (مُصححة ومؤمّنة ضد أخطاء التعليق والتحميل)
  */
 
 const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
@@ -13,61 +13,72 @@ const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
 };
 
 window.openLegendaryRankingScreen = function() {
-    const existingScreen = document.getElementById('ranking-full-screen');
-    if (existingScreen) existingScreen.remove();
+    try {
+        const existingScreen = document.getElementById('ranking-full-screen');
+        if (existingScreen) existingScreen.remove();
 
-    const isAr = userState.lang === 'ar';
-    const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
+        const state = window.userState || {};
+        const isAr = state.lang === 'ar';
+        const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
 
-    const screen = document.createElement('div');
-    screen.id = 'ranking-full-screen';
-    
-    // تم التعديل هنا: منع التمرير في الشاشة الرئيسية لتقسيمها إلى ثابت ومتحرك
-    screen.style.cssText = `
-        position: fixed !important; 
-        top: 0 !important; 
-        left: 0 !important; 
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important; 
-        height: 100vh !important; 
-        background: var(--bg-dark, #0d0d12) !important; 
-        z-index: 99999 !important; 
-        padding: 20px 20px 0 20px; 
-        box-sizing: border-box; 
-        display: flex;
-        flex-direction: column;
-        overflow: hidden; 
-        color: white;
-        direction: ${isAr ? 'rtl' : 'ltr'}; 
-        text-align: ${isAr ? 'right' : 'left'};
-    `;
+        const screen = document.createElement('div');
+        screen.id = 'ranking-full-screen';
+        
+        screen.style.cssText = `
+            position: fixed !important; 
+            top: 0 !important; 
+            left: 0 !important; 
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important; 
+            height: 100vh !important; 
+            background: var(--bg-dark, #0d0d12) !important; 
+            z-index: 99999 !important; 
+            padding: 20px 20px 0 20px; 
+            box-sizing: border-box; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+            color: white;
+            direction: ${isAr ? 'rtl' : 'ltr'}; 
+            text-align: ${isAr ? 'right' : 'left'};
+        `;
 
-    screen.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-shrink: 0;">
-            <h2 style="margin:0; color:var(--accent-gold, #fcb045); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
-            <button onclick="document.getElementById('ranking-full-screen').remove()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer; transition: 0.2s;">✕</button>
-        </div>
-        <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
-                ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
+        screen.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-shrink: 0;">
+                <h2 style="margin:0; color:var(--accent-gold, #fcb045); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
+                <button onclick="document.getElementById('ranking-full-screen').remove()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer; transition: 0.2s;">✕</button>
             </div>
-        </div>
-    `;
+            <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
+                    ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
+                </div>
+            </div>
+        `;
 
-    document.body.appendChild(screen);
-    window.renderHomeRankingWidget('full-ranking-container');
+        document.body.appendChild(screen);
+        window.renderHomeRankingWidget('full-ranking-container');
+    } catch (err) {
+        console.error("Error opening ranking screen:", err);
+    }
 };
 
 window.renderHomeRankingWidget = async function(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const currentUserId = userState.userId || userState.telegram_id;
-    const isAr = userState.lang === 'ar'; 
+    const state = window.userState || {};
+    const client = window.supabaseClient;
+    const currentUserId = state.userId || state.telegram_id;
+    const isAr = state.lang === 'ar'; 
+
+    if (!client) {
+        container.innerHTML = `<div style="text-align:center; color:#fd1d1d; padding:30px;">الاتصال بقاعدة البيانات غير متوفر</div>`;
+        return;
+    }
 
     try {
-        const { data: rankings, error: topError } = await supabaseClient
+        const { data: rankings, error: topError } = await client
             .from('weekly_match_rankings')
             .select('*')
             .eq('is_eliminated', false)
@@ -75,37 +86,48 @@ window.renderHomeRankingWidget = async function(containerId) {
             .order('points_earned', { ascending: false })
             .limit(50);
 
-        if (topError) throw topError;
+        if (topError) console.warn("Error fetching rankings:", topError);
 
-        const { data: myRank } = await supabaseClient.rpc('get_user_rank', {
-            p_telegram_id: currentUserId,
-            p_category: 'weekly'
-        });
+        let myRank = null;
+        if (currentUserId) {
+            const { data: rankData } = await client.rpc('get_user_rank', {
+                p_telegram_id: currentUserId,
+                p_category: 'weekly'
+            });
+            myRank = rankData;
+        }
 
-        const { data: myData } = await supabaseClient
-            .from('weekly_match_rankings')
-            .select('points_earned')
-            .eq('telegram_id', currentUserId)
-            .eq('category', 'weekly')
-            .maybeSingle();
+        let myData = null;
+        if (currentUserId) {
+            const { data: userData } = await client
+                .from('weekly_match_rankings')
+                .select('points_earned')
+                .eq('telegram_id', currentUserId)
+                .eq('category', 'weekly')
+                .maybeSingle();
+            myData = userData;
+        }
 
-        const { data: predictions } = await supabaseClient
-            .from('match_predictions')
-            .select('*')
-            .eq('telegram_id', currentUserId)
-            .order('created_at', { ascending: false });
+        let predictions = [];
+        if (currentUserId) {
+            const { data: predsData } = await client
+                .from('match_predictions')
+                .select('*')
+                .eq('telegram_id', currentUserId)
+                .order('created_at', { ascending: false });
+            predictions = predsData || [];
+        }
 
         let matches = [];
         if (predictions && predictions.length > 0) {
             const matchIds = predictions.map(p => p.match_id);
-            const { data: matchesData } = await supabaseClient
+            const { data: matchesData } = await client
                 .from('matches')
                 .select('*')
                 .in('id', matchIds);
             matches = matchesData || [];
         }
 
-        // تم تنظيف الكود هنا بدمج الحلقات بحلقة واحدة أسرع
         let correctCount = 0, wrongCount = 0, pendingCount = 0;
         if (predictions && predictions.length > 0) {
             predictions.forEach(p => {
@@ -275,7 +297,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             </style>
         `;
 
-        // ================= القسم العلوي الثابت =================
+        // ================= القسم العلوي (المنصة + البطاقة) =================
         let topHtml = `<div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 100%;">`;
         
         if (rankings && rankings.length > 0) {
@@ -297,12 +319,12 @@ window.renderHomeRankingWidget = async function(containerId) {
             } else { topHtml += `<div style="flex: 1;"></div>`; }
             topHtml += `</div>`;
         } else {
-            // رفع نص "لا توجد بيانات ترتيب حالياً" للأعلى عبر تقليل المساحة
             topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${isAr ? 'لا توجد بيانات ترتيب حالياً' : 'No ranking data available'}</div>`;
         }
 
-        const userInitial = userState.username ? String(userState.username).charAt(0).toUpperCase() : '👤';
-        const userImageHtml = userState.photoUrl ? `<img src="${userState.photoUrl}" alt="User">` : `${userInitial}`;
+        const userName = state.username || 'User';
+        const userInitial = userName.charAt(0).toUpperCase();
+        const userImageHtml = state.photoUrl ? `<img src="${state.photoUrl}" alt="User">` : `${userInitial}`;
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
@@ -310,7 +332,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             <div class="legendary-card">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
                 <div class="legendary-avatar-wrapper"><div class="legendary-avatar-inner">${userImageHtml}</div></div>
-                <div class="legendary-name">${userState.username || 'User'}</div>
+                <div class="legendary-name">${userName}</div>
                 <div class="legendary-points">
                     <span style="font-size: 1.2rem;">🏆</span>
                     <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.3rem;">${myData ? myData.points_earned : 0}</span>
@@ -329,25 +351,24 @@ window.renderHomeRankingWidget = async function(containerId) {
                     </div>
                     <div class="legendary-stat-box stat-wrong">
                         <div style="font-size: 1.6rem; margin-bottom: 5px;">❌</div>
-                        <!-- تم التعديل هنا ليكون الرقم مفتوح بدون / 2 -->
                         <div style="color: #fff; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
-                <button class="btn-my-predictions" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
+                <button class="btn-my-predictions" onclick="const sec = document.getElementById('predictions-history-section'); if(sec) sec.scrollIntoView({behavior: 'smooth'});">
                     📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
                 </button>
             </div>
-        </div>`; // إغلاق القسم العلوي
+        </div>`;
 
-        // ================= القسم السفلي القابل للتمرير =================
+        // ================= القسم السفلي (سجل التوقعات + قائمة الترتيب) =================
         let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
 
         let historyHtml = '';
         if (predictions && predictions.length > 0) {
             const recentPredictions = predictions.slice(0, 10); 
             historyHtml = recentPredictions.map(pred => {
-                const match = matches.find(m => m.id === pred.match_id);
+                const match = matches.find(m => String(m.id) === String(pred.match_id));
                 if (!match) return ''; 
 
                 let statusColor = '', statusBg = '', statusText = '', resultUi = '';
@@ -361,8 +382,5 @@ window.renderHomeRankingWidget = async function(containerId) {
                     statusColor = 'var(--accent-gold, #fcb045)'; statusBg = 'rgba(252, 176, 69, 0.05)'; statusText = `${isAr ? 'بالانتظار' : 'Pending'} ⏳`;
                 }
 
-                return `
-                    <div style="background: linear-gradient(to ${isAr ? 'left' : 'right'}, var(--bg-card, #1c1c22), ${statusBg}); padding:18px; border-radius:16px; margin-bottom:15px; border: 1px solid rgba(255,255,255,0.03); border-${isAr ? 'right' : 'left'}: 4px solid ${statusColor}; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                        <div>
-                            <div style="font-weight:900; font-size:1.1rem; margin-bottom:8px; color:#fff; letter-spacing: 0.5px;">${match.team_a} <span style="color:#555; font-size:0.9rem; margin: 0 4px;">VS</span> ${match.team_b}</div>
-                            <div style="color:#ccc; font-size:0.95rem; b
+                const teamA = match.team_a || match.home_team || 'Team A';
+                const teamB = match.team_b || match.away_team || 'Tea
