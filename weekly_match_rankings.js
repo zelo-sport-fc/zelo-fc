@@ -265,7 +265,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     gap: 10px;
                 }
 
-                        .podium-container { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; width: 100%; }
+                        .podium-container { display: flex; flex-direction: column; gap: 8px; margin: 22px 0; width: 100%; }
         .podium-card { background: linear-gradient(135deg, rgba(30, 30, 38, 0.95), rgba(20, 20, 26, 0.95)); border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; direction: ltr; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .rank-1 { border: 1px solid rgba(252, 176, 69, 0.5); }
         .rank-2 { border: 1px solid rgba(192, 192, 192, 0.4); }
