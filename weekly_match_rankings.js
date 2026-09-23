@@ -294,6 +294,9 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .rank-3 { border-color: #cd7f32; background: linear-gradient(180deg, rgba(205, 127, 50, 0.1) 0%, rgba(28, 28, 34, 1) 100%); height: 120px; }
                 .podium-name { font-size: 0.85rem; font-weight: bold; margin: 10px 0 5px 0; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
                 .podium-pts { font-size: 1.1rem; font-weight: 900; }
+
+                .prediction-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+                .ranking-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 14px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); }
             </style>
         `;
 
@@ -377,10 +380,4 @@ window.renderHomeRankingWidget = async function(containerId) {
                     resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
                 } else if (pred.prediction_status === 'wrong') {
                     statusColor = 'var(--accent-red, #fd1d1d)'; statusBg = 'rgba(253, 29, 29, 0.05)'; statusText = `${isAr ? 'خطأ' : 'Wrong'} ❌`;
-                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
-                } else {
-                    statusColor = 'var(--accent-gold, #fcb045)'; statusBg = 'rgba(252, 176, 69, 0.05)'; statusText = `${isAr ? 'بالانتظار' : 'Pending'} ⏳`;
-                }
-
-                const teamA = match.team_a || match.home_team || 'Team A';
-                const teamB = match.team_b || match.a
+                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr
