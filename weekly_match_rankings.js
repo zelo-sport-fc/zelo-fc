@@ -134,8 +134,8 @@ window.renderHomeRankingWidget = async function(containerId) {
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
                     border-radius: 25px;
-                    padding: 55px 20px 25px 20px; 
-                    margin: 55px 0 15px 0; 
+                    padding: 30px 15px 12px 15px; 
+                    margin: 30px 0 10px 0; 
                     border: 1px solid rgba(255, 255, 255, 0.08);
                     box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 2px 15px rgba(255,255,255,0.05);
                     text-align: center;
@@ -159,8 +159,8 @@ window.renderHomeRankingWidget = async function(containerId) {
                     ${isAr ? 'left: -5px;' : 'right: -5px;'}
                     color: white;
                     font-weight: 900;
-                    font-size: 1.4rem;
-                    padding: 8px 18px;
+                    font-size: 0.9rem;
+                    padding: 4px 10px;
                     border-radius: 12px;
                     border: 3px solid rgba(255,255,255,0.9);
                     transform: rotate(${isAr ? '-8deg' : '8deg'});
@@ -174,11 +174,11 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 .legendary-avatar-wrapper {
                     position: absolute;
-                    top: -55px; 
+                    top: -30px; 
                     left: 50%;
                     transform: translateX(-50%);
-                    width: 100px;
-                    height: 100px;
+                    width: 60px;
+                    height: 60px;
                     border-radius: 50%;
                     padding: 5px;
                     background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
@@ -231,13 +231,13 @@ window.renderHomeRankingWidget = async function(containerId) {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
                     gap: 12px;
-                    margin-top: 20px;
+                    margin-top: 10px;
                 }
 
                 .legendary-stat-box {
                     background: rgba(0, 0, 0, 0.3);
                     border-radius: 16px;
-                    padding: 14px 5px;
+                    padding: 6px 5px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
 
@@ -248,13 +248,13 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .btn-my-predictions {
                     position: relative;
                     z-index: 1;
-                    margin-top: 25px;
+                    margin-top: 10px;
                     background: linear-gradient(90deg, #fd1d1d, #fcb045);
                     color: white;
                     border: none;
-                    padding: 12px 30px;
+                    padding: 6px 16px;
                     border-radius: 30px;
-                    font-size: 1.1rem;
+                    font-size: 0.9rem;
                     font-weight: 900;
                     cursor: pointer;
                     width: 85%;
