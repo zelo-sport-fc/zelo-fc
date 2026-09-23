@@ -350,8 +350,8 @@ window.renderHomeRankingWidget = async function(containerId) {
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'انتظار' : 'Pending'}</div>
                     </div>
                     <div class="legendary-stat-box stat-wrong">
-                        <div style="font-size: 1.6rem; margin-bottom: 5px;">❌</div>
-                        <div style="color: #fff; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
+                        <div style="color: #fff; font-size: 1.6rem; margin-bottom: 5px;">❌</div>
+                        <div style="color: #fd1d1d; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
@@ -383,4 +383,4 @@ window.renderHomeRankingWidget = async function(containerId) {
                 }
 
                 const teamA = match.team_a || match.home_team || 'Team A';
-                const teamB = match.team_b || match.away_team || 'Tea
+                const teamB = match.team_b || match.a
