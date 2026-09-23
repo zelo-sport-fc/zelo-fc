@@ -6,10 +6,6 @@
     <meta name="theme-color" content="#121215">
     <title>ZELO FC App</title>
     
-    <!-- 🛠️ أداة تشخيص أخطاء الجافاسكريبت على الهواتف (Eruda) -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -264,6 +260,7 @@
 </head>
 <body>
 
+    <!-- تم إفراغ النصوص الثابتة ليتم ملؤها ديناميكياً بواسطة الجافاسكريبت -->
     <header class="top-bar" id="top-bar" style="display: none;">
         <div id="club" style="font-size: 0.9rem; color: #e0e0e0; font-weight: bold;"></div>
         <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); box-shadow: 0 0 10px rgba(252, 176, 69, 0.2);"></div>
@@ -294,23 +291,25 @@
         </button>
     </nav>
 
-    <!-- 🔄 تم تحديث رقم الإصدار (v=10) لفرض تجاوز الذاكرة المؤقتة بالكامل -->
-    <script src="clubsData.js?v=10"></script>
-    <script src="data.js?v=10"></script> 
-    <script src="countries.js?v=10"></script>
-    <script src="i18n-helpers.js?v=10"></script>
-    <script src="ranking.js?v=10"></script>
+    <!-- تم الترتيب بشكل منطقي: الترجمة والبيانات أولاً -->
+    <script src="clubsData.js?v=6"></script>
+    <script src="data.js?v=6"></script> 
+    <script src="countries.js?v=6"></script>
+    <script src="i18n-helpers.js?v=6"></script>
+    <script src="ranking.js?v=6"></script>
     
-    <script src="login.js?v=10"></script>
-    <script src="weekly_match_rankings.js?v=10"></script>
-    <script src="predictions_ranking.js?v=10"></script> 
-    <script src="home.js?v=10"></script>
-    <script src="tasks.js?v=10"></script>
-    <script src="leaderboard.js?v=10"></script>
-    <script src="friends.js?v=10"></script>
-    <script src="wallet.js?v=10"></script>
+    <!-- ثم ملفات الواجهة المنطقية -->
+    <script src="login.js?v=7"></script>
+    <script src="weekly_match_rankings.js?v=6"></script>
+    <script src="predictions_ranking.js?v=6"></script> 
+    <script src="home.js?v=6"></script>
+    <script src="tasks.js?v=6"></script>
+    <script src="leaderboard.js?v=6"></script>
+    <script src="friends.js?v=6"></script>
+    <script src="wallet.js?v=6"></script>
     
-    <script src="app.js?v=10"></script>
+    <!-- التطبيق الرئيسي يُشغل في النهاية -->
+    <script src="app.js?v=6"></script>
 
 </body>
 </html>
