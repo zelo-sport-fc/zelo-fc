@@ -309,17 +309,30 @@ window.renderHomeRankingWidget = async function(containerId) {
         topHtml += `
             <div class="legendary-card">
                             <!-- شريط أفقي موحد يحتوي عناصر المستخدم -->
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 10px;">
-                
-                <!-- الجانب الأيسر: الصورة الشخصية ثم اسم المستخدم -->
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="legendary-avatar-wrapper" style="position: static; transform: none; width: 38px; height: 38px; margin: 0; padding: 2px;">
-                        ${userImageHtml}
-                    </div>
-                    <span style="color: white; font-weight: bold; font-size: 0.9rem;">
-                        @${userState.username || 'user'}
-                    </span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0 5px; margin-bottom: 8px; box-sizing: border-box;">
+            
+            <!-- الجانب الأيسر: الصورة والاسم (بدون تكرار الـ @) -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex-shrink: 0;">
+                    ${userImageHtml}
                 </div>
+                <span style="color: white; font-weight: bold; font-size: 0.9rem;">
+                    ${userState.username || 'user'}
+                </span>
+            </div>
+
+            <!-- الجانب الأيمن: النقاط والترتيب -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="color: #00ff88; font-weight: 800; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 6px;">
+                    🏆 ${userState.points !== undefined ? userState.points : (userState.totalPoints || 3)} Pts
+                </div>
+                <div class="legendary-rank-badge ${badgeClass}" style="position: static; transform: none; margin: 0; padding: 3px 8px; font-size: 0.8rem;">
+                    #${displayRank}
+                </div>
+            </div>
+
+        </div>
+        
 
                 <!-- الجانب الأيمن: النقاط ثم التاج (أقصى اليمين) -->
                 <div style="display: flex; align-items: center; gap: 8px;">
