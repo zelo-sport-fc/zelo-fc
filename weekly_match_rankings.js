@@ -236,10 +236,11 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 .legendary-stat-box {
                     background: rgba(0, 0, 0, 0.3);
-                    border-radius: 16px;
-                    padding: 6px 5px;
+                    border-radius: 12px;
+                    padding: 4px 2px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
+
 
                 .stat-correct { border-bottom: 4px solid #10b981; }
                 .stat-pending { border-bottom: 4px solid #fcb045; }
