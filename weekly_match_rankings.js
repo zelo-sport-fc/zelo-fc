@@ -265,13 +265,18 @@ window.renderHomeRankingWidget = async function(containerId) {
                     gap: 10px;
                 }
 
-                .podium-container { display: flex; flex-direction: column; margin-bottom: 10px; margin-top: 10px; gap: 10px; width: 100%; }
-                .podium-card { background: var(--bg-card, #1c1c22); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); direction: ltr; }
-                .rank-1 { border-color: var(--accent-gold, #fcb045); background: linear-gradient(180deg, rgba(252, 176, 69, 0.15) 0%, rgba(28, 28, 34, 1) 100%); height: 160px; transform: translateY(-10px); }
-                .rank-2 { border-color: #c0c0c0; background: linear-gradient(180deg, rgba(192, 192, 192, 0.1) 0%, rgba(28, 28, 34, 1) 100%); height: 130px; }
-                .rank-3 { border-color: #cd7f32; background: linear-gradient(180deg, rgba(205, 127, 50, 0.1) 0%, rgba(28, 28, 34, 1) 100%); height: 120px; }
-                .podium-name { font-size: 1rem; font-weight: bold; margin: 0 12px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; text-align: left; }
-                .podium-pts { font-size: 1.1rem; font-weight: 900; margin-right: 12px; }
+                        .podium-container { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; width: 100%; }
+        .podium-card { background: linear-gradient(135deg, rgba(30, 30, 38, 0.95), rgba(20, 20, 26, 0.95)); border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; direction: ltr; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .rank-1 { border: 1px solid rgba(252, 176, 69, 0.5); }
+        .rank-2 { border: 1px solid rgba(192, 192, 192, 0.4); }
+        .rank-3 { border: 1px solid rgba(205, 127, 50, 0.4); }
+        .podium-user-block { display: flex; align-items: center; gap: 10px; }
+        .podium-name { font-size: 0.9rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 5px; }
+        .podium-right-box { display: flex; align-items: center; gap: 12px; }
+        .podium-col { display: flex; flex-direction: column; align-items: center; }
+        .podium-sub-label { font-size: 0.6rem; color: rgba(255,255,255,0.5); font-weight: bold; margin-bottom: 2px; }
+        .podium-pts-pill { background: rgba(0, 0, 0, 0.4); padding: 2px 8px; border-radius: 6px; font-weight: 900; font-size: 0.85rem; }
+        
             </style>
         `;
 
@@ -281,15 +286,25 @@ window.renderHomeRankingWidget = async function(containerId) {
         if (rankings && rankings.length > 0) {
             const firstPlace = rankings[0], secondPlace = rankings[1], thirdPlace = rankings[2];
             topHtml += `<div class="podium-container">`;
-                        // المركز الأول
+                                    // المركز الأول
             if (firstPlace) {
                 const name1 = firstPlace.username || firstPlace.telegram_id;
                 topHtml += `
                     <div class="podium-card rank-1">
-                        ${generateLegendaryAvatar(name1, firstPlace.photo_url, '45px')}
-                        <div class="podium-name">${name1}</div>
-                        <div class="podium-pts" style="color: var(--accent-gold, #fcb045);">${firstPlace.points_earned}</div>
-                        <div style="font-size: 1.6rem;">👑</div>
+                        <div class="podium-user-block">
+                            ${generateLegendaryAvatar(name1, firstPlace.photo_url, '40px')}
+                            <div class="podium-name">🏆 ${name1}</div>
+                        </div>
+                        <div class="podium-right-box">
+                            <div class="podium-col">
+                                <span class="podium-sub-label">${isAr ? 'النقاط' : 'Pts'}</span>
+                                <div class="podium-pts-pill" style="color: #fcb045;">${firstPlace.points_earned}</div>
+                            </div>
+                            <div class="podium-col">
+                                <span class="podium-sub-label">${isAr ? 'الترتيب' : 'Rank'}</span>
+                                <span style="font-size: 1.3rem; line-height: 1;">👑</span>
+                            </div>
+                        </div>
                     </div>`;
             }
 
@@ -298,10 +313,20 @@ window.renderHomeRankingWidget = async function(containerId) {
                 const name2 = secondPlace.username || secondPlace.telegram_id;
                 topHtml += `
                     <div class="podium-card rank-2">
-                        ${generateLegendaryAvatar(name2, secondPlace.photo_url, '40px')}
-                        <div class="podium-name">${name2}</div>
-                        <div class="podium-pts" style="color: #c0c0c0;">${secondPlace.points_earned}</div>
-                        <div style="font-size: 1.3rem;">🥈</div>
+                        <div class="podium-user-block">
+                            ${generateLegendaryAvatar(name2, secondPlace.photo_url, '36px')}
+                            <div class="podium-name">🥈 ${name2}</div>
+                        </div>
+                        <div class="podium-right-box">
+                            <div class="podium-col">
+                                <span class="podium-sub-label">${isAr ? 'النقاط' : 'Pts'}</span>
+                                <div class="podium-pts-pill" style="color: #c0c0c0;">${secondPlace.points_earned}</div>
+                            </div>
+                            <div class="podium-col">
+                                <span class="podium-sub-label">${isAr ? 'الترتيب' : 'Rank'}</span>
+                                <span style="font-size: 1.2rem; line-height: 1;">🥈</span>
+                            </div>
+                        </div>
                     </div>`;
             }
 
@@ -310,12 +335,23 @@ window.renderHomeRankingWidget = async function(containerId) {
                 const name3 = thirdPlace.username || thirdPlace.telegram_id;
                 topHtml += `
                     <div class="podium-card rank-3">
-                        ${generateLegendaryAvatar(name3, thirdPlace.photo_url, '40px')}
-                        <div class="podium-name">${name3}</div>
-                        <div class="podium-pts" style="color: #cd7f32;">${thirdPlace.points_earned}</div>
-                        <div style="font-size: 1.3rem;">🥉</div>
+                        <div class="podium-user-block">
+                            ${generateLegendaryAvatar(name3, thirdPlace.photo_url, '36px')}
+                            <div class="podium-name">🥉 ${name3}</div>
+                        </div>
+                        <div class="podium-right-box">
+                            <div class="podium-col">
+                                <span class="podium-sub-label">${isAr ? 'النقاط' : 'Pts'}</span>
+                                <div class="podium-pts-pill" style="color: #cd7f32;">${thirdPlace.points_earned}</div>
+                            </div>
+                            <div class="podium-col">
+                                <span class="podium-sub-label">${isAr ? 'الترتيب' : 'Rank'}</span>
+                                <span style="font-size: 1.2rem; line-height: 1;">🥉</span>
+                            </div>
+                        </div>
                     </div>`;
             }
+            
             
             topHtml += `</div>`;
             
