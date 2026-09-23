@@ -103,6 +103,7 @@ window.renderHomePage = async function(container) {
     let titleRanking = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
     let textRankingDesc = isAr ? 'اكتشف المتصدرين وتعرف على ترتيبك' : 'Discover top players and your rank';
     let supportedClubsTitle = isAr ? 'أنديتك المفضلة' : 'Supported Clubs';
+    let loadingAlert = isAr ? '⏳ جاري التحميل...' : '⏳ Loading...';
     let websiteBtnText = isAr ? 'الموقع الرسمي' : 'Official Site';
 
     // 4. تجميع الصفحة (مع تأثيرات الـ VIP وتقسيم الشاشة الثابتة)
@@ -141,9 +142,9 @@ window.renderHomePage = async function(container) {
                 position: relative;
                 background: linear-gradient(180deg, rgba(22, 22, 30, 0.9) 0%, rgba(13, 13, 18, 0.95) 100%);
                 border-radius: 20px;
-                padding: 30px 15px 15px 15px;
-                margin-top: 30px;
-                margin-bottom: 20px;
+                padding: 30px 15px 15px 15px; /* تقليل الحشوة */
+                margin-top: 30px; /* تقليل المساحة العلوية */
+                margin-bottom: 20px; /* تقليل المساحة السفلية */
                 border: 1px solid rgba(255, 215, 0, 0.15);
                 text-align: center;
                 animation: profileGlow 4s infinite alternate;
@@ -159,10 +160,10 @@ window.renderHomePage = async function(container) {
 
             .royal-avatar-wrapper {
                 position: absolute;
-                top: -35px;
+                top: -35px; /* رفع أقل */
                 left: 50%;
                 transform: translateX(-50%);
-                width: 75px;
+                width: 75px; /* تصغير الصورة */
                 height: 75px;
                 border-radius: 50%;
                 background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
@@ -193,8 +194,8 @@ window.renderHomePage = async function(container) {
             .action-banner {
                 position: relative;
                 border-radius: 16px;
-                padding: 15px;
-                margin-bottom: 12px;
+                padding: 15px; /* تقليل الحشوة */
+                margin-bottom: 12px; /* تقليل التباعد */
                 display: flex; align-items: center; gap: 12px;
                 cursor: pointer; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
                 border: 1px solid rgba(255,255,255,0.05);
@@ -212,7 +213,7 @@ window.renderHomePage = async function(container) {
             .banner-ranking { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(67, 20, 7, 0.95)); border-left: 4px solid #fd1d1d; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(253, 29, 29, 0.1); }
 
             .banner-icon-wrapper {
-                width: 45px; height: 45px;
+                width: 45px; height: 45px; /* تصغير الأيقونة */
                 border-radius: 12px; display: flex; align-items: center; justify-content: center;
                 font-size: 1.6rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05);
                 box-shadow: inset 0 2px 10px rgba(255,255,255,0.1);
@@ -220,14 +221,14 @@ window.renderHomePage = async function(container) {
 
             /* ====== قائمة الأندية ====== */
             .clubs-section { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
-            .clubs-section::-webkit-scrollbar { display: none; }
+            .clubs-section::-webkit-scrollbar { display: none; } /* إخفاء شريط التمرير لو ظهر */
             
             .glass-club-card {
                 background: rgba(26, 26, 34, 0.6); backdrop-filter: blur(12px);
                 border: 1px solid rgba(255,255,255,0.03); border-radius: 14px;
-                padding: 12px;
+                padding: 12px; /* تقليل الحشوة */
                 display: flex; align-items: center; justify-content: space-between;
-                margin-bottom: 8px;
+                margin-bottom: 8px; /* تقليل التباعد */
                 transition: transform 0.3s, background 0.3s;
                 border-right: 3px solid rgba(252, 176, 69, 0.5);
             }
@@ -254,7 +255,7 @@ window.renderHomePage = async function(container) {
             </div>
           
             <!-- 🎯 لافتة التحديات -->
-            <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { console.log('جاري تحميل التحديات...'); }">
+            <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { alert('${loadingAlert}'); }">
                 <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);">${primaryClub ? primaryClub.countryFlag : '⚽'}</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
                     <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.1rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
@@ -263,8 +264,8 @@ window.renderHomePage = async function(container) {
                 <div style="color: #3b82f6; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
             </div>
 
-            <!-- 🏆 لافتة الترتيب (تم إزالة alert وبناء استدعاء مباشر ومضمون) -->
-            <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else if(typeof openLegendaryRankingScreen === 'function') { openLegendaryRankingScreen(); } else { console.error('ملف الترتيب لم يتم تحميله بعد'); }">
+            <!-- 🏆 لافتة الترتيب -->
+            <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else { alert('${loadingAlert}'); }">
                 <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(253, 29, 29, 0.6);">🔥</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
                     <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.1rem; font-weight: 900;">${titleRanking}</h3>
