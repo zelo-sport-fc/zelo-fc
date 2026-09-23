@@ -2,11 +2,9 @@
 // 🚀 تطبيق زيلو إف سي (ZELO FC) - الكود الأساسي (app.js)
 // ==========================================
 
-// 1. إعداد الاتصال بقاعدة بيانات Supabase الصحيحة (tty1cwtlaxyphkariqhw)
-const supabaseUrl = 'https://tty1cwtlaxyphkariqhw.supabase.co'; 
-
-// ⚠️ تأكد من وضع مفتاح (anon public key) الخاص بـ مشروع tty1cwtlaxyphkariqhw من صفحة (Project Settings -> API)
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eTFjd3RsYXh5cGhrYXJpcWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODk1MjYsImV4cCI6MjA5ODc2NTUyNn0.m3wFMEASM3K63nm3bsIlrEOXhRvMQhUZqvpXyFq7NEg'; 
+// 1. إعداد الاتصال بقاعدة بيانات Supabase المحدثة والصحيحة (ttyfcwtlasvphkariqhw)
+const supabaseUrl = 'https://ttyfcwtlasvphkariqhw.supabase.co'; 
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eWZjd3RsYXN2cGhrYXJpcWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODk1MjYsImV4cCI6MjA5ODc2NTUyNn0.m3wFMEASM3K63nm3bsIlrEOXhRvMQhUZqvpXyFq7NEg'; 
 
 const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey, {
     db: { schema: 'public' }
@@ -319,4 +317,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                        }
+                }
