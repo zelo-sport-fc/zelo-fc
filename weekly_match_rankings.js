@@ -155,12 +155,12 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 .legendary-rank-badge {
                     position: absolute;
-                    top: -15px;
+                    top: -10px;
                     ${isAr ? 'left: -5px;' : 'right: -5px;'}
                     color: white;
                     font-weight: 900;
-                    font-size: 1.4rem;
-                    padding: 8px 18px;
+                    font-size: 1rem;
+                    padding: 5px 12px;
                     border-radius: 12px;
                     border: 3px solid rgba(255,255,255,0.9);
                     transform: rotate(${isAr ? '-8deg' : '8deg'});
@@ -174,13 +174,13 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 .legendary-avatar-wrapper {
                     position: absolute;
-                    top: -55px; 
+                    top: -35px; 
                     left: 50%;
                     transform: translateX(-50%);
                     width: 100px;
-                    height: 100px;
+                    height: 000px;
                     border-radius: 50%;
-                    padding: 5px;
+                    padding: 3px;
                     background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
                     animation: floatAvatar 4s ease-in-out infinite, glowPulse 3s infinite;
                     z-index: 2;
@@ -192,12 +192,12 @@ window.renderHomeRankingWidget = async function(containerId) {
                     border-radius: 50%;
                     background: #111;
                     overflow: hidden;
-                    border: 4px solid #16161e; 
+                    border: 2px solid #16161e; 
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 2.5rem;
+                    font-size: 1.5rem;
                     font-weight: bold;
                 }
 
@@ -206,10 +206,10 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .legendary-name {
                     position: relative;
                     z-index: 1;
-                    font-size: 1.6rem;
+                    font-size: 1.1rem;
                     font-weight: 900;
                     color: #fff;
-                    margin-bottom: 8px;
+                    margin: 0;
                     text-shadow: 0 3px 15px rgba(0,0,0,0.8);
                 }
 
@@ -218,10 +218,10 @@ window.renderHomeRankingWidget = async function(containerId) {
                     z-index: 1;
                     display: inline-flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 6px;
                     background: rgba(0, 0, 0, 0.4);
-                    padding: 8px 20px;
-                    border-radius: 15px;
+                    padding: 5px 20px;
+                    border-radius: 10px;
                     border: 1px solid rgba(255, 215, 0, 0.3);
                 }
 
@@ -230,29 +230,29 @@ window.renderHomeRankingWidget = async function(containerId) {
                     z-index: 1;
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 12px;
-                    margin-top: 20px;
+                    gap: 8px;
+                    margin-top: 10px;
                 }
 
                 .legendary-stat-box {
                     background: rgba(0, 0, 0, 0.3);
-                    border-radius: 16px;
+                    border-radius: 12px;
                     padding: 14px 5px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
 
-                .stat-correct { border-bottom: 4px solid #10b981; }
-                .stat-pending { border-bottom: 4px solid #fcb045; }
-                .stat-wrong   { border-bottom: 4px solid #fd1d1d; }
+                .stat-correct { border-bottom: 3px solid #10b981; }
+                .stat-pending { border-bottom: 3px solid #fcb045; }
+                .stat-wrong   { border-bottom: 3px solid #fd1d1d; }
 
                 .btn-my-predictions {
                     position: relative;
                     z-index: 1;
-                    margin-top: 25px;
+                    margin-top: 15px;
                     background: linear-gradient(90deg, #fd1d1d, #fcb045);
                     color: white;
                     border: none;
-                    padding: 12px 30px;
+                    padding: 8px 20px;
                     border-radius: 30px;
                     font-size: 1.1rem;
                     font-weight: 900;
@@ -265,13 +265,13 @@ window.renderHomeRankingWidget = async function(containerId) {
                     gap: 10px;
                 }
 
-                .podium-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; margin-top: 10px; gap: 10px; width: 100%; }
-                .podium-card { background: var(--bg-card, #1c1c22); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; text-align: center; padding: 15px 5px; flex: 1; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+                .podium-container { display: flex; flex-direction: column; margin-bottom: 10px; margin-top: 10px; gap: 10px; width: 100%; }
+                .podium-card { background: var(--bg-card, #1c1c22); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 15px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); direction: ltr; }
                 .rank-1 { border-color: var(--accent-gold, #fcb045); background: linear-gradient(180deg, rgba(252, 176, 69, 0.15) 0%, rgba(28, 28, 34, 1) 100%); height: 160px; transform: translateY(-10px); }
                 .rank-2 { border-color: #c0c0c0; background: linear-gradient(180deg, rgba(192, 192, 192, 0.1) 0%, rgba(28, 28, 34, 1) 100%); height: 130px; }
                 .rank-3 { border-color: #cd7f32; background: linear-gradient(180deg, rgba(205, 127, 50, 0.1) 0%, rgba(28, 28, 34, 1) 100%); height: 120px; }
-                .podium-name { font-size: 0.85rem; font-weight: bold; margin: 10px 0 5px 0; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
-                .podium-pts { font-size: 1.1rem; font-weight: 900; }
+                .podium-name { font-size: 1rem; font-weight: bold; margin: 0 12px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; text-align: left; }
+                .podium-pts { font-size: 1.1rem; font-weight: 900; margin-right: 12px; }
             </style>
         `;
 
@@ -281,21 +281,44 @@ window.renderHomeRankingWidget = async function(containerId) {
         if (rankings && rankings.length > 0) {
             const firstPlace = rankings[0], secondPlace = rankings[1], thirdPlace = rankings[2];
             topHtml += `<div class="podium-container">`;
-            if (secondPlace) {
-                const name2 = secondPlace.username || secondPlace.telegram_id;
-                topHtml += `<div class="podium-card rank-2"><div style="font-size: 1.5rem; margin-bottom: 5px;">🥈</div>${generateLegendaryAvatar(name2, secondPlace.photo_url, '40px')}<div class="podium-name">${name2}</div><div class="podium-pts" style="color: #c0c0c0;">${secondPlace.points_earned}</div></div>`;
-            } else { topHtml += `<div style="flex: 1;"></div>`; }
-
+                        // المركز الأول
             if (firstPlace) {
                 const name1 = firstPlace.username || firstPlace.telegram_id;
-                topHtml += `<div class="podium-card rank-1"><div style="font-size: 2rem; margin-bottom: 5px;">👑</div>${generateLegendaryAvatar(name1, firstPlace.photo_url, '55px')}<div class="podium-name">${name1}</div><div class="podium-pts" style="color: var(--accent-gold, #fcb045);">${firstPlace.points_earned}</div></div>`;
+                topHtml += `
+                    <div class="podium-card rank-1">
+                        ${generateLegendaryAvatar(name1, firstPlace.photo_url, '45px')}
+                        <div class="podium-name">${name1}</div>
+                        <div class="podium-pts" style="color: var(--accent-gold, #fcb045);">${firstPlace.points_earned}</div>
+                        <div style="font-size: 1.6rem;">👑</div>
+                    </div>`;
             }
 
+            // المركز الثاني
+            if (secondPlace) {
+                const name2 = secondPlace.username || secondPlace.telegram_id;
+                topHtml += `
+                    <div class="podium-card rank-2">
+                        ${generateLegendaryAvatar(name2, secondPlace.photo_url, '40px')}
+                        <div class="podium-name">${name2}</div>
+                        <div class="podium-pts" style="color: #c0c0c0;">${secondPlace.points_earned}</div>
+                        <div style="font-size: 1.3rem;">🥈</div>
+                    </div>`;
+            }
+
+            // المركز الثالث
             if (thirdPlace) {
                 const name3 = thirdPlace.username || thirdPlace.telegram_id;
-                topHtml += `<div class="podium-card rank-3"><div style="font-size: 1.5rem; margin-bottom: 5px;">🥉</div>${generateLegendaryAvatar(name3, thirdPlace.photo_url, '35px')}<div class="podium-name">${name3}</div><div class="podium-pts" style="color: #cd7f32;">${thirdPlace.points_earned}</div></div>`;
-            } else { topHtml += `<div style="flex: 1;"></div>`; }
+                topHtml += `
+                    <div class="podium-card rank-3">
+                        ${generateLegendaryAvatar(name3, thirdPlace.photo_url, '40px')}
+                        <div class="podium-name">${name3}</div>
+                        <div class="podium-pts" style="color: #cd7f32;">${thirdPlace.points_earned}</div>
+                        <div style="font-size: 1.3rem;">🥉</div>
+                    </div>`;
+            }
+            
             topHtml += `</div>`;
+            
         } else {
             // رفع نص "لا توجد بيانات ترتيب حالياً" للأعلى عبر تقليل المساحة
             topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${isAr ? 'لا توجد بيانات ترتيب حالياً' : 'No ranking data available'}</div>`;
@@ -306,39 +329,43 @@ window.renderHomeRankingWidget = async function(containerId) {
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
-        topHtml += `
+                topHtml += `
             <div class="legendary-card">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
                 <div class="legendary-avatar-wrapper"><div class="legendary-avatar-inner">${userImageHtml}</div></div>
-                <div class="legendary-name">${userState.username || 'User'}</div>
-                <div class="legendary-points">
-                    <span style="font-size: 1.2rem;">🏆</span>
-                    <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.3rem;">${myData ? myData.points_earned : 0}</span>
-                    <span style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: bold;">${isAr ? 'نقطة' : 'Pts'}</span>
+                
+                <div class="legendary-info-row">
+                    <div class="legendary-name">${userState.username || 'User'}</div>
+                    <div class="legendary-points">
+                        <span style="font-size: 1rem;">🏆</span>
+                        <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.1rem;">${myData ? myData.points_earned : 0}</span>
+                        <span style="color: rgba(255,255,255,0.7); font-size: 0.75rem; font-weight: bold;">${isAr ? 'نقطة' : 'Pts'}</span>
+                    </div>
                 </div>
-                <div class="legendary-stats-grid">
+                
+                                <div class="legendary-stats-grid">
                     <div class="legendary-stat-box stat-correct">
-                        <div style="font-size: 1.6rem; margin-bottom: 5px;">✅</div>
-                        <div style="color: #10b981; font-size: 1.5rem; font-weight: 900;">${correctCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'صحيح' : 'Correct'}</div>
+                        <div style="font-size: 1.1rem; margin-bottom: 3px;">✅</div>
+                        <div style="color: #10b981; font-size: 1.1rem; font-weight: 900;">${correctCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'صحيح' : 'Correct'}</div>
                     </div>
                     <div class="legendary-stat-box stat-pending">
-                        <div style="font-size: 1.6rem; margin-bottom: 5px;">⏳</div>
-                        <div style="color: #fcb045; font-size: 1.5rem; font-weight: 900;">${pendingCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'انتظار' : 'Pending'}</div>
+                        <div style="font-size: 1.1rem; margin-bottom: 3px;">⏳</div>
+                        <div style="color: #fcb045; font-size: 1.1rem; font-weight: 900;">${pendingCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'انتظار' : 'Pending'}</div>
                     </div>
                     <div class="legendary-stat-box stat-wrong">
-                        <div style="font-size: 1.6rem; margin-bottom: 5px;">❌</div>
-                        <!-- تم التعديل هنا ليكون الرقم مفتوح بدون / 2 -->
-                        <div style="color: #fff; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
+                        <div style="font-size: 1.1rem; margin-bottom: 3px;">❌</div>
+                        <div style="color: #fff; font-size: 1.1rem; font-weight: 900;">${wrongCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
                 <button class="btn-my-predictions" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
                     📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
                 </button>
             </div>
-        </div>`; // إغلاق القسم العلوي
+        </div>`;
+        // إغلاق القسم العلوي
 
         // ================= القسم السفلي القابل للتمرير =================
         let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
