@@ -17,7 +17,6 @@ window.openLegendaryRankingScreen = function() {
         const existingScreen = document.getElementById('ranking-full-screen');
         if (existingScreen) existingScreen.remove();
 
-        // حماية جلب حالة المستخدم
         const state = window.userState || {};
         const isAr = state.lang === 'ar';
         const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
@@ -68,7 +67,6 @@ window.renderHomeRankingWidget = async function(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // نقل تعريف المتغيرات داخل النطاق الآمن
     const state = window.userState || {};
     const client = window.supabaseClient;
     const currentUserId = state.userId || state.telegram_id;
@@ -80,7 +78,6 @@ window.renderHomeRankingWidget = async function(containerId) {
     }
 
     try {
-        // جلب أفضل 50 لاعب
         const { data: rankings, error: topError } = await client
             .from('weekly_match_rankings')
             .select('*')
@@ -91,17 +88,19 @@ window.renderHomeRankingWidget = async function(containerId) {
 
         if (topError) console.warn("Ranking query error:", topError);
 
-        // جلب ترتيب المستخدم الحالي
         let myRank = null;
         if (currentUserId) {
-            const { data: rankData } = await client.rpc('get_user_rank', {
-                p_telegram_id: currentUserId,
-                p_category: 'weekly'
-            });
-            myRank = rankData;
+            try {
+                const { data: rankData } = await client.rpc('get_user_rank', {
+                    p_telegram_id: currentUserId,
+                    p_category: 'weekly'
+                });
+                myRank = rankData;
+            } catch (rErr) {
+                console.warn("Error fetching rank RPC:", rErr);
+            }
         }
 
-        // جلب نقاط المستخدم الحالي
         let myData = null;
         if (currentUserId) {
             const { data: userData } = await client
@@ -113,7 +112,6 @@ window.renderHomeRankingWidget = async function(containerId) {
             myData = userData;
         }
 
-        // جلب توقعات المستخدم
         let predictions = [];
         if (currentUserId) {
             const { data: predsData } = await client
@@ -124,18 +122,18 @@ window.renderHomeRankingWidget = async function(containerId) {
             predictions = predsData || [];
         }
 
-        // جلب بيانات المباريات المتوقعة
         let matches = [];
         if (predictions && predictions.length > 0) {
-            const matchIds = predictions.map(p => p.match_id);
-            const { data: matchesData } = await client
-                .from('matches')
-                .select('*')
-                .in('id', matchIds);
-            matches = matchesData || [];
+            const matchIds = predictions.map(p => p.match_id).filter(Boolean);
+            if (matchIds.length > 0) {
+                const { data: matchesData } = await client
+                    .from('matches')
+                    .select('*')
+                    .in('id', matchIds);
+                matches = matchesData || [];
+            }
         }
 
-        // حساب إحصائيات التوقعات
         let correctCount = 0, wrongCount = 0, pendingCount = 0;
         if (predictions && predictions.length > 0) {
             predictions.forEach(p => {
@@ -376,7 +374,6 @@ window.renderHomeRankingWidget = async function(containerId) {
         if (predictions && predictions.length > 0) {
             const recentPredictions = predictions.slice(0, 10); 
             historyHtml = recentPredictions.map(pred => {
-                // إصلاح طريقة المقارنة بتحويل المعرفات إلى نصوص
                 const match = matches.find(m => String(m.id) === String(pred.match_id));
                 if (!match) return ''; 
 
@@ -386,4 +383,5 @@ window.renderHomeRankingWidget = async function(containerId) {
                     resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score ?? '-'} - ${match.away_score ?? '-'}</div>`;
                 } else if (pred.prediction_status === 'wrong') {
                     statusColor = 'var(--accent-red, #fd1d1d)'; statusBg = 'rgba(253, 29, 29, 0.05)'; statusText = `${isAr ? 'خطأ' : 'Wrong'} ❌`;
-                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600
+                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score ?? '-'} - ${match.away_score ?? '-'}</div>`;
+    
