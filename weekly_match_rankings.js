@@ -37,7 +37,7 @@ window.openLegendaryRankingScreen = function() {
         box-sizing: border-box; 
         display: flex;
         flex-direction: column;
-        overflow: hidden; 
+        overflow-y: auto !important;
         color: white;
         direction: ${isAr ? 'rtl' : 'ltr'}; 
         text-align: ${isAr ? 'right' : 'left'};
@@ -48,7 +48,7 @@ window.openLegendaryRankingScreen = function() {
             <h2 style="margin:0; color:var(--accent-gold, #fcb045); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
             <button onclick="document.getElementById('ranking-full-screen').remove()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer; transition: 0.2s;">✕</button>
         </div>
-        <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <div id="full-ranking-container" style="width: 100%; display: flex; flex-direction: column;">
             <div style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
                 ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
             </div>
