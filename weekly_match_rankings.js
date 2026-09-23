@@ -22,7 +22,7 @@ window.openLegendaryRankingScreen = function() {
     const screen = document.createElement('div');
     screen.id = 'ranking-full-screen';
     
-    // منع التمرير في الشاشة الرئيسية لتقسيمها إلى ثابت ومتحرك
+    // تم التعديل هنا: منع التمرير في الشاشة الرئيسية لتقسيمها إلى ثابت ومتحرك
     screen.style.cssText = `
         position: fixed !important; 
         top: 0 !important; 
@@ -105,6 +105,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             matches = matchesData || [];
         }
 
+        // تم تنظيف الكود هنا بدمج الحلقات بحلقة واحدة أسرع
         let correctCount = 0, wrongCount = 0, pendingCount = 0;
         if (predictions && predictions.length > 0) {
             predictions.forEach(p => {
@@ -127,7 +128,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     100% { box-shadow: 0 0 15px rgba(252, 176, 69, 0.4), inset 0 0 10px rgba(252, 176, 69, 0.1); }
                 }
 
-                /* البطاقة مصغرة بنسبة 40% تقريباً */
+                /* تم تصغير البطاقة المركزية بنسبة 40% */
                 .legendary-card {
                     position: relative;
                     background: rgba(22, 22, 30, 0.8);
@@ -153,6 +154,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     z-index: 0;
                 }
 
+                /* تصغير شارة الترتيب */
                 .legendary-rank-badge {
                     position: absolute;
                     top: -10px;
@@ -172,7 +174,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .badge-top { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); box-shadow: 0 8px 25px rgba(253, 160, 133, 0.5); color: #fff; }
                 .badge-normal { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); box-shadow: 0 8px 25px rgba(255, 8, 68, 0.5); }
 
-                /* الصورة مصغرة 40% */
+                /* تصغير الصورة الشخصية 40% */
                 .legendary-avatar-wrapper {
                     position: absolute;
                     top: -35px; 
@@ -204,7 +206,7 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 .legendary-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
 
-                /* تنسيق الترتيب الأفقي للاسم والنقاط مصغر 40% */
+                /* صف أفقي يحتوي على الاسم والنقاط */
                 .legendary-info-row {
                     position: relative;
                     z-index: 1;
@@ -212,7 +214,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     justify-content: space-between;
                     align-items: center;
                     width: 100%;
-                    direction: ltr; /* لضمان ثبات الاسم يسار والنقاط يمين */
+                    direction: ltr; 
                     margin-bottom: 12px;
                     margin-top: 5px;
                 }
@@ -261,6 +263,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .stat-pending { border-bottom: 3px solid #fcb045; }
                 .stat-wrong   { border-bottom: 3px solid #fd1d1d; }
 
+                /* تصغير الزر قليلاً */
                 .btn-my-predictions {
                     position: relative;
                     z-index: 1;
@@ -355,6 +358,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             
             topHtml += `</div>`;
         } else {
+            // رفع نص "لا توجد بيانات ترتيب حالياً" للأعلى عبر تقليل المساحة
             topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${isAr ? 'لا توجد بيانات ترتيب حالياً' : 'No ranking data available'}</div>`;
         }
 
@@ -363,7 +367,6 @@ window.renderHomeRankingWidget = async function(containerId) {
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
-        // البطاقة المركزية (مع ترتيب أفقي للاسم والنقاط)
         topHtml += `
             <div class="legendary-card">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
@@ -391,6 +394,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     </div>
                     <div class="legendary-stat-box stat-wrong">
                         <div style="font-size: 1.1rem; margin-bottom: 3px;">❌</div>
+                        <!-- تم التعديل هنا ليكون الرقم مفتوح بدون / 2 -->
                         <div style="color: #fff; font-size: 1.1rem; font-weight: 900;">${wrongCount}</div>
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
@@ -399,7 +403,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
                 </button>
             </div>
-        </div>`; 
+        </div>`; // إغلاق القسم العلوي
 
         // ================= القسم السفلي القابل للتمرير =================
         let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
@@ -413,6 +417,4 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 let statusColor = '', statusBg = '', statusText = '', resultUi = '';
                 if (pred.prediction_status === 'correct') {
-                    statusColor = '#10b981'; statusBg = 'rgba(16, 185, 129, 0.05)'; statusText = `+3 ${isAr ? 'نقاط' : 'Pts'} ✅`;
-                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
-            
+                    statusColor = '#10b981'; statusBg = 'rgba(16, 185, 129, 0.05)'; statusText = `+3 ${isAr ? 'نقاط' : 'Pts'} 
