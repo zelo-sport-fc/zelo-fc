@@ -231,13 +231,13 @@ window.renderHomeRankingWidget = async function(containerId) {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
                     gap: 8px;
-                    margin-top: 10px;
+                    margin-top: 6px;
                 }
 
                 .legendary-stat-box {
                     background: rgba(0, 0, 0, 0.3);
                     border-radius: 12px;
-                    padding: 14px 5px;
+                    padding: 4px 2px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
 
@@ -248,11 +248,11 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .btn-my-predictions {
                     position: relative;
                     z-index: 1;
-                    margin-top: 15px;
+                    margin-top: 8px;
                     background: linear-gradient(90deg, #fd1d1d, #fcb045);
                     color: white;
                     border: none;
-                    padding: 8px 20px;
+                    padding: 5px 14px;
                     border-radius: 30px;
                     font-size: 1.1rem;
                     font-weight: 900;
@@ -347,28 +347,29 @@ window.renderHomeRankingWidget = async function(containerId) {
                 </div>
                 
                 
-                                <div class="legendary-stats-grid">
-                    <div class="legendary-stat-box stat-correct">
-                        <div style="font-size: 1.1rem; margin-bottom: 3px;">✅</div>
-                        <div style="color: #10b981; font-size: 1.1rem; font-weight: 900;">${correctCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'صحيح' : 'Correct'}</div>
+                                                <div class="legendary-stats-grid" style="margin-top: 6px;">
+                    <div class="legendary-stat-box stat-correct" style="padding: 4px 2px;">
+                        <div style="font-size: 0.9rem; margin-bottom: 1px;">✅</div>
+                        <div style="color: #10b981; font-size: 0.95rem; font-weight: 900; line-height: 1;">${correctCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'صحيح' : 'Correct'}</div>
                     </div>
-                    <div class="legendary-stat-box stat-pending">
-                        <div style="font-size: 1.1rem; margin-bottom: 3px;">⏳</div>
-                        <div style="color: #fcb045; font-size: 1.1rem; font-weight: 900;">${pendingCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'انتظار' : 'Pending'}</div>
+                    <div class="legendary-stat-box stat-pending" style="padding: 4px 2px;">
+                        <div style="font-size: 0.9rem; margin-bottom: 1px;">⏳</div>
+                        <div style="color: #fcb045; font-size: 0.95rem; font-weight: 900; line-height: 1;">${pendingCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'انتظار' : 'Pending'}</div>
                     </div>
-                    <div class="legendary-stat-box stat-wrong">
-                        <div style="font-size: 1.1rem; margin-bottom: 3px;">❌</div>
-                        <div style="color: #fff; font-size: 1.1rem; font-weight: 900;">${wrongCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.65rem; font-weight: bold; margin-top: 2px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
+                    <div class="legendary-stat-box stat-wrong" style="padding: 4px 2px;">
+                        <div style="font-size: 0.9rem; margin-bottom: 1px;">❌</div>
+                        <div style="color: #fff; font-size: 0.95rem; font-weight: 900; line-height: 1;">${wrongCount}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
-                <button class="btn-my-predictions" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
+                <button class="btn-my-predictions" style="margin-top: 8px; padding: 6px 16px; font-size: 0.85rem;" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
                     📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
                 </button>
             </div>
         </div>`;
+        
         // إغلاق القسم العلوي
 
         // ================= القسم السفلي القابل للتمرير =================
