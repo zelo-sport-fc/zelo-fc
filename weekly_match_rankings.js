@@ -22,7 +22,7 @@ window.openLegendaryRankingScreen = function() {
     const screen = document.createElement('div');
     screen.id = 'ranking-full-screen';
     
-    // تم التعديل هنا: منع التمرير في الشاشة الرئيسية لتقسيمها إلى ثابت ومتحرك
+    // تم التعديل: تفعيل overflow-y: auto والسماح بالتمرير الكامل للشاشة
     screen.style.cssText = `
         position: fixed !important; 
         top: 0 !important; 
@@ -33,11 +33,12 @@ window.openLegendaryRankingScreen = function() {
         height: 100vh !important; 
         background: var(--bg-dark, #0d0d12) !important; 
         z-index: 99999 !important; 
-        padding: 20px 20px 0 20px; 
+        padding: 20px 20px 30px 20px; 
         box-sizing: border-box; 
         display: flex;
         flex-direction: column;
-        overflow: hidden; 
+        overflow-y: auto !important; 
+        -webkit-overflow-scrolling: touch;
         color: white;
         direction: ${isAr ? 'rtl' : 'ltr'}; 
         text-align: ${isAr ? 'right' : 'left'};
@@ -48,7 +49,7 @@ window.openLegendaryRankingScreen = function() {
             <h2 style="margin:0; color:var(--accent-gold, #fcb045); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
             <button onclick="document.getElementById('ranking-full-screen').remove()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer; transition: 0.2s;">✕</button>
         </div>
-        <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <div id="full-ranking-container" style="display: flex; flex-direction: column; overflow: visible; width: 100%;">
             <div style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
                 ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
             </div>
@@ -105,7 +106,6 @@ window.renderHomeRankingWidget = async function(containerId) {
             matches = matchesData || [];
         }
 
-        // تم تنظيف الكود هنا بدمج الحلقات بحلقة واحدة أسرع
         let correctCount = 0, wrongCount = 0, pendingCount = 0;
         if (predictions && predictions.length > 0) {
             predictions.forEach(p => {
@@ -275,8 +275,8 @@ window.renderHomeRankingWidget = async function(containerId) {
             </style>
         `;
 
-        // ================= القسم العلوي الثابت =================
-        let topHtml = `<div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 100%;">`;
+        // ================= القسم العلوي =================
+        let topHtml = `<div style="display: flex; flex-direction: column; align-items: center; width: 100%;">`;
         
         if (rankings && rankings.length > 0) {
             const firstPlace = rankings[0], secondPlace = rankings[1], thirdPlace = rankings[2];
@@ -297,7 +297,6 @@ window.renderHomeRankingWidget = async function(containerId) {
             } else { topHtml += `<div style="flex: 1;"></div>`; }
             topHtml += `</div>`;
         } else {
-            // رفع نص "لا توجد بيانات ترتيب حالياً" للأعلى عبر تقليل المساحة
             topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${isAr ? 'لا توجد بيانات ترتيب حالياً' : 'No ranking data available'}</div>`;
         }
 
@@ -329,7 +328,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     </div>
                     <div class="legendary-stat-box stat-wrong">
                         <div style="font-size: 1.6rem; margin-bottom: 5px;">❌</div>
-                        <!-- تم التعديل هنا ليكون الرقم مفتوح بدون / 2 -->
                         <div style="color: #fff; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
@@ -338,15 +336,15 @@ window.renderHomeRankingWidget = async function(containerId) {
                     📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
                 </button>
             </div>
-        </div>`; // إغلاق القسم العلوي
+        </div>`;
 
-        // ================= القسم السفلي القابل للتمرير =================
-        let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
+        // ================= القسم السفلي (تجميع التوقعات والترتيب) =================
+        let bottomHtml = `<div style="width: 100%; padding-bottom: 40px; margin-top: 15px;" id="scrollable-content">`;
 
-        let historyHtml = '';
+        let historyCards = '';
         if (predictions && predictions.length > 0) {
             const recentPredictions = predictions.slice(0, 10); 
-            historyHtml = recentPredictions.map(pred => {
+            historyCards = recentPredictions.map(pred => {
                 const match = matches.find(m => m.id === pred.match_id);
                 if (!match) return ''; 
 
@@ -361,68 +359,11 @@ window.renderHomeRankingWidget = async function(containerId) {
                     statusColor = 'var(--accent-gold, #fcb045)'; statusBg = 'rgba(252, 176, 69, 0.05)'; statusText = `${isAr ? 'بالانتظار' : 'Pending'} ⏳`;
                 }
 
+                const userPred = pred.predicted_score || `${pred.predicted_home || 0} - ${pred.predicted_away || 0}`;
+
                 return `
                     <div style="background: linear-gradient(to ${isAr ? 'left' : 'right'}, var(--bg-card, #1c1c22), ${statusBg}); padding:18px; border-radius:16px; margin-bottom:15px; border: 1px solid rgba(255,255,255,0.03); border-${isAr ? 'right' : 'left'}: 4px solid ${statusColor}; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                         <div>
                             <div style="font-weight:900; font-size:1.1rem; margin-bottom:8px; color:#fff; letter-spacing: 0.5px;">${match.team_a} <span style="color:#555; font-size:0.9rem; margin: 0 4px;">VS</span> ${match.team_b}</div>
-                            <div style="color:#ccc; font-size:0.95rem; background: rgba(0,0,0,0.3); display: inline-block; padding: 5px 12px; border-radius: 8px;">
-                                ${isAr ? 'توقعك:' : 'Prediction:'} <b style="color:#fff; font-size:1rem;">${pred.predicted_home} - ${pred.predicted_away}</b>
-                            </div>
-                            ${resultUi}
-                        </div>
-                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 12px;">
-                            <span style="color:${statusColor}; font-weight:bold; font-size:1rem; display:block;">${statusText}</span>
-                        </div>
-                    </div>`;
-            }).join('');
-
-            if (predictions.length > 10) {
-                historyHtml += `<div style="text-align:center; color:#888; font-size: 0.9rem; margin-top: 20px; padding-bottom: 10px;">${isAr ? 'يتم عرض أحدث 10 توقعات فقط' : 'Showing latest 10 predictions only'}</div>`;
-            }
-        } else {
-            historyHtml = `<div style="text-align:center; color:#888; padding:40px; background:rgba(255,255,255,0.02); border-radius:16px; border: 1px solid rgba(255,255,255,0.03); font-size:1.1rem;">${isAr ? 'لم تقم بأي توقعات بعد.' : 'No predictions yet.'}</div>`;
-        }
-
-        bottomHtml += `
-            <div id="predictions-history-section" style="margin-top: 10px; margin-bottom: 40px; scroll-margin-top: 25px;">
-                <h3 style="margin:0 0 20px 0; color:#fff; font-size: 1.3rem; font-weight: 800;">📜 ${isAr ? 'سجل التوقعات' : 'Prediction History'}</h3>
-                ${historyHtml}
-            </div>`;
-
-        let leaderboardHtml = '';
-        if (rankings && rankings.length > 3) {
-            const restOfRankings = rankings.slice(3); 
-            leaderboardHtml = restOfRankings.map((rank, index) => {
-                let actualRank = index + 4; 
-                let isMe = String(rank.telegram_id) === String(currentUserId);
-                let cardStyle = isMe ? 'background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(28, 28, 34, 1) 100%); border: 1px solid rgba(255, 215, 0, 0.3);' : 'background: #1c1c22; border: 1px solid rgba(255,255,255,0.03);';
-                const alias = rank.username || 'ID: ' + String(rank.telegram_id).slice(-4);
-
-                return `
-                    <div style="${cardStyle} border-radius: 14px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        <div style="display: flex; align-items: center; gap: 18px;">
-                            <div style="font-size: 1.2rem; font-weight: 900; color: ${isMe ? '#ffd700' : '#666'}; width: 35px; text-align: center;">#${actualRank}</div>
-                            <div style="color: #fff; font-weight: bold; font-size: 1.05rem;">${alias} ${isMe ? `<span style="color:#ffd700; font-size:0.8rem; margin-${isAr ? 'right' : 'left'}:8px; background: rgba(255,215,0,0.15); padding: 2px 8px; border-radius: 6px;">${isAr ? 'أنت' : 'You'}</span>` : ''}</div>
-                        </div>
-                        <div style="color: #ffd700; font-weight: 900; font-size: 1.2rem;">${rank.points_earned || 0} <span style="font-size:0.8rem; color:#888; font-weight: 600;">${isAr ? 'نقطة' : 'Pts'}</span></div>
-                    </div>`;
-            }).join('');
-
-            bottomHtml += `
-                <div>
-                    <h3 style="margin:0 0 20px 0; color:#fff; font-size: 1.3rem; font-weight: 800;">🌍 ${isAr ? 'الترتيب العام' : 'Global Ranking'}</h3>
-                    ${leaderboardHtml}
-                </div>`;
-        }
-        bottomHtml += `</div>`; // إغلاق القسم السفلي
-
-        // تركيب الشاشة النهائية
-        container.innerHTML = htmlStyles + topHtml + bottomHtml;
-
-    } catch (error) {
-        console.error(isAr ? "خطأ في عرض الترتيب:" : "Error displaying ranking:", error);
-        container.innerHTML = `<div style="text-align:center; color: var(--accent-red, #fd1d1d); padding: 25px; background: rgba(253, 29, 29, 0.05); border-radius: 16px; border: 1px solid rgba(253, 29, 29, 0.2); font-weight: bold;">
-            ${isAr ? 'تعذر تحميل الترتيب. يرجى المحاولة لاحقاً.' : 'Failed to load ranking. Please try again later.'}
-        </div>`;
-    }
-};
+                            <div style="color:#ccc; font-size:0.95rem;">${isAr ? 'توقعك:' : 'Prediction:'} <strong style="color:#fff;">${userPred}</strong></div>
+                        
