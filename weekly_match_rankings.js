@@ -130,18 +130,23 @@ window.renderHomeRankingWidget = async function(containerId) {
 
                 .legendary-card {
                     position: relative;
-                    background: rgba(22, 22, 30, 0.8);
+                    background: rgba(22, 22, 30, 0.85);
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
-                    border-radius: 25px;
-                    padding: 55px 20px 25px 20px; 
-                    margin: 55px 0 15px 0; 
+                    border-radius: 18px;
+                    padding: 12px 15px !important;
+                    margin: 15px 0 !important;
                     border: 1px solid rgba(255, 255, 255, 0.08);
-                    box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 2px 15px rgba(255,255,255,0.05);
-                    text-align: center;
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+                    display: flex !important;
+                    flex-direction: row !important;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
                     width: 100%;
                     box-sizing: border-box;
-                }
+               }
+
                 
                 .legendary-card::before {
                     content: '';
