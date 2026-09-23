@@ -302,7 +302,7 @@ window.renderHomeRankingWidget = async function(containerId) {
         }
 
         const userInitial = userState.username ? String(userState.username).charAt(0).toUpperCase() : '👤';
-        const userImageHtml = userState.photoUrl ? `<img src="${userState.photoUrl}" alt="User">` : `${userInitial}`;
+        const userImageHtml = userState.photoUrl ? `<img src="${userState.photoUrl}" alt="User" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;">` : `${userInitial}`;
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
