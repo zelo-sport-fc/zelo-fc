@@ -308,14 +308,31 @@ window.renderHomeRankingWidget = async function(containerId) {
 
         topHtml += `
             <div class="legendary-card">
-                <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
-                <div class="legendary-avatar-wrapper"><div class="legendary-avatar-inner">${userImageHtml}</div></div>
-                <div class="legendary-name">${userState.username || 'User'}</div>
-                <div class="legendary-points">
-                    <span style="font-size: 1.2rem;">🏆</span>
-                    <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.3rem;">${myData ? myData.points_earned : 0}</span>
-                    <span style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: bold;">${isAr ? 'نقطة' : 'Pts'}</span>
+                            <!-- شريط أفقي موحد يحتوي عناصر المستخدم -->
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 10px;">
+                
+                <!-- الجانب الأيسر: الصورة الشخصية ثم اسم المستخدم -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="legendary-avatar-wrapper" style="position: static; transform: none; width: 38px; height: 38px; margin: 0; padding: 2px;">
+                        ${userImageHtml}
+                    </div>
+                    <span style="color: white; font-weight: bold; font-size: 0.9rem;">
+                        @${userState.username || 'user'}
+                    </span>
                 </div>
+
+                <!-- الجانب الأيمن: النقاط ثم التاج (أقصى اليمين) -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="legendary-points" style="margin: 0; padding: 4px 8px; font-size: 0.8rem;">
+                        🏆 ${userState.totalPoints || 0} Pts
+                    </div>
+                    <div class="legendary-rank-badge ${badgeClass}" style="position: static; transform: none; margin: 0; padding: 4px 8px; font-size: 0.8rem;">
+                        #${displayRank}
+                    </div>
+                </div>
+
+            </div>
+            
                 <div class="legendary-stats-grid">
                     <div class="legendary-stat-box stat-correct">
                         <div style="font-size: 1.6rem; margin-bottom: 5px;">✅</div>
