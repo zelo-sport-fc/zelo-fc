@@ -1,6 +1,6 @@
 /**
  * ملف: weekly_match_rankings.js
- * الوظيفة: شاشة الترتيب الكاملة (مُصححة ومؤمّنة ضد أخطاء التعليق والتحميل)
+ * الوظيفة: شاشة الترتيب الكاملة (المنصة + البطاقة الأسطورية الشاملة + سجل التوقعات + الترتيب العام)
  */
 
 const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
@@ -295,7 +295,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .podium-name { font-size: 0.85rem; font-weight: bold; margin: 10px 0 5px 0; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
                 .podium-pts { font-size: 1.1rem; font-weight: 900; }
 
-                .prediction-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+                .prediction-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 15px; margin-bottom: 12px; }
                 .ranking-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 14px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.04); }
             </style>
         `;
@@ -353,8 +353,8 @@ window.renderHomeRankingWidget = async function(containerId) {
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'انتظار' : 'Pending'}</div>
                     </div>
                     <div class="legendary-stat-box stat-wrong">
-                        <div style="color: #fff; font-size: 1.6rem; margin-bottom: 5px;">❌</div>
-                        <div style="color: #fd1d1d; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
+                        <div style="font-size: 1.6rem; margin-bottom: 5px;">❌</div>
+                        <div style="color: #fff; font-size: 1.5rem; font-weight: 900;">${wrongCount}</div>
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: bold; margin-top: 4px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
@@ -364,7 +364,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             </div>
         </div>`;
 
-        // ================= القسم السفلي (سجل التوقعات + قائمة الترتيب) =================
+        // ================= القسم السفلي القابل للتمرير =================
         let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
 
         let historyHtml = '';
@@ -380,4 +380,4 @@ window.renderHomeRankingWidget = async function(containerId) {
                     resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
                 } else if (pred.prediction_status === 'wrong') {
                     statusColor = 'var(--accent-red, #fd1d1d)'; statusBg = 'rgba(253, 29, 29, 0.05)'; statusText = `${isAr ? 'خطأ' : 'Wrong'} ❌`;
-                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr
+                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? '
