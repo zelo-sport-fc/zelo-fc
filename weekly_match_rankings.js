@@ -330,18 +330,22 @@ window.renderHomeRankingWidget = async function(containerId) {
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
                 topHtml += `
-            <div class="legendary-card">
+                        <div class="legendary-card" style="margin-top: -10px; padding-top: 12px;">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
-                <div class="legendary-avatar-wrapper"><div class="legendary-avatar-inner">${userImageHtml}</div></div>
                 
-                <div class="legendary-info-row">
-                    <div class="legendary-name">${userState.username || 'User'}</div>
-                    <div class="legendary-points">
-                        <span style="font-size: 1rem;">🏆</span>
-                        <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 1.1rem;">${myData ? myData.points_earned : 0}</span>
-                        <span style="color: rgba(255,255,255,0.7); font-size: 0.75rem; font-weight: bold;">${isAr ? 'نقطة' : 'Pts'}</span>
+                <div style="display: flex; justify-content: center; margin-bottom: 6px;">
+                    ${generateLegendaryAvatar(userState.username || 'User', userState.photoUrl, '50px')}
+                </div>
+                
+                <div class="legendary-info-row" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                    <div class="legendary-name" style="font-size: 1rem; margin: 0;">${userState.username || 'User'}</div>
+                    <div class="legendary-points" style="padding: 3px 8px; margin: 0;">
+                        <span style="font-size: 0.85rem;">🏆</span>
+                        <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 0.95rem;">${myData ? myData.points_earned : 0}</span>
+                        <span style="color: rgba(255,255,255,0.7); font-size: 0.7rem; font-weight: bold;">${isAr ? 'نقطة' : 'Pts'}</span>
                     </div>
                 </div>
+                
                 
                                 <div class="legendary-stats-grid">
                     <div class="legendary-stat-box stat-correct">
