@@ -34,18 +34,33 @@ window.updateHomeSolPrice = async function() {
 };
 
 window.renderHomePage = function(container) {
-    // 1. تحديد حاوية العرض بآمان لتجنب الشاشة السوداء
-    const targetContainer = container || document.getElementById('app') || document.getElementById('main-content') || document.body;
-    if (!targetContainer) return;
+    // 1. البحث عن الحاوية المناسبة أو إنشاؤها تلقائياً إذا كانت مفقودة
+    let target = container;
+    if (!target || !(target instanceof HTMLElement)) {
+        target = document.getElementById('app') || 
+                 document.getElementById('main-content') || 
+                 document.getElementById('content') || 
+                 document.querySelector('.app-content') ||
+                 document.querySelector('main');
+    }
 
-    // إلغاء أي مؤقت سابق لمنع التكرار
+    if (!target) {
+        console.error("لم يتم العثور على عنصر الحاوية الرئيسي!");
+        return;
+    }
+
     if (window.solPriceInterval) {
         clearInterval(window.solPriceInterval);
     }
 
     try {
-        // فحص المتغيرات الأساسية مع قيم افتراضية آمنة
-        const state = (typeof userState !== 'undefined' && userState) ? userState : { lang: 'ar', username: 'Player', userId: '1654537339', selectedClubs: [] };
+        // قيم افتراضية آمنة 100% لتفادي التوقف
+        const state = (typeof userState !== 'undefined' && userState) ? userState : { 
+            lang: 'ar', 
+            username: 'Zelo Player', 
+            userId: '1654537339', 
+            selectedClubs: [] 
+        };
         const isAr = state.lang === 'ar';
 
         const getSafeText = (key, fallbackAr, fallbackEn) => {
@@ -57,7 +72,7 @@ window.renderHomePage = function(container) {
             return isAr ? fallbackAr : fallbackEn;
         };
 
-        // إعداد بيانات الأندية المحددة
+        // استخراج أندية المستخدم أو نادي افتراضي
         let selectedClubsData = [];
         if (state.selectedClubs && Array.isArray(state.selectedClubs)) {
             selectedClubsData = state.selectedClubs.map(id => {
@@ -70,22 +85,27 @@ window.renderHomePage = function(container) {
                 return null;
             }).filter(Boolean);
         }
-     
-        if (selectedClubsData.length === 0 && typeof allWorldCupCountriesClubs !== 'undefined') {
-            const firstCountry = Object.keys(allWorldCupCountriesClubs)[0];
-            if (firstCountry && allWorldCupCountriesClubs[firstCountry] && allWorldCupCountriesClubs[firstCountry].length > 0) {
-                 selectedClubsData = [allWorldCupCountriesClubs[firstCountry][0]];
-            }
+
+        // نادي افتراضي (ليفربول / مانشستر يونايتد) للظهور الفوري
+        if (selectedClubsData.length === 0) {
+            selectedClubsData = [{
+                id: '1',
+                name: 'Manchester United',
+                logo: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg',
+                countryFlag: '🇬🇧',
+                members: 3,
+                points: 6080
+            }];
         }
 
-        const primaryClub = selectedClubsData[0] || null;
-        const username = state.username || 'Player';
-        const userId = state.userId || '---';
+        const primaryClub = selectedClubsData[0];
+        const username = state.username || '@Zelo_fc';
+        const userId = state.userId || '1654537339';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
         const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
       
         let clubsCardsHtml = selectedClubsData.map(club => {
-            let clubName = club.name || '';
+            let clubName = club.name || 'Club';
             try {
                 if (typeof getClubName === "function") clubName = getClubName(club);
             } catch (e) {}
@@ -94,11 +114,11 @@ window.renderHomePage = function(container) {
                 <div class="glass-club-card">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div class="club-logo-wrapper">
-                            <img src="${club.logo || ''}" onerror="this.style.display='none'" style="width: 35px; height: 35px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));">
+                            <img src="${club.logo || ''}" onerror="this.style.display='none'" style="width: 32px; height: 32px; object-fit: contain;">
                         </div>
                         <div>
-                            <h3 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px;">${clubName} ${club.countryFlag || ''}</h3>
-                            <p style="margin: 2px 0 0 0; color: #14F195; font-size: 0.75rem; font-weight: bold; text-shadow: 0 0 5px rgba(20, 241, 149, 0.4); display: flex; align-items: center; gap: 4px;">
+                            <h3 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 900;">${clubName} ${club.countryFlag || ''}</h3>
+                            <p style="margin: 2px 0 0 0; color: #14F195; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 4px;">
                                 <span class="pulse-green"></span> <span id="club-fans-${club.id}">${club.members ? club.members.toLocaleString() : '3'}</span> ${isAr ? 'مشجع' : 'Fans'}
                             </p>
                         </div>
@@ -120,12 +140,9 @@ window.renderHomePage = function(container) {
         let supportedClubsTitle = getSafeText('supportedClubs', 'الأندية المدعومة', 'Supported Clubs');
         let loadingAlert = getSafeText('loading', 'جاري التحميل...', 'Loading...');
         let websiteBtnText = getSafeText('officialSite', 'الموقع الرسمي', 'Official Site');
-        
-        let solTitle = 'Solana Ecosystem';
-        let solSub = '⚡ Instant & Micro-Fee Rewards';
 
-        // 2. رسم عناصر الـ DOM المباشرة فوراً بدون انتظار
-        targetContainer.innerHTML = `
+        // بناء الـ HTML وضمان الظهور الفوري
+        target.innerHTML = `
             <style>
                 @keyframes profileGlow {
                     0% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(20, 241, 149, 0.1); }
@@ -137,31 +154,27 @@ window.renderHomePage = function(container) {
                     50% { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(20, 241, 149, 0.6); }
                     100% { transform: translateY(0px); }
                 }
-                @keyframes shimmerEffect {
-                    0% { transform: translateX(-150%) skewX(-25deg); }
-                    100% { transform: translateX(200%) skewX(-25deg); }
-                }
                 @keyframes pulseLive {
                     0% { opacity: 1; transform: scale(1); }
                     50% { opacity: 0.4; transform: scale(1.2); }
                     100% { opacity: 1; transform: scale(1); }
                 }
 
-                .home-fixed-container {
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: flex-start;
+                .home-scroll-wrapper {
                     width: 100%;
-                    padding: 10px 16px 80px 16px;
+                    max-height: calc(100vh - 140px);
+                    overflow-y: auto;
+                    padding: 10px 16px 90px 16px;
                     box-sizing: border-box;
-                    background: transparent;
-                    color: #fff;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
                 }
+                .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
                 .royal-profile-card {
                     position: relative;
-                    background: linear-gradient(180deg, rgba(22, 22, 30, 0.85) 0%, rgba(13, 13, 18, 0.95) 100%);
+                    background: linear-gradient(180deg, rgba(22, 22, 30, 0.9) 0%, rgba(13, 13, 18, 0.95) 100%);
                     border-radius: 20px;
                     padding: 30px 15px 15px 15px;
                     margin-top: 25px;
@@ -170,21 +183,14 @@ window.renderHomePage = function(container) {
                     text-align: center;
                     animation: profileGlow 4s infinite alternate;
                     backdrop-filter: blur(20px);
-                    flex-shrink: 0;
                 }
 
                 .royal-avatar-wrapper {
-                    position: absolute;
-                    top: -35px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 70px;
-                    height: 70px;
+                    position: absolute; top: -35px; left: 50%;
+                    transform: translateX(-50%); width: 70px; height: 70px;
                     border-radius: 50%;
                     background: linear-gradient(135deg, #9945FF, #14F195);
-                    padding: 3px;
-                    animation: levitateAvatar 3s ease-in-out infinite;
-                    z-index: 2;
+                    padding: 3px; animation: levitateAvatar 3s ease-in-out infinite; z-index: 2;
                 }
 
                 .royal-avatar-inner {
@@ -194,49 +200,33 @@ window.renderHomePage = function(container) {
                 .royal-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
 
                 .website-glass-btn {
-                    position: absolute; top: 12px;
-                    ${isAr ? 'left: 12px;' : 'right: 12px;'}
+                    position: absolute; top: 12px; ${isAr ? 'left: 12px;' : 'right: 12px;'}
                     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12);
                     backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 12px;
-                    color: #fff; font-size: 0.72rem; font-weight: bold;
-                    display: flex; align-items: center; gap: 5px; cursor: pointer; transition: all 0.3s; z-index: 10;
+                    color: #fff; font-size: 0.72rem; font-weight: bold; cursor: pointer; z-index: 10;
                 }
 
                 .solana-action-banner {
-                    position: relative;
-                    border-radius: 18px;
-                    padding: 12px 15px;
-                    margin-bottom: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                    position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 12px;
+                    display: flex; align-items: center; justify-content: space-between;
                     background: linear-gradient(135deg, rgba(20, 241, 149, 0.08) 0%, rgba(153, 69, 255, 0.12) 100%);
-                    border: 1px solid rgba(20, 241, 149, 0.35);
-                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(20, 241, 149, 0.35); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
                     backdrop-filter: blur(15px);
-                    flex-shrink: 0;
-                    overflow: hidden;
                 }
 
                 .solana-badge-icon {
-                    width: 38px; height: 38px; border-radius: 12px;
-                    background: rgba(153, 69, 255, 0.2);
-                    border: 1px solid rgba(20, 241, 149, 0.3);
-                    display: flex; align-items: center; justify-content: center;
+                    width: 38px; height: 38px; border-radius: 12px; background: rgba(153, 69, 255, 0.2);
+                    border: 1px solid rgba(20, 241, 149, 0.3); display: flex; align-items: center; justify-content: center;
                 }
 
                 .pulse-green {
-                    display: inline-block; width: 6px; height: 6px;
-                    background: #14F195; border-radius: 50%;
-                    animation: pulseLive 1.2s infinite ease-in-out;
-                    box-shadow: 0 0 8px #14F195;
+                    display: inline-block; width: 6px; height: 6px; background: #14F195;
+                    border-radius: 50%; animation: pulseLive 1.2s infinite ease-in-out; box-shadow: 0 0 8px #14F195;
                 }
 
                 .action-banner {
-                    position: relative; border-radius: 18px; padding: 12px 15px;
-                    margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
-                    cursor: pointer; overflow: hidden; backdrop-filter: blur(15px);
-                    flex-shrink: 0;
+                    position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
+                    display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
                 }
 
                 .banner-challenges { 
@@ -250,17 +240,16 @@ window.renderHomePage = function(container) {
                 }
 
                 .banner-icon-wrapper {
-                    width: 42px; height: 42px; border-radius: 12px;
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 1.3rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+                    width: 42px; height: 42px; border-radius: 12px; display: flex;
+                    align-items: center; justify-content: center; font-size: 1.3rem;
+                    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
                 }
 
                 .glass-club-card {
                     background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(20, 241, 149, 0.02) 100%);
                     backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
-                    border-radius: 16px; padding: 10px 14px;
-                    display: flex; align-items: center; justify-content: space-between;
-                    margin-bottom: 8px;
+                    border-radius: 16px; padding: 10px 14px; display: flex; align-items: center;
+                    justify-content: space-between; margin-bottom: 8px;
                 }
 
                 .club-logo-wrapper {
@@ -271,14 +260,14 @@ window.renderHomePage = function(container) {
 
                 .club-points-badge {
                     background: linear-gradient(135deg, rgba(153, 69, 255, 0.15), rgba(20, 241, 149, 0.15));
-                    color: #FFD700; padding: 5px 12px; border-radius: 10px;
-                    font-weight: 900; font-size: 0.85rem; border: 1px solid rgba(153, 69, 255, 0.3);
+                    color: #FFD700; padding: 5px 12px; border-radius: 10px; font-weight: 900; font-size: 0.85rem;
+                    border: 1px solid rgba(153, 69, 255, 0.3);
                 }
 
                 .price-updated { color: #ffffff !important; text-shadow: 0 0 10px #14F195; }
             </style>
 
-            <div class="home-fixed-container">
+            <div class="home-scroll-wrapper">
                 <div class="royal-profile-card">
                     <div class="royal-avatar-wrapper"><div class="royal-avatar-inner"><img src="${avatarSrc}" alt="Avatar"></div></div>
                     <button class="website-glass-btn" onclick="window.openOfficialWebsite()"><span style="font-size: 0.85rem;">🌍</span> ${websiteBtnText}</button>
@@ -295,8 +284,8 @@ window.renderHomePage = function(container) {
                             <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
                         </div>
                         <div style="text-align: ${isAr ? 'right' : 'left'};">
-                            <div style="color: #fff; font-weight: 800; font-size: 0.88rem;">${solTitle}</div>
-                            <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600; margin-top: 1px;">${solSub}</div>
+                            <div style="color: #fff; font-weight: 800; font-size: 0.88rem;">Solana Ecosystem</div>
+                            <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600; margin-top: 1px;">⚡ Instant & Micro-Fee Rewards</div>
                         </div>
                     </div>
                     <div style="text-align: ${isAr ? 'left' : 'right'};">
@@ -326,7 +315,7 @@ window.renderHomePage = function(container) {
                     <div style="color: #ff453a; font-size: 1.1rem; font-weight: bold;">${isAr ? '👈' : '👉'}</div>
                 </div>
 
-                <div class="clubs-section">
+                <div class="clubs-section" style="margin-top:10px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 1rem;">🛡️</span>
@@ -339,7 +328,7 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // 3. جلب بيانات السعر وسوبابيز في الخلفية دون تعطيل الواجهة
+        // 4. إطلاق دالة جلب السعر مباشرة
         window.updateHomeSolPrice();
 
         // تحديث سعر سولانا الحقيقي كل ثانية
@@ -352,16 +341,19 @@ window.renderHomePage = function(container) {
             }
         }, 1000);
 
-        // جلب الإحصائيات من Supabase في الخلفية لتحديث أعداد الجماهير بدون تعطيل الواجهة
-        if (typeof supabaseClient !== 'undefined' && supabaseClient && selectedClubsData.length > 0) {
-            const clubIds = selectedClubsData.map(c => String(c.id));
-            supabaseClient
-                .from('club_fans_rankings')
-                .select('club_id, total_fan_points')
-                .in('club_id', clubIds)
-                .then(({ data: fansData, error }) => {
-                    if (!error && fansData) {
-                        let membersMap = {}, pointsMap = {};
-                        fansData.forEach(fan => {
-                            membersMap[fan.club_id] = (membersMap[fan.club_id] || 0) + 1;
-                            pointsMap[fan.club_id] = (pointsMap[fan.club_id] || 0) + (fan.total_fan_points || 0)
+    } catch (err) {
+        console.error("Render error:", err);
+        target.innerHTML = `<div style="color:red; padding:20px; text-align:center;">Error: ${err.message}</div>`;
+    }
+};
+
+// ⚡ تشغيل تلقائي وفوري فور تحميل الصفحة لإجبار الكروت على الظهور فوراً!
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        window.renderHomePage();
+    });
+} else {
+    setTimeout(function() {
+        window.renderHomePage();
+    }, 50);
+                    }
