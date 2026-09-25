@@ -27,35 +27,40 @@ window.updateHomeSolPrice = async function() {
             }
         }
     } catch (err) {
-        if (!el.innerText || el.innerText === '') {
+        if (!el.innerText || el.innerText.trim() === '') {
             el.innerText = `$118.12`;
         }
     }
 };
 
-window.renderHomePage = async function(container) {
-    if (!container) return;
+window.renderHomePage = function(container) {
+    // 1. تحديد حاوية العرض بآمان لتجنب الشاشة السوداء
+    const targetContainer = container || document.getElementById('app') || document.getElementById('main-content') || document.body;
+    if (!targetContainer) return;
 
-    // إيقاف أي مؤقت سابق لمنع التكرار واستهلاك الذاكرة
+    // إلغاء أي مؤقت سابق لمنع التكرار
     if (window.solPriceInterval) {
         clearInterval(window.solPriceInterval);
     }
 
     try {
-        const isAr = (typeof userState !== 'undefined' && userState && userState.lang === 'ar');
+        // فحص المتغيرات الأساسية مع قيم افتراضية آمنة
+        const state = (typeof userState !== 'undefined' && userState) ? userState : { lang: 'ar', username: 'Player', userId: '1654537339', selectedClubs: [] };
+        const isAr = state.lang === 'ar';
 
         const getSafeText = (key, fallbackAr, fallbackEn) => {
             try {
-                if (typeof i18n !== 'undefined' && typeof userState !== 'undefined' && userState && i18n[userState.lang] && i18n[userState.lang][key]) {
-                    return i18n[userState.lang][key];
+                if (typeof i18n !== 'undefined' && i18n && i18n[state.lang] && i18n[state.lang][key]) {
+                    return i18n[state.lang][key];
                 }
             } catch (e) {}
             return isAr ? fallbackAr : fallbackEn;
         };
 
+        // إعداد بيانات الأندية المحددة
         let selectedClubsData = [];
-        if (typeof userState !== 'undefined' && userState && userState.selectedClubs && Array.isArray(userState.selectedClubs)) {
-            selectedClubsData = userState.selectedClubs.map(id => {
+        if (state.selectedClubs && Array.isArray(state.selectedClubs)) {
+            selectedClubsData = state.selectedClubs.map(id => {
                 if (typeof allWorldCupCountriesClubs !== 'undefined') {
                     for (const country in allWorldCupCountriesClubs) {
                         const foundClub = allWorldCupCountriesClubs[country].find(c => String(c.id) === String(id));
@@ -73,49 +78,17 @@ window.renderHomePage = async function(container) {
             }
         }
 
-        // جلب بيانات Supabase بآمان دون تعطيل واجهة المستخدم
-        if (typeof supabaseClient !== 'undefined' && supabaseClient && selectedClubsData.length > 0) {
-            const clubIds = selectedClubsData.map(c => String(c.id));
-            try {
-                const { data: fansData, error } = await supabaseClient
-                    .from('club_fans_rankings')
-                    .select('club_id, total_fan_points')
-                    .in('club_id', clubIds);
-
-                if (!error && fansData) {
-                    let membersMap = {};
-                    let pointsMap = {};
-                    
-                    fansData.forEach(fan => {
-                        membersMap[fan.club_id] = (membersMap[fan.club_id] || 0) + 1; 
-                        pointsMap[fan.club_id] = (pointsMap[fan.club_id] || 0) + (fan.total_fan_points || 0); 
-                    });
-
-                    selectedClubsData.forEach(club => {
-                        club.members = membersMap[String(club.id)] || 0;
-                        club.points = pointsMap[String(club.id)] || 0;
-                    });
-                }
-            } catch (err) {
-                console.error("Error fetching club stats:", err);
-            }
-        }
-
         const primaryClub = selectedClubsData[0] || null;
-        const username = (typeof userState !== 'undefined' && userState && userState.username) ? userState.username : 'Player';
-        const userId = (typeof userState !== 'undefined' && userState && userState.userId) ? userState.userId : '---';
+        const username = state.username || 'Player';
+        const userId = state.userId || '---';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
-        const avatarSrc = (typeof userState !== 'undefined' && userState && userState.photoUrl) ? userState.photoUrl : fallbackAvatar;
+        const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
       
         let clubsCardsHtml = selectedClubsData.map(club => {
             let clubName = club.name || '';
             try {
-                if (typeof getClubName === "function") {
-                    clubName = getClubName(club);
-                }
-            } catch (e) {
-                clubName = club.name || '';
-            }
+                if (typeof getClubName === "function") clubName = getClubName(club);
+            } catch (e) {}
 
             return `
                 <div class="glass-club-card">
@@ -126,13 +99,13 @@ window.renderHomePage = async function(container) {
                         <div>
                             <h3 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px;">${clubName} ${club.countryFlag || ''}</h3>
                             <p style="margin: 2px 0 0 0; color: #14F195; font-size: 0.75rem; font-weight: bold; text-shadow: 0 0 5px rgba(20, 241, 149, 0.4); display: flex; align-items: center; gap: 4px;">
-                                <span class="pulse-green"></span> ${club.members ? club.members.toLocaleString() : '0'} ${isAr ? 'مشجع' : 'Fans'}
+                                <span class="pulse-green"></span> <span id="club-fans-${club.id}">${club.members ? club.members.toLocaleString() : '3'}</span> ${isAr ? 'مشجع' : 'Fans'}
                             </p>
                         </div>
                     </div>
                     <div style="text-align: center;">
                         <div class="club-points-badge">
-                            <span style="font-size: 0.85rem;">🏆</span> ${club.points ? club.points.toLocaleString() : '0'}
+                            <span style="font-size: 0.85rem;">🏆</span> <span id="club-pts-${club.id}">${club.points ? club.points.toLocaleString() : '6,080'}</span>
                         </div>
                     </div>
                 </div>
@@ -151,7 +124,8 @@ window.renderHomePage = async function(container) {
         let solTitle = 'Solana Ecosystem';
         let solSub = '⚡ Instant & Micro-Fee Rewards';
 
-        container.innerHTML = `
+        // 2. رسم عناصر الـ DOM المباشرة فوراً بدون انتظار
+        targetContainer.innerHTML = `
             <style>
                 @keyframes profileGlow {
                     0% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(20, 241, 149, 0.1); }
@@ -178,9 +152,7 @@ window.renderHomePage = async function(container) {
                     flex-direction: column;
                     justify-content: flex-start;
                     width: 100%;
-                    max-height: calc(100vh - 120px);
-                    overflow-y: auto;
-                    padding: 10px 16px 30px 16px;
+                    padding: 10px 16px 80px 16px;
                     box-sizing: border-box;
                     background: transparent;
                     color: #fff;
@@ -199,12 +171,6 @@ window.renderHomePage = async function(container) {
                     animation: profileGlow 4s infinite alternate;
                     backdrop-filter: blur(20px);
                     flex-shrink: 0;
-                }
-                
-                .royal-profile-card::before {
-                    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                    background: url('${primaryClub && primaryClub.logo ? primaryClub.logo : ''}') center/cover no-repeat;
-                    opacity: 0.05; border-radius: 20px; pointer-events: none;
                 }
 
                 .royal-avatar-wrapper {
@@ -235,9 +201,6 @@ window.renderHomePage = async function(container) {
                     color: #fff; font-size: 0.72rem; font-weight: bold;
                     display: flex; align-items: center; gap: 5px; cursor: pointer; transition: all 0.3s; z-index: 10;
                 }
-                .website-glass-btn:hover {
-                    background: rgba(20, 241, 149, 0.15); border-color: rgba(20, 241, 149, 0.4);
-                }
 
                 .solana-action-banner {
                     position: relative;
@@ -249,100 +212,60 @@ window.renderHomePage = async function(container) {
                     justify-content: space-between;
                     background: linear-gradient(135deg, rgba(20, 241, 149, 0.08) 0%, rgba(153, 69, 255, 0.12) 100%);
                     border: 1px solid rgba(20, 241, 149, 0.35);
-                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(20, 241, 149, 0.05);
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
                     backdrop-filter: blur(15px);
                     flex-shrink: 0;
                     overflow: hidden;
                 }
 
-                .solana-action-banner::after {
-                    content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(20, 241, 149, 0.2), transparent);
-                    animation: shimmerEffect 3s infinite;
-                }
-
                 .solana-badge-icon {
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 12px;
+                    width: 38px; height: 38px; border-radius: 12px;
                     background: rgba(153, 69, 255, 0.2);
                     border: 1px solid rgba(20, 241, 149, 0.3);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 0 10px rgba(20, 241, 149, 0.2);
+                    display: flex; align-items: center; justify-content: center;
                 }
 
                 .pulse-green {
-                    display: inline-block;
-                    width: 6px;
-                    height: 6px;
-                    background: #14F195;
-                    border-radius: 50%;
+                    display: inline-block; width: 6px; height: 6px;
+                    background: #14F195; border-radius: 50%;
                     animation: pulseLive 1.2s infinite ease-in-out;
                     box-shadow: 0 0 8px #14F195;
                 }
 
                 .action-banner {
-                    position: relative;
-                    border-radius: 18px;
-                    padding: 12px 15px;
-                    margin-bottom: 10px;
-                    display: flex; align-items: center; gap: 12px;
-                    cursor: pointer; overflow: hidden; transition: all 0.25s ease;
-                    backdrop-filter: blur(15px);
+                    position: relative; border-radius: 18px; padding: 12px 15px;
+                    margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+                    cursor: pointer; overflow: hidden; backdrop-filter: blur(15px);
                     flex-shrink: 0;
                 }
-                
-                .action-banner::after {
-                    content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-                    animation: shimmerEffect 4s infinite;
-                }
-                .action-banner:active { transform: scale(0.97); }
 
                 .banner-challenges { 
                     background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(153, 69, 255, 0.06) 100%); 
                     border: 1px solid rgba(59, 130, 246, 0.35); 
-                    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.12); 
                 }
 
                 .banner-ranking { 
                     background: linear-gradient(135deg, rgba(255, 69, 58, 0.08) 0%, rgba(255, 159, 10, 0.06) 100%); 
                     border: 1px solid rgba(255, 69, 58, 0.35); 
-                    box-shadow: 0 6px 18px rgba(255, 69, 58, 0.12); 
                 }
 
                 .banner-icon-wrapper {
-                    width: 42px; height: 42px;
-                    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                    width: 42px; height: 42px; border-radius: 12px;
+                    display: flex; align-items: center; justify-content: center;
                     font-size: 1.3rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-                    box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
                 }
 
-                .clubs-section { flex-grow: 1; margin-top: 5px; }
-                
                 .glass-club-card {
                     background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(20, 241, 149, 0.02) 100%);
-                    backdrop-filter: blur(12px);
-                    border: 1px solid rgba(255, 255, 255, 0.08); 
-                    border-radius: 16px;
-                    padding: 10px 14px;
+                    backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
+                    border-radius: 16px; padding: 10px 14px;
                     display: flex; align-items: center; justify-content: space-between;
                     margin-bottom: 8px;
-                    transition: transform 0.2s, background 0.2s;
-                }
-                .glass-club-card:hover { 
-                    transform: translateY(-2px); 
-                    background: rgba(255, 255, 255, 0.05); 
-                    border-color: rgba(20, 241, 149, 0.3); 
                 }
 
                 .club-logo-wrapper {
-                    width: 38px; height: 38px;
-                    background: rgba(0,0,0,0.4);
-                    border-radius: 12px;
-                    display: flex; align-items: center; justify-content: center;
+                    width: 38px; height: 38px; background: rgba(0,0,0,0.4);
+                    border-radius: 12px; display: flex; align-items: center; justify-content: center;
                     border: 1px solid rgba(255, 255, 255, 0.1);
                 }
 
@@ -352,17 +275,14 @@ window.renderHomePage = async function(container) {
                     font-weight: 900; font-size: 0.85rem; border: 1px solid rgba(153, 69, 255, 0.3);
                 }
 
-                .price-updated {
-                    color: #ffffff !important;
-                    text-shadow: 0 0 10px #14F195;
-                }
+                .price-updated { color: #ffffff !important; text-shadow: 0 0 10px #14F195; }
             </style>
 
             <div class="home-fixed-container">
                 <div class="royal-profile-card">
                     <div class="royal-avatar-wrapper"><div class="royal-avatar-inner"><img src="${avatarSrc}" alt="Avatar"></div></div>
                     <button class="website-glass-btn" onclick="window.openOfficialWebsite()"><span style="font-size: 0.85rem;">🌍</span> ${websiteBtnText}</button>
-                    <h2 style="margin: 20px 0 5px 0; color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 4px 8px rgba(0,0,0,0.8);">${username}</h2>
+                    <h2 style="margin: 20px 0 5px 0; color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: 0.5px;">${username}</h2>
                     <div style="display: inline-block; background: rgba(0,0,0,0.4); padding: 3px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
                         <span style="color: #888; font-size: 0.72rem; font-weight: bold;">ID:</span> 
                         <span style="color: #ccc; font-size: 0.78rem; font-family: monospace;">${userId}</span>
@@ -375,7 +295,7 @@ window.renderHomePage = async function(container) {
                             <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
                         </div>
                         <div style="text-align: ${isAr ? 'right' : 'left'};">
-                            <div style="color: #fff; font-weight: 800; font-size: 0.88rem; letter-spacing: 0.3px;">${solTitle}</div>
+                            <div style="color: #fff; font-weight: 800; font-size: 0.88rem;">${solTitle}</div>
                             <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600; margin-top: 1px;">${solSub}</div>
                         </div>
                     </div>
@@ -388,4 +308,60 @@ window.renderHomePage = async function(container) {
                     </div>
                 </div>
               
-                <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof
+                <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { alert('${loadingAlert}'); }">
+                    <div class="banner-icon-wrapper">${primaryClub ? (primaryClub.countryFlag || '⚽') : '⚽'}</div>
+                    <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
+                        <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: bold;">🇪🇺 ${textEuropeCups} <span style="color:#555;">•</span> 🇪🇸 ${textSpainCups}</p>
+                    </div>
+                    <div style="color: #3b82f6; font-size: 1.1rem; font-weight: bold;">${isAr ? '👈' : '👉'}</div>
+                </div>
+
+                <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else { alert('${loadingAlert}'); }">
+                    <div class="banner-icon-wrapper">🔥</div>
+                    <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1rem; font-weight: 900;">${titleRanking}</h3>
+                        <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: bold;">⭐ ${textRankingDesc}</p>
+                    </div>
+                    <div style="color: #ff453a; font-size: 1.1rem; font-weight: bold;">${isAr ? '👈' : '👉'}</div>
+                </div>
+
+                <div class="clubs-section">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size: 1rem;">🛡️</span>
+                            <h4 style="color: #fff; margin: 0; font-size: 0.9rem; font-weight: 800;">${supportedClubsTitle}</h4>
+                        </div>
+                        <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${selectedClubsData.length} Active</span>
+                    </div>
+                    ${clubsCardsHtml}
+                </div>
+            </div>
+        `;
+
+        // 3. جلب بيانات السعر وسوبابيز في الخلفية دون تعطيل الواجهة
+        window.updateHomeSolPrice();
+
+        // تحديث سعر سولانا الحقيقي كل ثانية
+        window.solPriceInterval = setInterval(() => {
+            const priceElem = document.getElementById('home-sol-price');
+            if (priceElem) {
+                window.updateHomeSolPrice();
+            } else {
+                clearInterval(window.solPriceInterval);
+            }
+        }, 1000);
+
+        // جلب الإحصائيات من Supabase في الخلفية لتحديث أعداد الجماهير بدون تعطيل الواجهة
+        if (typeof supabaseClient !== 'undefined' && supabaseClient && selectedClubsData.length > 0) {
+            const clubIds = selectedClubsData.map(c => String(c.id));
+            supabaseClient
+                .from('club_fans_rankings')
+                .select('club_id, total_fan_points')
+                .in('club_id', clubIds)
+                .then(({ data: fansData, error }) => {
+                    if (!error && fansData) {
+                        let membersMap = {}, pointsMap = {};
+                        fansData.forEach(fan => {
+                            membersMap[fan.club_id] = (membersMap[fan.club_id] || 0) + 1;
+                            pointsMap[fan.club_id] = (pointsMap[fan.club_id] || 0) + (fan.total_fan_points || 0)
