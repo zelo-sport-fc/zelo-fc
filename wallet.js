@@ -13,27 +13,47 @@ if (!window.solanaWeb3) {
     document.head.appendChild(script);
 }
 
-function renderWalletPage(container) {
-    // 💡 الحصول على ID مستخدم تلجرام الحالي للتفريق بين الحسابات
+async function renderWalletPage(container) {
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
 
-    // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
+    // 1. جلب بيانات المستخدم من الخادم وضمان مزامنة قاعدة البيانات
+    let dbSolanaWallet = '';
+    let dbTonWallet = '';
+    let dbCoins = 0;
+
+    if (telegramId !== 'guest') {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/user-info?telegramId=${telegramId}`);
+            const data = await res.json();
+            if (data && data.success) {
+                dbSolanaWallet = data.solanaWallet || '';
+                dbTonWallet = data.tonWallet || '';
+                dbCoins = Number(data.coins || 0);
+            }
+        } catch (err) {
+            console.warn("⚠️ Failed to load user data from backend:", err);
+        }
+    }
+
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
-        : ((typeof userState !== 'undefined' && userState.coins !== undefined)
-            ? Number(userState.coins)
-            : Number(localStorage.getItem(`user_coins_${telegramId}`) || 0));
+        : (dbCoins || Number(localStorage.getItem(`user_coins_${telegramId}`) || 0));
     
-    // 💡 قراءة المحفظة الخاصة بهذا الـ Telegram ID تحديداً
-    const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
-        ? userState.solanaWallet 
+    const solanaWallet = dbSolanaWallet || (typeof userState !== 'undefined' && userState.solanaWallet) 
+        ? (dbSolanaWallet || userState.solanaWallet) 
         : (localStorage.getItem(`solana_wallet_${telegramId}`) || '');
+
+    const tonWallet = dbTonWallet || (typeof userState !== 'undefined' && userState.walletAddress)
+        ? (dbTonWallet || userState.walletAddress)
+        : (localStorage.getItem(`ton_wallet_${telegramId}`) || '');
 
     // Sync global state
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
         userState.coins = userCoins;
         userState.solanaWallet = solanaWallet;
+        userState.walletAddress = tonWallet;
+        userState.walletConnected = !!tonWallet;
     }
 
     const walletStyles = `
@@ -134,19 +154,19 @@ function renderWalletPage(container) {
                         TON Wallet
                     </span>
                 </div>
-                ${(typeof userState !== 'undefined' && userState.walletConnected) ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
+                ${tonWallet ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
             </div>
 
-            ${(typeof userState !== 'undefined' && userState.walletConnected) ? `
+            ${tonWallet ? `
                 <div class="address-box-sm" style="color:#0088cc;">
-                    ${userState.walletAddress.slice(0, 8)}...${userState.walletAddress.slice(-8)}
+                    ${tonWallet.slice(0, 8)}...${tonWallet.slice(-8)}
                 </div>
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${userState.walletAddress}')">📋 Copy</button>
-                    <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 Disconnect</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 Copy</button>
+                    <button class="btn-danger-sm" onclick="disconnectTonWallet()">🔌 Disconnect</button>
                 </div>
             ` : `
-                <button class="btn-glass-ton" onclick="triggerConnect()">
+                <button class="btn-glass-ton" onclick="connectTonWallet()">
                     <span>💎</span> Connect TON Wallet
                 </button>
             `}
@@ -248,6 +268,112 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
+// 💾 Save Wallet to LocalStorage & Supabase
+// ==========================================
+async function saveWalletToDB(walletType, walletAddress) {
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+    // 1. حفظ محلي
+    if (walletType === 'solana') {
+        localStorage.setItem(`solana_wallet_${telegramId || 'guest'}`, walletAddress);
+        if (typeof userState !== 'undefined') userState.solanaWallet = walletAddress;
+    } else if (walletType === 'ton') {
+        localStorage.setItem(`ton_wallet_${telegramId || 'guest'}`, walletAddress);
+        if (typeof userState !== 'undefined') {
+            userState.walletAddress = walletAddress;
+            userState.walletConnected = true;
+        }
+    }
+
+    // 2. تحديث قاعدة البيانات على Render / Supabase
+    if (telegramId) {
+        try {
+            await fetch(`${BACKEND_URL}/api/save-wallet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    telegramId: telegramId,
+                    walletType: walletType, // 'solana' or 'ton'
+                    walletAddress: walletAddress
+                })
+            });
+        } catch (err) {
+            console.error("❌ Failed to sync wallet with backend:", err);
+        }
+    }
+
+    if (typeof showPage === 'function') showPage('wallet');
+}
+
+// ==========================================
+// 🔌 TON Wallet Handlers
+// ==========================================
+window.connectTonWallet = async function() {
+    // يمكنك ربط TonConnect UI أو أخذ العنوان المباشر
+    if (window.tonConnectUI) {
+        try {
+            const connectedWallet = await window.tonConnectUI.connectWallet();
+            const tonAddress = connectedWallet.account.address;
+            await saveWalletToDB('ton', tonAddress);
+        } catch (e) {
+            console.error("TON Connect Error:", e);
+        }
+    } else {
+        const promptAddress = prompt("Enter your TON Wallet Address:");
+        if (promptAddress && promptAddress.trim().length > 10) {
+            await saveWalletToDB('ton', promptAddress.trim());
+        }
+    }
+};
+
+window.disconnectTonWallet = async function() {
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    localStorage.removeItem(`ton_wallet_${telegramId || 'guest'}`);
+    
+    if (typeof userState !== 'undefined') {
+        userState.walletAddress = '';
+        userState.walletConnected = false;
+    }
+
+    await saveWalletToDB('ton', '');
+};
+
+// ==========================================
+// 🟣 Solana Wallet Handlers
+// ==========================================
+window.connectPhantomWallet = function() {
+    if ("solana" in window && window.solana.isPhantom) {
+        window.solana.connect().then((res) => {
+            saveWalletToDB('solana', res.publicKey.toString());
+        }).catch((err) => console.error(err));
+    } else {
+        alert('Please copy your wallet address from the Phantom app and paste it in the field.');
+    }
+};
+
+window.saveSolanaWalletAddress = function() {
+    const input = document.getElementById('solana-address-input');
+    if (!input) return;
+    const solAddress = input.value.trim();
+    if (solAddress.length >= 32) {
+        saveWalletToDB('solana', solAddress);
+    } else {
+        alert('Please enter a valid Solana address');
+    }
+};
+
+window.disconnectSolanaWallet = async function() {
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    localStorage.removeItem(`solana_wallet_${telegramId || 'guest'}`);
+    
+    if (typeof userState !== 'undefined') {
+        userState.solanaWallet = '';
+    }
+
+    await saveWalletToDB('solana', '');
+};
+
+// ==========================================
 // ⚡ Claim Action Handler
 // ==========================================
 window.claimCoinsToSolanaWallet = async function() {
@@ -335,54 +461,6 @@ window.claimCoinsToSolanaWallet = async function() {
             claimBtn.innerText = `Claim ${TOKEN_NAME} Tokens`;
         }
     }
-};
-
-window.connectPhantomWallet = function() {
-    if ("solana" in window && window.solana.isPhantom) {
-        window.solana.connect().then((res) => {
-            saveSolanaAddressToStateAndDB(res.publicKey.toString());
-        }).catch((err) => console.error(err));
-    } else {
-        alert('Please copy your wallet address from the Phantom app and paste it in the field.');
-    }
-};
-
-// 💡 حفظ المحفظة باسم الـ Telegram ID الخاص بالحساب المفتوح فقط
-async function saveSolanaAddressToStateAndDB(solAddress) {
-    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
-    
-    localStorage.setItem(`solana_wallet_${telegramId}`, solAddress);
-    
-    if (typeof userState !== 'undefined') {
-        userState.solanaWallet = solAddress;
-    }
-    if (typeof showPage === 'function') showPage('wallet');
-}
-
-window.saveSolanaWalletAddress = function() {
-    const input = document.getElementById('solana-address-input');
-    if (!input) return;
-    const solAddress = input.value.trim();
-    if (solAddress.length >= 32) {
-        saveSolanaAddressToStateAndDB(solAddress);
-    } else {
-        alert('Please enter a valid Solana address');
-    }
-};
-
-// 💡 فصل المحفظة الخاصة بالحساب الحالي فقط دون المساس بالحسابات الأخرى
-window.disconnectSolanaWallet = function() {
-    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
-
-    localStorage.removeItem(`solana_wallet_${telegramId}`);
-    localStorage.removeItem(`user_coins_${telegramId}`);
-    
-    if (typeof userState !== 'undefined') {
-        userState.solanaWallet = '';
-        userState.points = 0;
-        userState.coins = 0;
-    }
-    if (typeof showPage === 'function') showPage('wallet');
 };
 
 window.copyToClipboard = function(text) {
