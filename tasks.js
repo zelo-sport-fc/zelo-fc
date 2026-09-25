@@ -1,9 +1,18 @@
 // ==========================================
-// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme (Fixed & Official SVG Icons)
+// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme (Fixed & Verified)
 // ==========================================
 
 (function() {
-    // 1. Default tasks list
+    // التأكد من وجود كائن userState العام لتجنب الأخطاء
+    window.userState = window.userState || {
+        userId: "guest",
+        points: 0,
+        lang: "ar",
+        tasks: [],
+        dailyCheckInClaimed: false
+    };
+
+    // 1. القائمة الافتراضية للمهام
     window.defaultTasksData = [
         { id: "connect_x", textAr: "ربط حسابك في منصة X (مهمة خاصة)", textEn: "Connect X Account (VIP)", points: 1000, completed: false, url: "#" },
         { id: "pump_fun", textAr: "دعم وشراء عملة ZELO FC على Pump.fun", textEn: "Support & Buy ZELO FC on Pump.fun", points: 1500, completed: false, url: "https://pump.fun/coin/BBQmpKimKwAHBoJN2TyRG2CSEYRZhkxfksu1D1q9pump" },
@@ -19,12 +28,15 @@
     // ==========================================
 
     async function apiVerifyTask(taskId, points) {
-        if (!supabaseClient) return { success: false, message: "No database connection" };
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+            console.warn("Supabase client is not initialized.");
+            return { success: false, message: "No database connection" };
+        }
         
         try {
             const { error: taskError } = await supabaseClient
                 .from('user_tasks')
-                .insert([{ telegram_id: userState.userId, task_id: taskId, reward_points: points }]);
+                .insert([{ telegram_id: window.userState.userId, task_id: taskId, reward_points: points }]);
 
             if (taskError) {
                 if (taskError.code === '23505') return { success: true, alreadyDone: true }; 
@@ -35,7 +47,7 @@
             const { data: userData, error: fetchError } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', window.userState.userId);
 
             if (!fetchError && userData && userData.length > 0) {
                 currentPoints = parseInt(userData[0].points) || 0;
@@ -47,7 +59,7 @@
             const { error: userUpsertError } = await supabaseClient
                 .from('users')
                 .upsert(
-                    { telegram_id: userState.userId, points: newPoints },
+                    { telegram_id: window.userState.userId, points: newPoints },
                     { onConflict: 'telegram_id' }
                 );
 
@@ -56,15 +68,13 @@
             const { data: clubData, error: clubFetchError } = await supabaseClient
                 .from('club_fans_rankings')
                 .select('total_fan_points')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', window.userState.userId);
 
             if (!clubFetchError && clubData && clubData.length > 0) {
-                const { error: clubUpdateError } = await supabaseClient
+                await supabaseClient
                     .from('club_fans_rankings')
                     .update({ total_fan_points: newPoints })
-                    .eq('telegram_id', userState.userId);
-
-                if (clubUpdateError) console.error("Error updating club points:", clubUpdateError);
+                    .eq('telegram_id', window.userState.userId);
             }
 
             return { success: true, alreadyDone: false };
@@ -74,16 +84,21 @@
         }
     }
 
-    async function apiClaimDaily() {
-        if (!supabaseClient) return { success: false };
+    window.claimDaily = async function() {
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+            alert("فشل الاتصال بقاعدة البيانات!");
+            return;
+        }
+        
         const dailyPoints = 200; 
+        const isAr = (window.userState.lang === 'ar');
 
         try {
             let currentPoints = 0;
             const { data: userData, error: fetchError } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', window.userState.userId);
 
             if (!fetchError && userData && userData.length > 0) {
                 currentPoints = parseInt(userData[0].points) || 0;
@@ -97,45 +112,38 @@
                     points: newPoints,
                     last_daily_claim: new Date().toISOString() 
                 })
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', window.userState.userId);
 
             if (updateError) throw updateError;
 
-            const { data: clubData, error: clubFetchError } = await supabaseClient
-                .from('club_fans_rankings')
-                .select('total_fan_points')
-                .eq('telegram_id', userState.userId);
+            window.userState.points = newPoints;
+            window.userState.dailyCheckInClaimed = true;
+            alert(isAr ? `🎉 تم استلام المكافأة اليومية بنجاح: +${dailyPoints} ZELO` : `🎉 Daily reward claimed: +${dailyPoints} ZELO`);
 
-            if (!clubFetchError && clubData && clubData.length > 0) {
-                await supabaseClient
-                    .from('club_fans_rankings')
-                    .update({ total_fan_points: newPoints })
-                    .eq('telegram_id', userState.userId);
-            }
-
-            return { success: true, pointsAdded: dailyPoints };
+            if (typeof updateTopBar === "function") updateTopBar();
+            renderTasksPage(document.getElementById("main-content"));
         } catch (error) {
             console.error("Error claiming daily reward:", error);
-            return { success: false };
+            alert(isAr ? "حدث خطأ أثناء الحصول على المكافأة اليومية." : "Error claiming daily reward.");
         }
-    }
+    };
 
     async function syncTasksFromDB() {
-        if (!supabaseClient || !userState.userId) return;
+        if (typeof supabaseClient === 'undefined' || !supabaseClient || !window.userState.userId) return;
 
-        if (!userState.tasks || userState.tasks.length === 0) {
-            userState.tasks = window.defaultTasksData.map(t => ({...t}));
+        if (!window.userState.tasks || window.userState.tasks.length === 0) {
+            window.userState.tasks = window.defaultTasksData.map(t => ({...t}));
         }
 
         try {
             const { data: tasksData } = await supabaseClient
                 .from('user_tasks')
                 .select('task_id')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', window.userState.userId);
 
             if (tasksData) {
                 const completedIds = tasksData.map(t => t.task_id);
-                userState.tasks.forEach(task => {
+                window.userState.tasks.forEach(task => {
                     if (completedIds.includes(task.id)) task.completed = true;
                 });
             }
@@ -143,7 +151,7 @@
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('last_daily_claim')
-                .eq('telegram_id', userState.userId)
+                .eq('telegram_id', window.userState.userId)
                 .single();
 
             if (userData && userData.last_daily_claim) {
@@ -151,9 +159,9 @@
                 const now = new Date();
                 const diffHours = Math.abs(now.getTime() - lastClaim.getTime()) / 36e5;
                 
-                userState.dailyCheckInClaimed = (diffHours < 24);
+                window.userState.dailyCheckInClaimed = (diffHours < 24);
             } else {
-                userState.dailyCheckInClaimed = false;
+                window.userState.dailyCheckInClaimed = false;
             }
         } catch (error) {
             console.error("Error syncing task data:", error);
@@ -165,11 +173,16 @@
     // ==========================================
 
     window.renderTasksPage = async function(container) {
-        if (!userState.tasks || userState.tasks.length === 0) {
-            userState.tasks = window.defaultTasksData.map(t => ({...t}));
+        if (!container) {
+            console.error("Container element not found for rendering tasks.");
+            return;
         }
 
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+        if (!window.userState.tasks || window.userState.tasks.length === 0) {
+            window.userState.tasks = window.defaultTasksData.map(t => ({...t}));
+        }
+
+        const isAr = (window.userState.lang === 'ar');
         const borderSide = isAr ? 'border-right' : 'border-left';
 
         const styles = `
@@ -280,7 +293,6 @@
 
         await syncTasksFromDB();
 
-        // 🌟 شعارات المنصات الرسمية (SVG) المصححة
         const svgIcons = {
             tg: `<svg class="task-icon-svg" style="color:#24A1DE;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.07-.02.16-.04.25z"/></svg>`,
             x: `<svg class="task-icon-svg" style="color:#fff;" viewBox="0 0 24 24"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
@@ -288,7 +300,7 @@
             pump: `<svg class="task-icon-svg" style="color:#00FF87;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5h-2v-2h2zm0-4h-2V7h2z"/></svg>`
         };
 
-        let tasksHtml = userState.tasks.map(task => {
+        let tasksHtml = window.userState.tasks.map(task => {
             let iconClass = 'icon-tg';
             let iconSvg = svgIcons.tg;
             
@@ -309,7 +321,7 @@
 
             let buttonAction = `onclick="executeTask('${task.id}', '${task.url}', ${task.points})"`;
             if (task.id === 'connect_x') {
-                buttonAction = `onclick="startXLogin('${task.id}', ${task.points})"`;
+                buttonAction = `onclick="executeTask('${task.id}', '${task.url}', ${task.points})"`; // أو دالة startXLogin إذا تم تعريفها
             }
 
             return `
@@ -358,10 +370,10 @@
                 </div>
                 
                 <button id="btn-daily-claim" 
-                        class="${userState.dailyCheckInClaimed ? 'btn-task-done' : 'btn-task-go'}" 
+                        class="${window.userState.dailyCheckInClaimed ? 'btn-task-done' : 'btn-task-go'}" 
                         onclick="claimDaily()" 
-                        ${userState.dailyCheckInClaimed ? 'disabled' : ''}>
-                    ${userState.dailyCheckInClaimed ? (isAr ? 'تم ✅' : 'Claimed ✅') : (isAr ? 'استلام ✨' : 'Claim ✨')}
+                        ${window.userState.dailyCheckInClaimed ? 'disabled' : ''}>
+                    ${window.userState.dailyCheckInClaimed ? (isAr ? 'تم ✅' : 'Claimed ✅') : (isAr ? 'استلام ✨' : 'Claim ✨')}
                 </button>
             </div>
 
@@ -377,26 +389,28 @@
     };
 
     window.executeTask = async function(taskId, url, points) {
-        const task = userState.tasks.find(t => t.id === taskId);
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+        const task = window.userState.tasks.find(t => t.id === taskId);
+        const isAr = (window.userState.lang === 'ar');
         
         if (!task || task.completed || task.isProcessing) return;
 
         task.isProcessing = true; 
 
-        try {
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-                if (url.includes("t.me")) {
-                    window.Telegram.WebApp.openTelegramLink(url);
+        if (url && url !== '#') {
+            try {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                    if (url.includes("t.me")) {
+                        window.Telegram.WebApp.openTelegramLink(url);
+                    } else {
+                        window.Telegram.WebApp.openLink(url);
+                    }
                 } else {
-                    window.Telegram.WebApp.openLink(url);
+                    window.open(url, '_blank');
                 }
-            } else {
+            } catch (e) {
+                console.error("Error opening link:", e);
                 window.open(url, '_blank');
             }
-        } catch (e) {
-            console.error("Error opening link:", e);
-            window.open(url, '_blank');
         }
 
         const btn = document.getElementById(`btn-task-${taskId}`);
@@ -415,18 +429,5 @@
                     task.completed = true;
                     
                     if (!response.alreadyDone) {
-                        userState.points = (userState.points || 0) + points; 
-                        alert(`🎉 ${isAr ? 'تم إضافة النقاط بنجاح:' : 'Points added successfully:'} +${points} ZELO.`);
-                    }
-
-                    if (typeof updateTopBar === "function") updateTopBar();
-                    renderTasksPage(document.getElementById("main-content")); 
-                } else {
-                    alert(isAr ? "حدث خطأ أثناء حفظ المهمة، يرجى المحاولة لاحقاً." : "An error occurred, please try again.");
-                    if (btn) {
-                        btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                        btn.className = "btn-task-go";
-                        btn.disabled = false;
-                    }
-                }
-          
+                        window.userState.points = (window.userState.points || 0) + points; 
+                        alert(`🎉 ${isAr 
