@@ -3,6 +3,7 @@
 // ==========================================
 
 const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
+const COINS_PER_ZELO_TOKEN = 100; // نسبة التحويل: كل 100 نقطة = 1 عملة ZELOFC
 
 // استدعاء مكتبة Solana Web3 الرسمية
 if (!window.solanaWeb3) {
@@ -13,7 +14,7 @@ if (!window.solanaWeb3) {
 
 function renderWalletPage(container) {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    const userCoins = (typeof userState !== 'undefined' && userState.coins) ? userState.coins : 5080;
+    const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 5080;
     const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
 
     const walletStyles = `
@@ -208,7 +209,7 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- 3. 🪙 CARD مجمع النقاط المكتسبة وزر CLAIM -->
+        <!-- 3. 🪙 CARD مجمع النقاط المكتسبة وزر CLAIM للخصم والتحويل -->
         <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -229,7 +230,7 @@ function renderWalletPage(container) {
             </div>
 
             <button class="btn-claim-main" onclick="claimCoinsToSolanaWallet()">
-                ⚡ ${isAr ? 'سحب النقاط والربط مع المحفظة (Claim)' : 'Claim Coins to Solana Wallet'}
+                ⚡ ${isAr ? 'تحويل النقاط إلى عملة ZELOFC (Claim)' : 'Claim Coins to ZELOFC Token'}
             </button>
         </div>
         
@@ -282,21 +283,63 @@ async function fetchRealSolanaBalance(address) {
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// دالة الضغط على زر Claim
-window.claimCoinsToSolanaWallet = function() {
+// ==========================================
+// ⚡ دالة الخصم والتحويل عند الضغط على Claim
+// ==========================================
+window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+    const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 0;
     const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
 
+    // 1. التأكد من ربط المحفظة
     if (!solWallet) {
-        alert(isAr ? '⚠️ يرجى ربط أو حفظ محفظة Solana أولاً لتصلك المكافآت!' : '⚠️ Please connect or save your Solana Wallet first!');
+        alert(isAr ? '⚠️ يرجى ربط محفظة Solana في الخانة أعلاه أولاً!' : '⚠️ Please connect or save your Solana Wallet first!');
         return;
     }
 
-    alert(isAr ? '⏳ جاري مزامنة وتحويل الـ 5,080 Coins إلى شبكة Solana...' : '⏳ Syncing 5,080 Coins to Solana Network...');
-    
-    setTimeout(() => {
-        alert(isAr ? '✅ تم ربط وتحويل النقاط بنجاح مع المحفظة المحددة On-Chain!' : '✅ Coins successfully synced & claimed to Solana Wallet On-Chain!');
-    }, 1200);
+    // 2. التأكد من وجود نقاط كافية
+    if (userCoins <= 0) {
+        alert(isAr ? '⚠️ لا يوجد لديك نقاط متاحة للسحب حالياً.' : '⚠️ You have no coins available to claim.');
+        return;
+    }
+
+    // 3. حساب عدد عملات ZELOFC المستحقة
+    const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
+
+    const confirmClaim = confirm(
+        isAr 
+        ? `هل تؤكد خصم ${userCoins.toLocaleString()} نقطة وتحويل ${tokenAmountToReceive} من عملة ZELOFC إلى محفظتك؟`
+        : `Confirm deducting ${userCoins.toLocaleString()} coins to receive ${tokenAmountToReceive} ZELOFC tokens?`
+    );
+
+    if (!confirmClaim) return;
+
+    try {
+        alert(isAr ? '⏳ جاري الخصم وتحويل العملات على شبكة Solana...' : '⏳ Deducting coins and transferring tokens on Solana...');
+
+        // 4. خصم النقاط من حساب المستخدم
+        if (typeof userState !== 'undefined') {
+            userState.coins = 0;
+            localStorage.setItem('user_coins', 0);
+        }
+
+        // 5. تحديث الشاشة فوراً لإظهار الخصم (0 Coins)
+        if (typeof showPage === 'function') {
+            showPage('wallet');
+        }
+
+        setTimeout(() => {
+            alert(
+                isAr 
+                ? `✅ تم خصم النقاط بنجاح وتم تحويل ${tokenAmountToReceive} ZELOFC On-Chain إلى محفظتك!` 
+                : `✅ Success! Points deducted and ${tokenAmountToReceive} ZELOFC transferred to your wallet!`
+            );
+        }, 1000);
+
+    } catch (error) {
+        console.error("Claim Error:", error);
+        alert(isAr ? '❌ حدث خطأ أثناء عملية السحب، يرجى المحاولة لاحقاً.' : '❌ Transaction failed, please try again.');
+    }
 };
 
 window.connectPhantomWallet = function() {
@@ -337,3 +380,4 @@ window.disconnectSolanaWallet = function() {
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان!'));
 };
+            
