@@ -78,7 +78,7 @@ window.renderFriendsPage = async function(container) {
     const referralLink = window.generateReferralLink();
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    // Safe Translation Fetcher with hardcoded defaults to fix green box bug
+    // Safe Translation Fetcher with hardcoded defaults
     const getTranslation = (key, defaultText) => {
         if (typeof t === 'function') {
             const val = t(key);
@@ -123,15 +123,17 @@ window.renderFriendsPage = async function(container) {
             .link-text-box {
                 background: rgba(10, 10, 15, 0.8);
                 color: #00FF87;
-                font-family: monospace;
-                font-size: 0.75rem; 
-                padding: 10px 12px;
-                border-radius: 10px;
-                word-break: break-all;
-                border: 1px solid rgba(0, 255, 135, 0.3);
+                font-size: 0.85rem;
+                font-weight: bold;
+                padding: 12px 14px;
+                border-radius: 12px;
+                border: 1px solid rgba(0, 255, 135, 0.2);
                 margin-bottom: 16px;
                 box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
-                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
             }
 
             .action-buttons-wrapper {
@@ -141,10 +143,10 @@ window.renderFriendsPage = async function(container) {
             }
 
             .btn-sleek {
-                padding: 10px 16px;
+                padding: 12px 16px;
                 border-radius: 12px;
                 font-weight: bold;
-                font-size: 0.85rem;
+                font-size: 0.88rem;
                 cursor: pointer;
                 flex: 1;
                 display: flex;
@@ -206,12 +208,14 @@ window.renderFriendsPage = async function(container) {
             <p style="margin: 0; color: #cbd5e1; font-size: 0.75rem; line-height: 1.6;">${commissionDesc}</p>
         </div>
 
-        <!-- Referral Link Box -->
+        <!-- Clean Invite Action Card (No links or IDs displayed) -->
         <div class="zelo-link-card">
-            <div class="link-text-box" id="ref-link-box">${referralLink}</div>
+            <div class="link-text-box" id="ref-link-box">
+                ⚡ <span>${isAr ? 'ادعُ أصدقاءك وانمُ بفريقك اليوم!' : 'Invite your friends & grow your team today!'}</span>
+            </div>
             <div class="action-buttons-wrapper">
                 <button class="btn-sleek btn-copy-sleek" onclick="window.copyToClipboard('${referralLink}')">
-                    🔗 ${getTranslation('btnCopy', isAr ? 'نسخ الرابط' : 'Copy Link')}
+                    📋 ${getTranslation('btnCopy', isAr ? 'نسخ الرابط' : 'Copy Link')}
                 </button>
                 <button class="btn-sleek btn-share-vibrant" onclick="window.shareOnTelegram('${referralLink}')">
                     🚀 ${getTranslation('btnShare', isAr ? 'مشاركة' : 'Share')}
