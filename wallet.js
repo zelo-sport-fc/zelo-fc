@@ -14,10 +14,12 @@ if (!window.solanaWeb3) {
 }
 
 function renderWalletPage(container) {
-    // Rely strictly on database/state first to prevent rendering cleared/deleted account data
-    const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) 
-        ? Number(userState.coins) 
-        : Number(localStorage.getItem('user_coins') || 0);
+    // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
+    const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
+        ? Number(userState.points)
+        : ((typeof userState !== 'undefined' && userState.coins !== undefined)
+            ? Number(userState.coins)
+            : Number(localStorage.getItem('user_coins') || 0));
     
     const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
         ? userState.solanaWallet 
@@ -25,6 +27,7 @@ function renderWalletPage(container) {
 
     // Sync global state
     if (typeof userState !== 'undefined') {
+        userState.points = userCoins;
         userState.coins = userCoins;
         userState.solanaWallet = solanaWallet;
     }
@@ -248,8 +251,8 @@ window.claimCoinsToSolanaWallet = async function() {
         ? userState.solanaWallet 
         : (localStorage.getItem('solana_wallet') || '');
 
-    const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) 
-        ? Number(userState.coins) 
+    const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined) 
+        ? Number(userState.points) 
         : Number(localStorage.getItem('user_coins') || 0);
 
     const claimBtn = document.getElementById('btn-claim-action');
@@ -299,6 +302,7 @@ window.claimCoinsToSolanaWallet = async function() {
             // 5. Reset local balance & state on success
             localStorage.setItem('user_coins', 0);
             if (typeof userState !== 'undefined') {
+                userState.points = 0;
                 userState.coins = 0;
             }
 
@@ -365,6 +369,7 @@ window.disconnectSolanaWallet = function() {
     localStorage.removeItem('user_coins');
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = '';
+        userState.points = 0;
         userState.coins = 0;
     }
     if (typeof showPage === 'function') showPage('wallet');
@@ -373,3 +378,4 @@ window.disconnectSolanaWallet = function() {
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => alert('Address copied to clipboard!'));
 };
+                
