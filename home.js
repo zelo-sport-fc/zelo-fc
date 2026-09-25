@@ -8,8 +8,8 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
 };
 
 window.updateHomeSolPrice = async function() {
-    const el = document.getElementById('home-sol-price');
-    if (!el) return;
+    const elPriceHeader = document.getElementById('home-sol-price');
+    const elPriceOracle = document.getElementById('home-sol-oracle-val');
     const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
     
     try {
@@ -18,179 +18,77 @@ window.updateHomeSolPrice = async function() {
         if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
             const p = data.parsed[0].price;
             const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
-            
             const newPriceStr = `$${finalPrice}`;
-            if (el.innerText !== newPriceStr) {
-                el.innerText = newPriceStr;
-                el.classList.add('price-updated');
-                setTimeout(() => el.classList.remove('price-updated'), 300);
+            
+            if (elPriceHeader && elPriceHeader.innerText !== newPriceStr) {
+                elPriceHeader.innerText = newPriceStr;
+            }
+            if (elPriceOracle && elPriceOracle.innerText !== newPriceStr) {
+                elPriceOracle.innerText = newPriceStr;
             }
         }
     } catch (err) {
-        if (!el.innerText || el.innerText.trim() === '') {
-            el.innerText = `$118.12`;
-        }
+        if (elPriceHeader) elPriceHeader.innerText = `$118.12`;
+        if (elPriceOracle) elPriceOracle.innerText = `$118.12`;
     }
 };
 
 window.renderHomePage = function(container) {
-    // 1. البحث عن الحاوية المناسبة أو إنشاؤها تلقائياً إذا كانت مفقودة
-    let target = container;
-    if (!target || !(target instanceof HTMLElement)) {
-        target = document.getElementById('app') || 
-                 document.getElementById('main-content') || 
-                 document.getElementById('content') || 
-                 document.querySelector('.app-content') ||
-                 document.querySelector('main');
-    }
-
-    if (!target) {
-        console.error("لم يتم العثور على عنصر الحاوية الرئيسي!");
-        return;
-    }
+    let target = container || document.getElementById('app') || document.getElementById('main-content') || document.body;
+    if (!target) return;
 
     if (window.solPriceInterval) {
         clearInterval(window.solPriceInterval);
     }
 
     try {
-        // قيم افتراضية آمنة 100% لتفادي التوقف
         const state = (typeof userState !== 'undefined' && userState) ? userState : { 
             lang: 'ar', 
-            username: 'Zelo Player', 
-            userId: '1654537339', 
-            selectedClubs: [] 
+            username: '@Zelo_fc', 
+            userId: '1654537339' 
         };
         const isAr = state.lang === 'ar';
 
-        const getSafeText = (key, fallbackAr, fallbackEn) => {
-            try {
-                if (typeof i18n !== 'undefined' && i18n && i18n[state.lang] && i18n[state.lang][key]) {
-                    return i18n[state.lang][key];
-                }
-            } catch (e) {}
-            return isAr ? fallbackAr : fallbackEn;
-        };
-
-        // استخراج أندية المستخدم أو نادي افتراضي
-        let selectedClubsData = [];
-        if (state.selectedClubs && Array.isArray(state.selectedClubs)) {
-            selectedClubsData = state.selectedClubs.map(id => {
-                if (typeof allWorldCupCountriesClubs !== 'undefined') {
-                    for (const country in allWorldCupCountriesClubs) {
-                        const foundClub = allWorldCupCountriesClubs[country].find(c => String(c.id) === String(id));
-                        if (foundClub) return foundClub;
-                    }
-                }
-                return null;
-            }).filter(Boolean);
-        }
-
-        // نادي افتراضي (ليفربول / مانشستر يونايتد) للظهور الفوري
-        if (selectedClubsData.length === 0) {
-            selectedClubsData = [{
-                id: '1',
-                name: 'Manchester United',
-                logo: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg',
-                countryFlag: '🇬🇧',
-                members: 3,
-                points: 6080
-            }];
-        }
-
-        const primaryClub = selectedClubsData[0];
         const username = state.username || '@Zelo_fc';
         const userId = state.userId || '1654537339';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
         const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
-      
-        let clubsCardsHtml = selectedClubsData.map(club => {
-            let clubName = club.name || 'Club';
-            try {
-                if (typeof getClubName === "function") clubName = getClubName(club);
-            } catch (e) {}
 
-            return `
-                <div class="glass-club-card">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="club-logo-wrapper">
-                            <img src="${club.logo || ''}" onerror="this.style.display='none'" style="width: 32px; height: 32px; object-fit: contain;">
-                        </div>
-                        <div>
-                            <h3 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 900;">${clubName} ${club.countryFlag || ''}</h3>
-                            <p style="margin: 2px 0 0 0; color: #14F195; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 4px;">
-                                <span class="pulse-green"></span> <span id="club-fans-${club.id}">${club.members ? club.members.toLocaleString() : '3'}</span> ${isAr ? 'مشجع' : 'Fans'}
-                            </p>
-                        </div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div class="club-points-badge">
-                            <span style="font-size: 0.85rem;">🏆</span> <span id="club-pts-${club.id}">${club.points ? club.points.toLocaleString() : '6,080'}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        let titleWeeklyChallenges = getSafeText('weeklyChallenges', 'التحديات الأسبوعية', 'Weekly Challenges');
-        let textEuropeCups = getSafeText('europeCups', 'الكؤوس الأوروبية', 'European Cups');
-        let textSpainCups = getSafeText('spainCups', 'الكؤوس الإسبانية', 'Spanish Cups');
-        let titleRanking = getSafeText('challengesRanking', 'ترتيب التحديات', 'Challenges Ranking');
-        let textRankingDesc = getSafeText('rankingDesc', 'اكتشف أفضل اللاعبين وترتيبك', 'Discover top players and your rank');
-        let supportedClubsTitle = getSafeText('supportedClubs', 'الأندية المدعومة', 'Supported Clubs');
-        let loadingAlert = getSafeText('loading', 'جاري التحميل...', 'Loading...');
-        let websiteBtnText = getSafeText('officialSite', 'الموقع الرسمي', 'Official Site');
-
-        // بناء الـ HTML وضمان الظهور الفوري
         target.innerHTML = `
             <style>
-                @keyframes profileGlow {
-                    0% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(20, 241, 149, 0.1); }
-                    50% { box-shadow: 0 15px 30px rgba(0,0,0,0.9), inset 0 0 25px rgba(153, 69, 255, 0.25); }
-                    100% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(20, 241, 149, 0.1); }
-                }
-                @keyframes levitateAvatar {
-                    0% { transform: translateY(0px); }
-                    50% { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(20, 241, 149, 0.6); }
-                    100% { transform: translateY(0px); }
-                }
-                @keyframes pulseLive {
-                    0% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.4; transform: scale(1.2); }
-                    100% { opacity: 1; transform: scale(1); }
-                }
-
                 .home-scroll-wrapper {
                     width: 100%;
-                    max-height: calc(100vh - 140px);
+                    max-height: calc(100vh - 130px);
                     overflow-y: auto;
                     padding: 10px 16px 90px 16px;
                     box-sizing: border-box;
-                    display: block !important;
-                    visibility: visible !important;
-                    opacity: 1 !important;
+                    background: radial-gradient(circle at 10% 8%, rgba(153, 69, 255, 0.22) 0%, transparent 35%),
+                                radial-gradient(circle at 90% 12%, rgba(20, 241, 149, 0.22) 0%, transparent 35%),
+                                #08090C;
+                    color: #fff;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 }
                 .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
+                /* كارت البروفايل */
                 .royal-profile-card {
                     position: relative;
-                    background: linear-gradient(180deg, rgba(22, 22, 30, 0.9) 0%, rgba(13, 13, 18, 0.95) 100%);
+                    background: rgba(18, 18, 24, 0.75);
                     border-radius: 20px;
-                    padding: 30px 15px 15px 15px;
+                    padding: 32px 15px 16px 15px;
                     margin-top: 25px;
                     margin-bottom: 12px;
-                    border: 1px solid rgba(153, 69, 255, 0.25);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
                     text-align: center;
-                    animation: profileGlow 4s infinite alternate;
-                    backdrop-filter: blur(20px);
+                    backdrop-filter: blur(15px);
                 }
 
                 .royal-avatar-wrapper {
                     position: absolute; top: -35px; left: 50%;
-                    transform: translateX(-50%); width: 70px; height: 70px;
+                    transform: translateX(-50%); width: 68px; height: 68px;
                     border-radius: 50%;
                     background: linear-gradient(135deg, #9945FF, #14F195);
-                    padding: 3px; animation: levitateAvatar 3s ease-in-out infinite; z-index: 2;
+                    padding: 3px; z-index: 2;
                 }
 
                 .royal-avatar-inner {
@@ -201,52 +99,102 @@ window.renderHomePage = function(container) {
 
                 .website-glass-btn {
                     position: absolute; top: 12px; ${isAr ? 'left: 12px;' : 'right: 12px;'}
-                    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12);
-                    backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 12px;
-                    color: #fff; font-size: 0.72rem; font-weight: bold; cursor: pointer; z-index: 10;
+                    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15);
+                    backdrop-filter: blur(10px); padding: 4px 10px; border-radius: 12px;
+                    color: #fff; font-size: 0.7rem; font-weight: 600; cursor: pointer;
+                    display: flex; align-items: center; gap: 4px;
                 }
 
-                .solana-action-banner {
-                    position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 12px;
-                    display: flex; align-items: center; justify-content: space-between;
-                    background: linear-gradient(135deg, rgba(20, 241, 149, 0.08) 0%, rgba(153, 69, 255, 0.12) 100%);
-                    border: 1px solid rgba(20, 241, 149, 0.35); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+                .gold-official-btn {
+                    background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
+                    color: #000;
+                    font-weight: 800;
+                    border: none;
+                    padding: 6px 22px;
+                    border-radius: 12px;
+                    font-size: 0.8rem;
+                    margin-top: 8px;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(230, 161, 0, 0.25);
+                }
+
+                /* كارت سولانا المميز بالرسم البياني */
+                .solana-chronicle-card {
+                    background: rgba(18, 18, 24, 0.8);
+                    border: 1px solid rgba(153, 69, 255, 0.25);
+                    border-radius: 18px;
+                    padding: 14px 16px;
+                    margin-bottom: 12px;
                     backdrop-filter: blur(15px);
                 }
 
-                .solana-badge-icon {
-                    width: 38px; height: 38px; border-radius: 12px; background: rgba(153, 69, 255, 0.2);
-                    border: 1px solid rgba(20, 241, 149, 0.3); display: flex; align-items: center; justify-content: center;
+                .sol-card-header {
+                    display: flex; align-items: center; justify-content: space-between;
+                    margin-bottom: 10px;
                 }
 
-                .pulse-green {
-                    display: inline-block; width: 6px; height: 6px; background: #14F195;
-                    border-radius: 50%; animation: pulseLive 1.2s infinite ease-in-out; box-shadow: 0 0 8px #14F195;
+                .sol-oracle-badge {
+                    font-size: 0.65rem; font-weight: 800; color: #c084fc;
+                    display: flex; align-items: center; gap: 4px; text-transform: uppercase;
                 }
 
+                .sol-chart-area {
+                    margin: 10px 0;
+                    position: relative;
+                }
+
+                .sol-sparkline-svg {
+                    width: 75%; height: 42px; stroke: #14F195; fill: none; stroke-width: 2;
+                }
+
+                .sol-price-axis {
+                    font-family: monospace; font-size: 0.68rem; color: #14F195; opacity: 0.8;
+                    text-align: right; display: flex; flex-direction: column; gap: 2px;
+                }
+
+                .sol-time-axis {
+                    display: flex; justify-content: space-between; width: 75%;
+                    font-size: 0.65rem; color: #6b7280; font-weight: 600; margin-top: 2px;
+                }
+
+                .sol-bottom-grid {
+                    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+                    margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);
+                    text-align: center;
+                }
+
+                .sol-grid-item span:first-child {
+                    display: block; font-size: 0.68rem; color: #9ca3af; font-weight: 600; margin-bottom: 2px;
+                }
+                .sol-grid-item span:last-child {
+                    font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace;
+                }
+
+                /* بنرات التحديات والترتيب */
                 .action-banner {
                     position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
                     display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
                 }
 
                 .banner-challenges { 
-                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(153, 69, 255, 0.06) 100%); 
+                    background: rgba(18, 18, 24, 0.75); 
                     border: 1px solid rgba(59, 130, 246, 0.35); 
                 }
 
                 .banner-ranking { 
-                    background: linear-gradient(135deg, rgba(255, 69, 58, 0.08) 0%, rgba(255, 159, 10, 0.06) 100%); 
+                    background: rgba(18, 18, 24, 0.75); 
                     border: 1px solid rgba(255, 69, 58, 0.35); 
                 }
 
                 .banner-icon-wrapper {
                     width: 42px; height: 42px; border-radius: 12px; display: flex;
                     align-items: center; justify-content: center; font-size: 1.3rem;
-                    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
                 }
 
+                /* كارت الأندية */
                 .glass-club-card {
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(20, 241, 149, 0.02) 100%);
+                    background: rgba(18, 18, 24, 0.75);
                     backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
                     border-radius: 16px; padding: 10px 14px; display: flex; align-items: center;
                     justify-content: space-between; margin-bottom: 8px;
@@ -255,105 +203,157 @@ window.renderHomePage = function(container) {
                 .club-logo-wrapper {
                     width: 38px; height: 38px; background: rgba(0,0,0,0.4);
                     border-radius: 12px; display: flex; align-items: center; justify-content: center;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
                 }
 
                 .club-points-badge {
-                    background: linear-gradient(135deg, rgba(153, 69, 255, 0.15), rgba(20, 241, 149, 0.15));
+                    background: rgba(255, 215, 0, 0.1);
                     color: #FFD700; padding: 5px 12px; border-radius: 10px; font-weight: 900; font-size: 0.85rem;
-                    border: 1px solid rgba(153, 69, 255, 0.3);
+                    border: 1px solid rgba(255, 215, 0, 0.25);
                 }
-
-                .price-updated { color: #ffffff !important; text-shadow: 0 0 10px #14F195; }
             </style>
 
             <div class="home-scroll-wrapper">
+                <!-- البروفايل الملكي -->
                 <div class="royal-profile-card">
-                    <div class="royal-avatar-wrapper"><div class="royal-avatar-inner"><img src="${avatarSrc}" alt="Avatar"></div></div>
-                    <button class="website-glass-btn" onclick="window.openOfficialWebsite()"><span style="font-size: 0.85rem;">🌍</span> ${websiteBtnText}</button>
-                    <h2 style="margin: 20px 0 5px 0; color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: 0.5px;">${username}</h2>
-                    <div style="display: inline-block; background: rgba(0,0,0,0.4); padding: 3px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                        <span style="color: #888; font-size: 0.72rem; font-weight: bold;">ID:</span> 
-                        <span style="color: #ccc; font-size: 0.78rem; font-family: monospace;">${userId}</span>
+                    <div class="royal-avatar-wrapper">
+                        <div class="royal-avatar-inner">
+                            <img src="${avatarSrc}" alt="Avatar">
+                        </div>
+                    </div>
+                    <button class="website-glass-btn" onclick="window.openOfficialWebsite()">
+                        <span>🌍</span> Official Site
+                    </button>
+                    <h2 style="margin: 18px 0 3px 0; color: #fff; font-size: 1.15rem; font-weight: 900;">${username}</h2>
+                    <div style="color: #888; font-size: 0.75rem; font-family: monospace;">ID: ${userId}</div>
+                    <button class="gold-official-btn" onclick="window.openOfficialWebsite()">Official Site</button>
+                </div>
+
+                <!-- كارت سولانا الشامل بالرسم البياني On-Chain Chronicle -->
+                <div class="solana-chronicle-card">
+                    <div class="sol-card-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width:36px; height:36px; background:rgba(153,69,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(153,69,255,0.3);">
+                                <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
+                            </div>
+                            <div>
+                                <div style="color: #fff; font-weight: 900; font-size: 0.95rem;">Solana</div>
+                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">On-Chain Chronicle</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="sol-oracle-badge">
+                                <span style="width: 5px; height: 5px; background: #c084fc; border-radius: 50%;"></span> PYTH ORACLE
+                            </div>
+                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">$118.12</div>
+                        </div>
+                    </div>
+
+                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 6px;">Live $SOL</div>
+
+                    <div class="sol-chart-area">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg class="sol-sparkline-svg" viewBox="0 0 200 40">
+                                <path d="M0,28 Q25,36 50,22 T100,26 T150,12 T200,6" />
+                            </svg>
+                            <div class="sol-price-axis">
+                                <div>$138.92</div>
+                                <div>$138.50</div>
+                                <div>$138.29</div>
+                            </div>
+                        </div>
+                        <div class="sol-time-axis">
+                            <span>1am</span>
+                            <span>13w</span>
+                            <span>26m</span>
+                            <span>High</span>
+                        </div>
+                    </div>
+
+                    <div class="sol-bottom-grid">
+                        <div class="sol-grid-item">
+                            <span>Live price</span>
+                            <span>$30.25</span>
+                        </div>
+                        <div class="sol-grid-item">
+                            <span>Pyth</span>
+                            <span>0.0022</span>
+                        </div>
+                        <div class="sol-grid-item">
+                            <span>Oracle</span>
+                            <span id="home-sol-oracle-val">$118.12</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="solana-action-banner">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div class="solana-badge-icon">
-                            <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
-                        </div>
-                        <div style="text-align: ${isAr ? 'right' : 'left'};">
-                            <div style="color: #fff; font-weight: 800; font-size: 0.88rem;">Solana Ecosystem</div>
-                            <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600; margin-top: 1px;">⚡ Instant & Micro-Fee Rewards</div>
-                        </div>
+                <!-- التحديات الأسبوعية -->
+                <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
+                    <div class="banner-icon-wrapper">
+                        <span style="font-size:1.2rem;">🇬🇧</span>
                     </div>
-                    <div style="text-align: ${isAr ? 'left' : 'right'};">
-                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
-                            <span class="pulse-green"></span>
-                            <span style="color: #c084fc; font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Pyth Live</span>
-                        </div>
-                        <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.05rem; margin-top: 2px;">$118.12</div>
-                    </div>
-                </div>
-              
-                <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { alert('${loadingAlert}'); }">
-                    <div class="banner-icon-wrapper">${primaryClub ? (primaryClub.countryFlag || '⚽') : '⚽'}</div>
                     <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
-                        <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: bold;">🇪🇺 ${textEuropeCups} <span style="color:#555;">•</span> 🇪🇸 ${textSpainCups}</p>
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">Weekly Challenges</h3>
+                        <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">🇪🇺 European Cups • 🇪🇸 Spanish Cups</p>
                     </div>
-                    <div style="color: #3b82f6; font-size: 1.1rem; font-weight: bold;">${isAr ? '👈' : '👉'}</div>
+                    <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
                 </div>
 
-                <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else { alert('${loadingAlert}'); }">
+                <!-- ترتيب التحديات -->
+                <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper">🔥</div>
                     <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1rem; font-weight: 900;">${titleRanking}</h3>
-                        <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: bold;">⭐ ${textRankingDesc}</p>
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">Challenges Ranking</h3>
+                        <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">⭐ Discover top players and your rank</p>
                     </div>
-                    <div style="color: #ff453a; font-size: 1.1rem; font-weight: bold;">${isAr ? '👈' : '👉'}</div>
+                    <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
                 </div>
 
-                <div class="clubs-section" style="margin-top:10px;">
+                <!-- الأندية المدعومة -->
+                <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size: 1rem;">🛡️</span>
-                            <h4 style="color: #fff; margin: 0; font-size: 0.9rem; font-weight: 800;">${supportedClubsTitle}</h4>
+                            <span style="font-size: 0.9rem;">🛡️</span>
+                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">Supported Clubs</h4>
                         </div>
-                        <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${selectedClubsData.length} Active</span>
+                        <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">1 Active</span>
                     </div>
-                    ${clubsCardsHtml}
+
+                    <div class="glass-club-card">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="club-logo-wrapper">
+                                <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; color: #fff; font-size: 0.92rem; font-weight: 900;">Manchester United 🇬🇧</h3>
+                                <p style="margin: 2px 0 0 0; color: #60a5fa; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                                    👥 3 Fans
+                                </p>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="club-points-badge">
+                                <span style="font-size: 0.8rem;">🏆</span> 6,080
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
 
-        // 4. إطلاق دالة جلب السعر مباشرة
         window.updateHomeSolPrice();
 
-        // تحديث سعر سولانا الحقيقي كل ثانية
         window.solPriceInterval = setInterval(() => {
-            const priceElem = document.getElementById('home-sol-price');
-            if (priceElem) {
-                window.updateHomeSolPrice();
-            } else {
-                clearInterval(window.solPriceInterval);
-            }
+            window.updateHomeSolPrice();
         }, 1000);
 
     } catch (err) {
         console.error("Render error:", err);
-        target.innerHTML = `<div style="color:red; padding:20px; text-align:center;">Error: ${err.message}</div>`;
     }
 };
 
-// ⚡ تشغيل تلقائي وفوري فور تحميل الصفحة لإجبار الكروت على الظهور فوراً!
+// تشغيل فوري تلقائي
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        window.renderHomePage();
-    });
+    document.addEventListener('DOMContentLoaded', function() { window.renderHomePage(); });
 } else {
-    setTimeout(function() {
-        window.renderHomePage();
-    }, 50);
-                    }
+    setTimeout(function() { window.renderHomePage(); }, 50);
+            }
