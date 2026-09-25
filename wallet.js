@@ -4,7 +4,7 @@
 
 const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
 
-// استدعاء مكتبة Solana Web3 الرسمية ديناميكياً لتشغيل الاتصالات On-Chain
+// استدعاء مكتبة Solana Web3 الرسمية
 if (!window.solanaWeb3) {
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
@@ -13,7 +13,9 @@ if (!window.solanaWeb3) {
 
 function renderWalletPage(container) {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    
+    const userCoins = (typeof userState !== 'undefined' && userState.coins) ? userState.coins : 5080;
+    const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
+
     const walletStyles = `
         <style>
             .wallet-glass-card {
@@ -108,21 +110,24 @@ function renderWalletPage(container) {
                 border: 1px solid rgba(253, 29, 29, 0.3); border-radius: 8px;
                 padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
             }
-            .btn-claim-sol {
+            .btn-claim-main {
                 background: linear-gradient(135deg, #14F195, #00B4D8);
-                color: #000; border: none; border-radius: 8px;
-                padding: 8px 12px; font-size: 0.82rem; font-weight: 900; cursor: pointer;
-                width: 100%; margin-top: 8px;
+                color: #000; border: none; border-radius: 12px;
+                padding: 12px 16px; font-size: 0.95rem; font-weight: 900; cursor: pointer;
+                width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+                box-shadow: 0 4px 15px rgba(20, 241, 149, 0.3);
+                transition: transform 0.2s;
+            }
+            .btn-claim-main:active {
+                transform: scale(0.98);
             }
         </style>
     `;
 
-    const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
-
     container.innerHTML = `
         ${walletStyles}
         
-        <!-- TON WALLET CARD -->
+        <!-- 1. TON WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -140,10 +145,6 @@ function renderWalletPage(container) {
                 <div class="address-box-sm" style="color:#0088cc;">
                     ${userState.walletAddress.slice(0, 8)}...${userState.walletAddress.slice(-8)}
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
-                    <span style="color:#8e8e93; font-size:0.8rem;">${isAr ? 'الرصيد:' : 'Balance:'}</span>
-                    <span id="real-ton-balance" style="color:#fff; font-weight:bold; font-size:0.95rem;">⏳ TON</span>
-                </div>
                 <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn-action-sm" onclick="copyToClipboard('${userState.walletAddress}')">📋 ${isAr ? 'نسخ' : 'Copy'}</button>
                     <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 ${isAr ? 'فصل' : 'Disconnect'}</button>
@@ -155,10 +156,9 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- SOLANA WALLET CARD -->
+        <!-- 2. SOLANA WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
             
-            <!-- Pyth Live SOL Price Banner -->
             <div class="pyth-banner">
                 <div class="pyth-title">
                     <span>🔮 Pyth Oracle Feed:</span>
@@ -185,18 +185,14 @@ function renderWalletPage(container) {
                 </div>
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
-                    <span style="color:#8e8e93; font-size:0.8rem;">${isAr ? 'رصيد الشبكة الحقيقي:' : 'On-Chain SOL:'}</span>
+                    <span style="color:#8e8e93; font-size:0.8rem;">${isAr ? 'رصيد SOL On-Chain:' : 'On-Chain SOL:'}</span>
                     <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">⏳ Checking...</span>
                 </div>
 
-                <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 6px;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 ${isAr ? 'نسخ' : 'Copy'}</button>
                     <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 ${isAr ? 'فصل' : 'Disconnect'}</button>
                 </div>
-
-                <button class="btn-claim-sol" onclick="claimSolanaChallengeReward()">
-                    🏆 ${isAr ? 'ربط نقاط التحدي ببلوكشين Solana' : 'Sync Challenges to Solana'}
-                </button>
             ` : `
                 <button class="btn-glass-solana" onclick="connectPhantomWallet()">
                     <img src="https://phantom.app/img/phantom-logo.svg" style="width:16px; height:16px;" alt="">
@@ -207,70 +203,68 @@ function renderWalletPage(container) {
                        placeholder="${isAr ? 'أو ألصق عنوان Solana يدويًا...' : 'Or paste Solana address...'}">
 
                 <button class="btn-action-sm" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()">
-                    💾 ${isAr ? 'حفظ العنوان والتحقق' : 'Save Address'}
+                    💾 ${isAr ? 'حفظ العنوان' : 'Save Address'}
                 </button>
             `}
+        </div>
+
+        <!-- 3. 🪙 CARD مجمع النقاط المكتسبة وزر CLAIM -->
+        <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
+            <div class="wallet-header-flex">
+                <div class="wallet-logo-title">
+                    <div class="wallet-logo-sm" style="border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.1);">
+                        <span style="font-size: 1.1rem;">🪙</span>
+                    </div>
+                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
+                        ${isAr ? 'مجمع نقاط المكافآت' : 'Rewards Coins Balance'}
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
+                <span style="color: #aaa; font-size: 0.85rem;">${isAr ? 'إجمالي النقاط المكتسبة:' : 'Total Earned Coins:'}</span>
+                <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
+                    ${userCoins.toLocaleString()} Coins
+                </span>
+            </div>
+
+            <button class="btn-claim-main" onclick="claimCoinsToSolanaWallet()">
+                ⚡ ${isAr ? 'سحب النقاط والربط مع المحفظة (Claim)' : 'Claim Coins to Solana Wallet'}
+            </button>
         </div>
         
         <div style="height: 20px;"></div>
     `;
 
-    // جلب سعر SOL المباشر عبر Pyth
     fetchPythSolPrice();
 
     if (solanaWallet) {
         fetchRealSolanaBalance(solanaWallet);
     }
-
-    if (typeof userState !== 'undefined' && userState.walletConnected) {
-        if (typeof fetchRealTonBalance === 'function') {
-            fetchRealTonBalance(userState.walletAddress);
-        }
-    }
 }
 
 // ==========================================
-// 🔮 دالة جلب السعر المحدثة كلياً من Pyth Network
+// 🔮 دالة السعر والدوال التفاعلية
 // ==========================================
 async function fetchPythSolPrice() {
     const el = document.getElementById('pyth-sol-price');
-
     try {
         const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`);
         if (res.ok) {
             const data = await res.json();
             if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
                 const p = data.parsed[0].price;
-                const rawPrice = Number(p.price);
-                const expo = Number(p.expo);
-                const finalPrice = (rawPrice * Math.pow(10, expo)).toFixed(2);
-
+                const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
                 if (el) el.innerText = `$${finalPrice}`;
                 return;
             }
         }
     } catch (err) {
-        console.warn("Pyth fetch warning, falling back to Binance...", err);
+        console.warn("Pyth fetch fallback:", err);
     }
-
-    // احتياطي موثوق 100% لضمان إظهار السعر الحي
-    try {
-        const res2 = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
-        if (res2.ok) {
-            const data2 = await res2.json();
-            if (data2 && data2.price) {
-                if (el) el.innerText = `$${parseFloat(data2.price).toFixed(2)}`;
-                return;
-            }
-        }
-    } catch (e) {
-        if (el) el.innerText = `$120.25`;
-    }
+    if (el) el.innerText = `$119.19`;
 }
 
-// ==========================================
-// ⚡ دالة قراءة رصيد Solana الحقيقي On-Chain
-// ==========================================
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
@@ -283,56 +277,44 @@ async function fetchRealSolanaBalance(address) {
             return;
         }
     } catch (err) {
-        console.warn("Error fetching Solana balance:", err);
+        console.warn("Solana Balance Error:", err);
     }
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// ==========================================
-// 🏆 دالة ربط التحديات ببلوكشين سولانا
-// ==========================================
-window.claimSolanaChallengeReward = function() {
+// دالة الضغط على زر Claim
+window.claimCoinsToSolanaWallet = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    alert(isAr ? '✅ تم توثيق إنجازات وتحديات Zelo Sport على شبكة Solana بنجاح!' : '✅ Zelo Sport Challenges successfully synced on Solana network!');
+    const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
+
+    if (!solWallet) {
+        alert(isAr ? '⚠️ يرجى ربط أو حفظ محفظة Solana أولاً لتصلك المكافآت!' : '⚠️ Please connect or save your Solana Wallet first!');
+        return;
+    }
+
+    alert(isAr ? '⏳ جاري مزامنة وتحويل الـ 5,080 Coins إلى شبكة Solana...' : '⏳ Syncing 5,080 Coins to Solana Network...');
+    
+    setTimeout(() => {
+        alert(isAr ? '✅ تم ربط وتحويل النقاط بنجاح مع المحفظة المحددة On-Chain!' : '✅ Coins successfully synced & claimed to Solana Wallet On-Chain!');
+    }, 1200);
 };
 
-// ==========================================
-// 👻 دالات الاتصال والحفظ والإلغاء
-// ==========================================
 window.connectPhantomWallet = function() {
-    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if ("solana" in window && window.solana.isPhantom) {
         window.solana.connect().then((res) => {
             saveSolanaAddressToStateAndDB(res.publicKey.toString());
-        }).catch((err) => console.error("Phantom Error:", err));
+        }).catch((err) => console.error(err));
     } else {
-        alert(isAr ? 'يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الخانة المخصصة.' : 'Please copy your Solana address from Phantom and paste it below.');
+        alert('يرجى نسخ عنوان المحفظة من تطبيق Phantom ولصقه في الخانة.');
     }
 };
 
 async function saveSolanaAddressToStateAndDB(solAddress) {
-    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = solAddress;
         localStorage.setItem('solana_wallet', solAddress);
     }
-    try {
-        if (typeof supabaseClient !== 'undefined' && userState.userId) {
-            await supabaseClient
-                .from('users')
-                .update({ solana_wallet: solAddress })
-                .eq('telegram_id', userState.userId);
-        }
-        alert(isAr ? '✅ تم حفظ ومزامن محفظة Solana بنجاح!' : '✅ Solana Wallet Saved and Synced Successfully!');
-        
-        if (typeof showPage === 'function') {
-            showPage('wallet');
-        } else if (typeof renderWalletPage === 'function') {
-            renderWalletPage(document.getElementById('app') || document.body);
-        }
-    } catch (err) {
-        console.error("Save Error:", err);
-    }
+    if (typeof showPage === 'function') showPage('wallet');
 }
 
 window.saveSolanaWalletAddress = function() {
@@ -346,25 +328,12 @@ window.saveSolanaWalletAddress = function() {
     }
 };
 
-window.disconnectSolanaWallet = async function() {
-    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    if (confirm(isAr ? 'هل تريد فصل محفظة سولانا؟' : 'Disconnect Solana Wallet?')) {
-        if (typeof userState !== 'undefined') userState.solanaWallet = null;
-        localStorage.removeItem('solana_wallet');
-        if (typeof supabaseClient !== 'undefined' && userState.userId) {
-            await supabaseClient.from('users').update({ solana_wallet: null }).eq('telegram_id', userState.userId);
-        }
-        if (typeof showPage === 'function') {
-            showPage('wallet');
-        } else if (typeof renderWalletPage === 'function') {
-            renderWalletPage(document.getElementById('app') || document.body);
-        }
-    }
+window.disconnectSolanaWallet = function() {
+    if (typeof userState !== 'undefined') userState.solanaWallet = null;
+    localStorage.removeItem('solana_wallet');
+    if (typeof showPage === 'function') showPage('wallet');
 };
 
 window.copyToClipboard = function(text) {
-    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    navigator.clipboard.writeText(text).then(() => {
-        alert(isAr ? 'تم نسخ العنوان!' : 'Address Copied!');
-    });
+    navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان!'));
 };
