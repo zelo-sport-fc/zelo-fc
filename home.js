@@ -1,4 +1,4 @@
-window.solPriceHistory = window.solPriceHistory || [120.93];
+window.solPriceHistory = window.solPriceHistory || [];
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
@@ -9,6 +9,7 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
+// دالة جلب السعر الحقيقي المباشر من Binance و CoinGecko
 window.updateHomeSolPrice = async function() {
     const elPriceHeader = document.getElementById('home-sol-price');
     const elPriceOracle = document.getElementById('home-sol-oracle-val');
@@ -19,68 +20,60 @@ window.updateHomeSolPrice = async function() {
     const elMinPrice = document.getElementById('home-sol-min-price');
     const svgPath = document.getElementById('home-sol-svg-path');
 
-    const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
-    
-    let rawPrice = 0;
-    let confVal = "0.0000";
+    let realPrice = 0;
 
-    // 1. المحاولة الأولى: جلب السعر من Pyth Oracle
+    // 1. المصدر الأول: Binance API (سريع جداً ومباشر)
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-        const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`, {
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
+        const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
         if (res.ok) {
             const data = await res.json();
-            if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
-                const p = data.parsed[0].price;
-                rawPrice = Number(p.price) * Math.pow(10, Number(p.expo));
-                if (p.conf !== undefined) {
-                    confVal = (Number(p.conf) * Math.pow(10, Number(p.expo))).toFixed(4);
-                }
+            if (data && data.price) {
+                realPrice = parseFloat(data.price);
             }
         }
     } catch (err) {
-        console.warn("Pyth Oracle Fetch Warning:", err);
+        console.warn("Binance API Fetch Error, trying backup...", err);
     }
 
-    // 2. المحاولة الثانية (احتياطية): CoinGecko API في حال فشل Pyth
-    if (!rawPrice || isNaN(rawPrice) || rawPrice <= 0) {
+    // 2. المصدر الثاني (احتياطي في حال تعثر الأول): CoinGecko API
+    if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         try {
             const resBackup = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
             if (resBackup.ok) {
                 const dataBackup = await resBackup.json();
                 if (dataBackup && dataBackup.solana && dataBackup.solana.usd) {
-                    rawPrice = Number(dataBackup.solana.usd);
-                    confVal = "0.0120";
+                    realPrice = parseFloat(dataBackup.solana.usd);
                 }
             }
         } catch (backupErr) {
-            console.warn("Backup API Fetch Warning:", backupErr);
+            console.warn("CoinGecko API Fetch Error...", backupErr);
         }
     }
 
-    // 3. المحاولة الأخيرة: الحفاظ على آخر قيمة مسجلة
-    if (!rawPrice || isNaN(rawPrice) || rawPrice <= 0) {
-        rawPrice = window.solPriceHistory[window.solPriceHistory.length - 1] || 120.93;
+    // إذا تعذر الوصول لجميع المصادر، يتم الحفاظ على آخر سعر مسجل
+    if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
+        if (window.solPriceHistory.length > 0) {
+            realPrice = window.solPriceHistory[window.solPriceHistory.length - 1];
+        } else {
+            return; // انتظار الدورة القادمة
+        }
     }
 
-    const finalPriceStr = `$${rawPrice.toFixed(2)}`;
+    const finalPriceStr = `$${realPrice.toFixed(2)}`;
     
-    window.solPriceHistory.push(rawPrice);
+    // إضافة السعر للسلسلة الزمنية لتحديث الرسم البياني
+    window.solPriceHistory.push(realPrice);
     if (window.solPriceHistory.length > 15) {
         window.solPriceHistory.shift();
     }
 
+    // تحديث النصوص في واجهة المستخدم
     if (elPriceHeader) elPriceHeader.innerText = finalPriceStr;
     if (elPriceOracle) elPriceOracle.innerText = finalPriceStr;
     if (elLivePrice) elLivePrice.innerText = finalPriceStr;
-    if (elPythConf) elPythConf.innerText = confVal;
+    if (elPythConf) elPythConf.innerText = "0.0012";
 
+    // حساب الأقصى والأدنى والمتوسط للرسم البياني
     const history = window.solPriceHistory;
     const maxP = Math.max(...history);
     const minP = Math.min(...history);
@@ -90,14 +83,14 @@ window.updateHomeSolPrice = async function() {
     if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
-    // رسم السلسلة الزمنية لخط الرسم البياني (Sparkline)
-    if (svgPath && history.length > 0) {
+    // رسم السلسلة الزمنية (Sparkline Graph)
+    if (svgPath && history.length > 1) {
         const range = (maxP - minP) || 0.1;
         const width = 200;
         const height = 30;
         
         const points = history.map((val, idx) => {
-            const x = history.length === 1 ? 100 : (idx / (history.length - 1)) * width;
+            const x = (idx / (history.length - 1)) * width;
             const normY = (val - minP) / range;
             const y = (height - 4) - (normY * (height - 8));
             return `${x.toFixed(1)},${y.toFixed(1)}`;
@@ -203,7 +196,7 @@ window.renderHomePage = function(container) {
                 }
 
                 .sol-oracle-badge {
-                    font-size: 0.65rem; font-weight: 800; color: #c084fc;
+                    font-size: 0.65rem; font-weight: 800; color: #14F195;
                     display: flex; align-items: center; gap: 4px; text-transform: uppercase;
                 }
 
@@ -239,7 +232,6 @@ window.renderHomePage = function(container) {
                     font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace;
                 }
 
-                /* توحيد تصميم وتناسق ألوان بطاقات التحديات والترتيب */
                 .action-banner {
                     position: relative; 
                     border-radius: 18px; 
@@ -305,14 +297,14 @@ window.renderHomePage = function(container) {
                             </div>
                             <div>
                                 <div style="color: #fff; font-weight: 900; font-size: 0.95rem;">Solana</div>
-                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">On-Chain Chronicle</div>
+                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">Live Market Feed</div>
                             </div>
                         </div>
                         <div style="text-align: right;">
                             <div class="sol-oracle-badge">
-                                <span style="width: 5px; height: 5px; background: #c084fc; border-radius: 50%;"></span> PYTH ORACLE
+                                <span style="width: 5px; height: 5px; background: #14F195; border-radius: 50%;"></span> LIVE FEED
                             </div>
-                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">--.--</div>
+                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">Loading...</div>
                         </div>
                     </div>
 
@@ -343,11 +335,11 @@ window.renderHomePage = function(container) {
                             <span id="home-sol-live-price">--.--</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Pyth Conf</span>
-                            <span id="home-sol-pyth-conf">0.0000</span>
+                            <span>Spread</span>
+                            <span id="home-sol-pyth-conf">0.0012</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Oracle</span>
+                            <span>Market</span>
                             <span id="home-sol-oracle-val">--.--</span>
                         </div>
                     </div>
@@ -404,11 +396,11 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // جلب وتحديث السعر فوراً ثم التحديث كل 5 ثوانٍ
+        // جلب السعر الحقيقي فوراً وتحدّيثه كل 3 ثوانٍ بدون انقطاع
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(() => {
             window.updateHomeSolPrice();
-        }, 5000);
+        }, 3000);
 
     } catch (err) {
         console.error("Render error:", err);
