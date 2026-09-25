@@ -2,9 +2,9 @@
 // 👛 ملف قسم المحفظة المحدث - Zelo Sport Wallet 💎
 // ==========================================
 
-const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
 const COINS_PER_ZELO_TOKEN = 100; // نسبة التحويل: كل 100 نقطة = 1 عملة ZELOFC
 const BACKEND_URL = "https://zelo-fc.onrender.com"; // رابط سيرفر Render الخاص بك
+const TOKEN_NAME = "ZELOFC"; // 🪙 اسم العملة الخاص بمشروعك
 
 // استدعاء مكتبة Solana Web3 الرسمية
 if (!window.solanaWeb3) {
@@ -59,30 +59,6 @@ function renderWalletPage(container) {
                 background: rgba(255,255,255,0.05);
                 display: flex; align-items: center; justify-content: center;
                 border: 1px solid rgba(255,255,255,0.1);
-            }
-            .pyth-banner {
-                background: rgba(168, 85, 247, 0.12);
-                border: 1px solid rgba(168, 85, 247, 0.3);
-                border-radius: 12px;
-                padding: 8px 12px;
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-            }
-            .pyth-title {
-                font-size: 0.78rem;
-                color: #c084fc;
-                font-weight: bold;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            .pyth-price-text {
-                font-size: 1.1rem;
-                font-weight: 900;
-                color: #ffffff;
-                font-family: monospace;
             }
             .address-box-sm {
                 background: rgba(0, 0, 0, 0.4);
@@ -171,16 +147,6 @@ function renderWalletPage(container) {
 
         <!-- 2. SOLANA WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
-            
-            <div class="pyth-banner">
-                <div class="pyth-title">
-                    <span>🔮 Pyth Oracle Feed:</span>
-                </div>
-                <div class="pyth-price-text" id="pyth-sol-price">
-                    SOL/USD $--.--
-                </div>
-            </div>
-
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
                     <div class="wallet-logo-sm" style="border-color: rgba(171, 159, 242, 0.4);">
@@ -221,7 +187,7 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- 3. CARD مجمع النقاط المكتسبة وزر CLAIM -->
+        <!-- 3. CARD مجمع رصيد العملة وزر CLAIM -->
         <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -229,27 +195,25 @@ function renderWalletPage(container) {
                         <span style="font-size: 1.1rem;">🪙</span>
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        ${isAr ? 'مجمع نقاط المكافآت' : 'Rewards Coins Balance'}
+                        ${isAr ? `رصيد عملة ${TOKEN_NAME}` : `${TOKEN_NAME} Balance`}
                     </span>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
-                <span style="color: #aaa; font-size: 0.85rem;">${isAr ? 'إجمالي النقاط المكتسبة:' : 'Total Earned Coins:'}</span>
+                <span style="color: #aaa; font-size: 0.85rem;">${isAr ? 'إجمالي الرصيد المكتسب:' : 'Total Earned:'}</span>
                 <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
-                    ${userCoins.toLocaleString()} Coins
+                    ${userCoins.toLocaleString()} ${TOKEN_NAME}
                 </span>
             </div>
 
             <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
-                ⚡ ${isAr ? 'تحويل النقاط إلى عملة ZELOFC (Claim)' : 'Claim Coins to ZELOFC Token'}
+                ⚡ ${isAr ? `مطالبة وتحويل عملة ${TOKEN_NAME} (Claim)` : `Claim ${TOKEN_NAME} Tokens`}
             </button>
         </div>
         
         <div style="height: 20px;"></div>
     `;
-
-    fetchPythSolPrice();
 
     if (solanaWallet) {
         fetchRealSolanaBalance(solanaWallet);
@@ -257,27 +221,8 @@ function renderWalletPage(container) {
 }
 
 // ==========================================
-// 🔮 دالة السعر والدوال التفاعلية
+// 🔮 دوال التفاعل مع المحفظة والشبكة
 // ==========================================
-async function fetchPythSolPrice() {
-    const el = document.getElementById('pyth-sol-price');
-    try {
-        const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
-                const p = data.parsed[0].price;
-                const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
-                if (el) el.innerText = `$${finalPrice}`;
-                return;
-            }
-        }
-    } catch (err) {
-        console.warn("Pyth fetch fallback:", err);
-    }
-    if (el) el.innerText = `$119.19`;
-}
-
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
@@ -301,7 +246,7 @@ async function fetchRealSolanaBalance(address) {
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     
-    // قراءة القيم بشكل صحيح ومباشر من الذاكرة المحلية
+    // قراءة القيم من الذاكرة المحلية
     const solWallet = localStorage.getItem('solana_wallet') || (typeof userState !== 'undefined' ? userState.solanaWallet : '');
     const storedCoins = localStorage.getItem('user_coins');
     const userCoins = (storedCoins !== null) ? Number(storedCoins) : ((typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 5080);
@@ -314,9 +259,9 @@ window.claimCoinsToSolanaWallet = async function() {
         return;
     }
 
-    // 2. التأكد من وجود نقاط كافية
+    // 2. التأكد من وجود رصيد كافٍ
     if (userCoins <= 0) {
-        alert(isAr ? '⚠️ لا يوجد لديك نقاط متاحة للسحب حالياً.' : '⚠️ You have no coins available to claim.');
+        alert(isAr ? `⚠️ لا يوجد لديك رصيد من عملة ${TOKEN_NAME} المتاحة للسحب حالياً.` : `⚠️ You have no ${TOKEN_NAME} available to claim.`);
         return;
     }
 
@@ -325,8 +270,8 @@ window.claimCoinsToSolanaWallet = async function() {
 
     const confirmClaim = confirm(
         isAr 
-        ? `هل تؤكد خصم ${userCoins.toLocaleString()} نقطة وتحويل ${tokenAmountToReceive} من عملة ZELOFC إلى محفظتك؟`
-        : `Confirm deducting ${userCoins.toLocaleString()} coins to receive ${tokenAmountToReceive} ZELOFC tokens?`
+        ? `هل تؤكد خصم ${userCoins.toLocaleString()} من رصيدك وتحويل ${tokenAmountToReceive} من عملة ${TOKEN_NAME} إلى محفظتك؟`
+        : `Confirm deducting ${userCoins.toLocaleString()} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
     );
 
     if (!confirmClaim) return;
@@ -337,7 +282,7 @@ window.claimCoinsToSolanaWallet = async function() {
             claimBtn.innerText = isAr ? '⏳ جاري الاتصال بالسيرفر والتحويل On-Chain...' : '⏳ Connecting server & transferring...';
         }
 
-        // 4. إرسال طلب تحويل حقيقي إلى السيرفر ليقوم بخصم العملات من محفظة المشروع
+        // 4. إرسال طلب تحويل إلى السيرفر
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
             method: 'POST',
             headers: {
@@ -352,7 +297,7 @@ window.claimCoinsToSolanaWallet = async function() {
         const result = await response.json();
 
         if (result.success) {
-            // 5. خصم النقاط وتحديث الذاكرة
+            // 5. خصم الرصيد وتحديث الذاكرة
             localStorage.setItem('user_coins', 0);
             if (typeof userState !== 'undefined') {
                 userState.coins = 0;
@@ -364,7 +309,7 @@ window.claimCoinsToSolanaWallet = async function() {
 
             alert(
                 isAr 
-                ? `✅ تم التحويل بنجاح من محفظة الخزينة!\n\nرقم المعاملة (Tx): ${result.txHash}` 
+                ? `✅ تم التحويل بنجاح إلى محفظتك!\n\nرقم المعاملة (Tx): ${result.txHash}` 
                 : `✅ Success! Tokens transferred On-Chain!\n\nTx Hash: ${result.txHash}`
             );
         } else {
@@ -377,7 +322,7 @@ window.claimCoinsToSolanaWallet = async function() {
     } finally {
         if (claimBtn) {
             claimBtn.disabled = false;
-            claimBtn.innerText = isAr ? '⚡ تحويل النقاط إلى عملة ZELOFC (Claim)' : 'Claim Coins to ZELOFC Token';
+            claimBtn.innerText = isAr ? `⚡ مطالبة وتحويل عملة ${TOKEN_NAME} (Claim)` : `Claim ${TOKEN_NAME} Tokens`;
         }
     }
 };
@@ -420,4 +365,3 @@ window.disconnectSolanaWallet = function() {
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان!'));
 };
-        
