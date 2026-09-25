@@ -1,8 +1,7 @@
 // ==========================================
-// 🚀 تطبيق زيلو إف سي (ZELO FC) - الكود الأساسي (app.js)
+// ZELO FC - Core Application (app.js)
 // ==========================================
 
-// 1. إعداد الاتصال بقاعدة بيانات Supabase المحدثة والصحيحة (ttyfcwtlasvphkariqhw)
 const supabaseUrl = 'https://ttyfcwtlasvphkariqhw.supabase.co'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eWZjd3RsYXN2cGhrYXJpcWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODk1MjYsImV4cCI6MjA5ODc2NTUyNn0.m3wFMEASM3K63nm3bsIlrEOXhRvMQhUZqvpXyFq7NEg'; 
 
@@ -10,7 +9,6 @@ const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUr
     db: { schema: 'public' }
 }) : null;
 
-// 2. إدارة بيانات المستخدم
 let userState = {
     username: "Zelo Sport",
     userParam: "", 
@@ -22,7 +20,7 @@ let userState = {
     walletAddress: null,
     walletBalance: "0.00",
     hasLoggedIn: false,
-    lang: "ar", // اللغة الافتراضية
+    lang: "ar",
     referrals: [], 
     dailyCheckInClaimed: false,
     pendingReferrer: null, 
@@ -31,11 +29,6 @@ let userState = {
 
 let tonConnectUI = null;
 const tg = window.Telegram?.WebApp;
-
-
-// ==========================================
-// 🚀 3. تهيئة التطبيق
-// ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
     if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp) {
@@ -61,12 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 const referrerId = tg.initDataUnsafe.start_param.replace('ref_', '');
                 if (String(referrerId) !== String(userState.userId)) {
                     userState.pendingReferrer = referrerId;
-                    console.log("🔗 تم الدخول عبر رابط إحالة من الصديق:", referrerId);
+                    console.log("🔗 Referral link used from referrer ID:", referrerId);
                 }
             }
 
         } else {
-            console.warn("⚠️ لم يتم العثور على بيانات تليجرام حقيقية. استخدام بيانات وهمية للاختبار...");
+            console.warn("⚠️ No real Telegram data found. Using dummy test data...");
             userState.username = "Local Tester";
             userState.userId = "123456789"; 
             userState.userParam = "123456789";
@@ -78,9 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchDataAndRoute();
 });
 
-// ==========================================
-// 🔄 دالة تهيئة المحفظة
-// ==========================================
 function initTonConnect() {
     try {
         if (typeof TON_CONNECT_UI !== 'undefined') {
@@ -101,8 +91,8 @@ function initTonConnect() {
                         const { error } = await supabaseClient.from('users')
                             .update({ wallet_address: walletInfo.account.address })
                             .eq('telegram_id', userState.userId);
-                        if (error) console.error("❌ خطأ في حفظ المحفظة:", error);
-                        else console.log("✅ تم حفظ المحفظة بنجاح!");
+                        if (error) console.error("❌ Wallet save error:", error);
+                        else console.log("✅ Wallet saved successfully!");
                     }
                 } else {
                     userState.walletConnected = false;
@@ -128,18 +118,17 @@ function initTonConnect() {
     }
 }
 
-// 🔄 دالة جلب البيانات والتوجيه
 async function fetchDataAndRoute() {
-    console.log("🔄 [1] بدء جلب البيانات...");
+    console.log("🔄 [1] Fetching data...");
 
     if (!supabaseClient) {
-        console.warn("⚠️ [2] قاعدة بيانات Supabase غير مهيأة.");
+        console.warn("⚠️ [2] Supabase client is not initialized.");
         triggerLoginScreen();
         return;
     }
 
     try {
-        console.log(`🔍 [3] جلب بيانات المستخدم (${userState.userId})...`);
+        console.log(`🔍 [3] Fetching user data (${userState.userId})...`);
         const { data, error } = await supabaseClient
             .from('users')
             .select('*')
@@ -147,12 +136,12 @@ async function fetchDataAndRoute() {
             .maybeSingle();
 
         if (error) {
-            console.error("❌ خطأ من Supabase:", error);
+            console.error("❌ Supabase error:", error);
             throw error;
         }
 
         if (data) {
-            console.log("✅ [4] المستخدم موجود في النظام.");
+            console.log("✅ [4] Existing user found.");
             userState.points = data.points || 0;
             userState.selectedClubs = data.selected_clubs || [];
             
@@ -167,33 +156,32 @@ async function fetchDataAndRoute() {
             }
 
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
-                console.log("⚙️ جاري معالجة الإحالة المعلقة لصالح:", userState.pendingReferrer);
+                console.log("⚙️ Processing pending referral for:", userState.pendingReferrer);
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
                 userState.pendingReferrer = null; 
             }
 
         } else {
-            console.log("🆕 [4] مستخدم جديد (غير مسجل).");
+            console.log("🆕 [4] New user (unregistered).");
             userState.hasLoggedIn = false;
         }
     } catch (error) {
-        console.error("❌ [خطأ] فشل في الاتصال وجلب البيانات:", error);
+        console.error("❌ [Error] Failed to fetch data:", error);
         userState.hasLoggedIn = false; 
     }
 
     if (!userState.hasLoggedIn || !userState.selectedClubs || userState.selectedClubs.length === 0) {
         triggerLoginScreen();
     } else {
-        console.log("🏠 [6] توجيه للشاشة الرئيسية...");
+        console.log("🏠 [6] Routing to Home Screen...");
         userState.hasLoggedIn = true;
         updateTopBar();
         showPage('home'); 
     }
 }
 
-// 🛠️ دالة تشغيل شاشة الدخول بأمان
 function triggerLoginScreen() {
-    console.log("🚪 [توجيه] محاولة فتح شاشة تسجيل الدخول...");
+    console.log("🚪 [Routing] Opening login screen...");
     
     const topBar = document.getElementById('top-bar');
     const bottomNav = document.getElementById('bottom-nav');
@@ -203,20 +191,16 @@ function triggerLoginScreen() {
     if (typeof renderLoginScreen === 'function') {
         renderLoginScreen();
     } else {
-        console.error("⛔ [خطأ] دالة renderLoginScreen غير موجودة!");
+        console.error("⛔ [Error] renderLoginScreen function missing!");
         const contentDiv = document.getElementById("main-content");
         if (contentDiv) {
             contentDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: red;">
-                <h3>خطأ في النظام</h3>
-                <p>شاشة تسجيل الدخول مفقودة. تأكد من ملف login.js</p>
+                <h3>System Error</h3>
+                <p>Login screen is missing. Please check login.js</p>
             </div>`;
         }
     }
 }
-
-// ==========================================
-// 🔄 4. التوجيه وتحديث الواجهة الأساسية
-// ==========================================
 
 async function updateTopBar() {
     const topBar = document.getElementById("top-bar");
@@ -239,7 +223,7 @@ async function updateTopBar() {
                 userState.points = data.total_fan_points;
             }
         } catch(error) {
-            console.error("❌ خطأ أثناء جلب النقاط من جدول الترتيب:", error);
+            console.error("❌ Error fetching points from ranking table:", error);
         }
     }
     
@@ -293,13 +277,9 @@ function showPage(pageId) {
     }
 }
 
-
-// ==========================================
-// ⚽ تهيئة دالة التحديات بأمان
-// ==========================================
 if (typeof window.openChallengesScreen !== 'function') {
     window.openChallengesScreen = function() {
-        console.log("⚽ [احتياطي] تم طلب فتح شاشة تحديات الأسبوع");
+        console.log("⚽ [Fallback] Weekly challenges screen requested");
         const contentDiv = document.getElementById("main-content");
         if (contentDiv) {
             if (typeof renderChallengesScreen === "function") {
@@ -317,4 +297,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                }
+        }
