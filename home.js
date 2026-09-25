@@ -1,3 +1,5 @@
+window.solPriceHistory = window.solPriceHistory || [];
+
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
@@ -10,26 +12,65 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
 window.updateHomeSolPrice = async function() {
     const elPriceHeader = document.getElementById('home-sol-price');
     const elPriceOracle = document.getElementById('home-sol-oracle-val');
+    const elLivePrice = document.getElementById('home-sol-live-price');
+    const elPythConf = document.getElementById('home-sol-pyth-conf');
+    const elMaxPrice = document.getElementById('home-sol-max-price');
+    const elMidPrice = document.getElementById('home-sol-mid-price');
+    const elMinPrice = document.getElementById('home-sol-min-price');
+    const svgPath = document.getElementById('home-sol-svg-path');
+
     const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
     
     try {
         const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`);
         const data = await res.json();
+        
         if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
             const p = data.parsed[0].price;
-            const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
-            const newPriceStr = `$${finalPrice}`;
+            const rawPrice = Number(p.price) * Math.pow(10, Number(p.expo));
+            const confVal = (Number(p.conf) * Math.pow(10, Number(p.expo))).toFixed(4);
+            const finalPriceStr = `$${rawPrice.toFixed(2)}`;
             
-            if (elPriceHeader && elPriceHeader.innerText !== newPriceStr) {
-                elPriceHeader.innerText = newPriceStr;
+            window.solPriceHistory.push(rawPrice);
+            if (window.solPriceHistory.length > 15) {
+                window.solPriceHistory.shift();
             }
-            if (elPriceOracle && elPriceOracle.innerText !== newPriceStr) {
-                elPriceOracle.innerText = newPriceStr;
+
+            if (elPriceHeader) elPriceHeader.innerText = finalPriceStr;
+            if (elPriceOracle) elPriceOracle.innerText = finalPriceStr;
+            if (elLivePrice) elLivePrice.innerText = finalPriceStr;
+            if (elPythConf) elPythConf.innerText = confVal;
+
+            const history = window.solPriceHistory;
+            const maxP = Math.max(...history);
+            const minP = Math.min(...history);
+            const midP = (maxP + minP) / 2;
+
+            if (elMaxPrice) elMaxPrice.innerText = `$${maxP.toFixed(2)}`;
+            if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
+            if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
+
+            if (svgPath && history.length > 1) {
+                const range = (maxP - minP) || 1;
+                const width = 200;
+                const height = 30;
+                
+                const points = history.map((val, idx) => {
+                    const x = (idx / (history.length - 1)) * width;
+                    const normY = (val - minP) / range;
+                    const y = (height - 5) - (normY * (height - 10)) + 5;
+                    return `${x.toFixed(1)},${y.toFixed(1)}`;
+                });
+
+                let pathD = `M ${points[0]}`;
+                for (let i = 1; i < points.length; i++) {
+                    pathD += ` L ${points[i]}`;
+                }
+                svgPath.setAttribute('d', pathD);
             }
         }
     } catch (err) {
-        if (elPriceHeader) elPriceHeader.innerText = `$118.12`;
-        if (elPriceOracle) elPriceOracle.innerText = `$118.12`;
+        console.warn("Error updating Solana Pyth feed:", err);
     }
 };
 
@@ -70,12 +111,11 @@ window.renderHomePage = function(container) {
                 }
                 .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-                /* كارت البروفايل */
                 .royal-profile-card {
                     position: relative;
                     background: rgba(18, 18, 24, 0.75);
                     border-radius: 20px;
-                    padding: 32px 15px 16px 15px;
+                    padding: 35px 15px 18px 15px;
                     margin-top: 25px;
                     margin-bottom: 12px;
                     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -97,28 +137,21 @@ window.renderHomePage = function(container) {
                 }
                 .royal-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
 
-                .website-glass-btn {
-                    position: absolute; top: 12px; ${isAr ? 'left: 12px;' : 'right: 12px;'}
-                    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15);
-                    backdrop-filter: blur(10px); padding: 4px 10px; border-radius: 12px;
-                    color: #fff; font-size: 0.7rem; font-weight: 600; cursor: pointer;
-                    display: flex; align-items: center; gap: 4px;
-                }
-
                 .gold-official-btn {
                     background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
                     color: #000;
                     font-weight: 800;
                     border: none;
-                    padding: 6px 22px;
+                    padding: 7px 24px;
                     border-radius: 12px;
-                    font-size: 0.8rem;
-                    margin-top: 8px;
+                    font-size: 0.82rem;
+                    margin-top: 10px;
                     cursor: pointer;
                     box-shadow: 0 4px 12px rgba(230, 161, 0, 0.25);
+                    transition: transform 0.2s;
                 }
+                .gold-official-btn:active { transform: scale(0.96); }
 
-                /* كارت سولانا المميز بالرسم البياني */
                 .solana-chronicle-card {
                     background: rgba(18, 18, 24, 0.8);
                     border: 1px solid rgba(153, 69, 255, 0.25);
@@ -130,7 +163,7 @@ window.renderHomePage = function(container) {
 
                 .sol-card-header {
                     display: flex; align-items: center; justify-content: space-between;
-                    margin-bottom: 10px;
+                    margin-bottom: 8px;
                 }
 
                 .sol-oracle-badge {
@@ -139,27 +172,27 @@ window.renderHomePage = function(container) {
                 }
 
                 .sol-chart-area {
-                    margin: 10px 0;
+                    margin: 8px 0;
                     position: relative;
                 }
 
                 .sol-sparkline-svg {
-                    width: 75%; height: 42px; stroke: #14F195; fill: none; stroke-width: 2;
+                    width: 72%; height: 40px; stroke: #14F195; fill: none; stroke-width: 2.5; stroke-linecap: round;
                 }
 
                 .sol-price-axis {
-                    font-family: monospace; font-size: 0.68rem; color: #14F195; opacity: 0.8;
+                    font-family: monospace; font-size: 0.68rem; color: #14F195; opacity: 0.85;
                     text-align: right; display: flex; flex-direction: column; gap: 2px;
                 }
 
                 .sol-time-axis {
-                    display: flex; justify-content: space-between; width: 75%;
+                    display: flex; justify-content: space-between; width: 72%;
                     font-size: 0.65rem; color: #6b7280; font-weight: 600; margin-top: 2px;
                 }
 
                 .sol-bottom-grid {
                     display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
-                    margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);
+                    margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);
                     text-align: center;
                 }
 
@@ -170,7 +203,6 @@ window.renderHomePage = function(container) {
                     font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace;
                 }
 
-                /* بنرات التحديات والترتيب */
                 .action-banner {
                     position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
                     display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
@@ -192,7 +224,6 @@ window.renderHomePage = function(container) {
                     background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
                 }
 
-                /* كارت الأندية */
                 .glass-club-card {
                     background: rgba(18, 18, 24, 0.75);
                     backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
@@ -214,22 +245,16 @@ window.renderHomePage = function(container) {
             </style>
 
             <div class="home-scroll-wrapper">
-                <!-- البروفايل الملكي -->
                 <div class="royal-profile-card">
                     <div class="royal-avatar-wrapper">
                         <div class="royal-avatar-inner">
                             <img src="${avatarSrc}" alt="Avatar">
                         </div>
                     </div>
-                    <button class="website-glass-btn" onclick="window.openOfficialWebsite()">
-                        <span>🌍</span> Official Site
-                    </button>
-                    <h2 style="margin: 18px 0 3px 0; color: #fff; font-size: 1.15rem; font-weight: 900;">${username}</h2>
-                    <div style="color: #888; font-size: 0.75rem; font-family: monospace;">ID: ${userId}</div>
+                    <h2 style="margin: 15px 0 2px 0; color: #fff; font-size: 1.15rem; font-weight: 900;">${username}</h2>
                     <button class="gold-official-btn" onclick="window.openOfficialWebsite()">Official Site</button>
                 </div>
 
-                <!-- كارت سولانا الشامل بالرسم البياني On-Chain Chronicle -->
                 <div class="solana-chronicle-card">
                     <div class="sol-card-header">
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -245,21 +270,21 @@ window.renderHomePage = function(container) {
                             <div class="sol-oracle-badge">
                                 <span style="width: 5px; height: 5px; background: #c084fc; border-radius: 50%;"></span> PYTH ORACLE
                             </div>
-                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">$118.12</div>
+                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">$--.--</div>
                         </div>
                     </div>
 
-                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 6px;">Live $SOL</div>
+                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px;">Live $SOL</div>
 
                     <div class="sol-chart-area">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <svg class="sol-sparkline-svg" viewBox="0 0 200 40">
-                                <path d="M0,28 Q25,36 50,22 T100,26 T150,12 T200,6" />
+                            <svg class="sol-sparkline-svg" viewBox="0 0 200 30">
+                                <path id="home-sol-svg-path" d="M0,15 L50,15 L100,15 L150,15 L200,15" />
                             </svg>
                             <div class="sol-price-axis">
-                                <div>$138.92</div>
-                                <div>$138.50</div>
-                                <div>$138.29</div>
+                                <div id="home-sol-max-price">$--.--</div>
+                                <div id="home-sol-mid-price">$--.--</div>
+                                <div id="home-sol-min-price">$--.--</div>
                             </div>
                         </div>
                         <div class="sol-time-axis">
@@ -273,20 +298,19 @@ window.renderHomePage = function(container) {
                     <div class="sol-bottom-grid">
                         <div class="sol-grid-item">
                             <span>Live price</span>
-                            <span>$30.25</span>
+                            <span id="home-sol-live-price">$--.--</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Pyth</span>
-                            <span>0.0022</span>
+                            <span>Pyth Conf</span>
+                            <span id="home-sol-pyth-conf">0.0000</span>
                         </div>
                         <div class="sol-grid-item">
                             <span>Oracle</span>
-                            <span id="home-sol-oracle-val">$118.12</span>
+                            <span id="home-sol-oracle-val">$--.--</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- التحديات الأسبوعية -->
                 <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
                     <div class="banner-icon-wrapper">
                         <span style="font-size:1.2rem;">🇬🇧</span>
@@ -298,7 +322,6 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
                 </div>
 
-                <!-- ترتيب التحديات -->
                 <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper">🔥</div>
                     <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
@@ -308,7 +331,6 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
                 </div>
 
-                <!-- الأندية المدعومة -->
                 <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
@@ -351,9 +373,8 @@ window.renderHomePage = function(container) {
     }
 };
 
-// تشغيل فوري تلقائي
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() { window.renderHomePage(); });
 } else {
     setTimeout(function() { window.renderHomePage(); }, 50);
-            }
+}
