@@ -294,9 +294,9 @@ window.claimCoinsToSolanaWallet = async function() {
             })
         });
 
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
 
-        if (result.success) {
+        if (response.ok && result && result.success) {
             // 5. خصم الرصيد وتحديث الذاكرة
             localStorage.setItem('user_coins', 0);
             if (typeof userState !== 'undefined') {
@@ -313,12 +313,14 @@ window.claimCoinsToSolanaWallet = async function() {
                 : `✅ Success! Tokens transferred On-Chain!\n\nTx Hash: ${result.txHash}`
             );
         } else {
-            alert(isAr ? `❌ فشلت عملية التحويل: ${result.error}` : `❌ Transfer failed: ${result.error}`);
+            // استخراج وتوضيح نص الخطأ القادم من السيرفر
+            const errorMsg = (result && result.error) ? result.error : `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
+            alert(isAr ? `❌ فشلت عملية التحويل:\n${errorMsg}` : `❌ Transfer failed:\n${errorMsg}`);
         }
 
     } catch (error) {
         console.error("Claim Error:", error);
-        alert(isAr ? '❌ تعذر الاتصال بالسيرفر، يرجى التأكد من تشغيل السيرفر والمحاولة لاحقاً.' : '❌ Server connection error, please try again.');
+        alert(isAr ? `❌ تعذر الاتصال بالسيرفر:\n${error.message}` : `❌ Server connection error:\n${error.message}`);
     } finally {
         if (claimBtn) {
             claimBtn.disabled = false;
