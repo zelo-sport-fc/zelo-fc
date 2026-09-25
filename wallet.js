@@ -20,6 +20,7 @@ try {
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo) {
                 console.log("✅ TON Wallet Connected (Real):", walletInfo.account.address);
+                // حفظ العنوان في الحالة العامة للتطبيق
                 if (typeof userState !== 'undefined') {
                     userState.tonWalletAddress = walletInfo.account.address;
                     userState.tonWalletConnected = true;
@@ -27,13 +28,13 @@ try {
                 }
             } else {
                 console.log("🔌 TON Wallet Disconnected");
+                // مسح العنوان من الحالة العامة
                 if (typeof userState !== 'undefined') {
                     userState.tonWalletAddress = null;
                     userState.tonWalletConnected = false;
                 }
                  localStorage.removeItem('ton_wallet_address');
             }
-            if (typeof showPage === 'function') showPage('wallet');
         });
     }
 } catch (error) {
@@ -398,7 +399,6 @@ window.claimCoinsToSolanaWallet = async function() {
     }
 
     try {
-        // إرسال الطلب للسيرفر أو تنفيذه محلياً وتحديث قاعدة البيانات
         if (typeof supabaseClient !== 'undefined' && supabaseClient && userState.userId) {
             const { error } = await supabaseClient.from('users')
                 .update({ points: 0 })
@@ -417,6 +417,7 @@ window.claimCoinsToSolanaWallet = async function() {
     } catch (err) {
         console.error("Claim Error:", err);
         alert('❌ Claim failed. Please try again later.');
+    } finally {
         if (claimBtn) {
             claimBtn.disabled = false;
             claimBtn.innerText = `⚡ Claim ${TOKEN_NAME} Tokens`;
@@ -431,4 +432,3 @@ window.copyToClipboard = function(text) {
         console.error('Failed to copy text: ', err);
     });
 };
-        
