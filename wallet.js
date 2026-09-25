@@ -1,5 +1,5 @@
 // ==========================================
-// 👛 Zelo Sport Wallet - Complete Dual Wallet Script 💎
+// 👛 Zelo Sport Wallet - Dual Wallet Script (TON & Solana) 💎
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100; // Conversion rate: 100 coins = 1 ZELOFC Token
@@ -15,12 +15,12 @@ if (!window.solanaWeb3) {
     document.head.appendChild(script);
 }
 
-// 💎 TON Connect Initialization
+// 💎 TON Connect Initialization & Handling
 function initTonConnect() {
     try {
-        if (window.TON_CONNECT_UI && !tonConnectUIInstance) {
+        if (window.TON_CONNECT_UI) {
             const tonContainer = document.getElementById('ton-connect-button-container');
-            if (tonContainer) {
+            if (tonContainer && !tonConnectUIInstance) {
                 tonConnectUIInstance = new TON_CONNECT_UI.TonConnectUI({
                     manifestUrl: 'https://zelo-fc.onrender.com/tonconnect-manifest.json',
                     buttonRootId: 'ton-connect-button-container'
@@ -32,14 +32,18 @@ function initTonConnect() {
                         if (typeof userState !== 'undefined') {
                             userState.walletConnected = true;
                             userState.walletAddress = address;
+                            userState.tonWallet = address;
                         }
                         localStorage.setItem('ton_wallet', address);
+                        updateTonUIState(address);
                     } else {
                         if (typeof userState !== 'undefined') {
                             userState.walletConnected = false;
                             userState.walletAddress = '';
+                            userState.tonWallet = '';
                         }
                         localStorage.removeItem('ton_wallet');
+                        updateTonUIState(null);
                     }
                 });
             }
@@ -49,9 +53,60 @@ function initTonConnect() {
     }
 }
 
+// Open Telegram Wallet directly / TON Connect trigger
+window.connectTonWalletDirect = async function() {
+    if (tonConnectUIInstance) {
+        try {
+            await tonConnectUIInstance.openModal();
+        } catch (e) {
+            console.error("TON Modal error:", e);
+        }
+    } else {
+        // Fallback: prompt for manual Telegram/TON wallet address if UI isn't loaded
+        const manualTon = prompt("Enter your TON Wallet / Telegram Wallet Address:\nأدخل عنوان محفظة TON الخاص بك:");
+        if (manualTon && manualTon.trim().length > 10) {
+            localStorage.setItem('ton_wallet', manualTon.trim());
+            if (typeof userState !== 'undefined') {
+                userState.tonWallet = manualTon.trim();
+            }
+            if (typeof showPage === 'function') showPage('wallet');
+        }
+    }
+};
+
+window.disconnectTonWallet = async function() {
+    if (tonConnectUIInstance) {
+        try {
+            await tonConnectUIInstance.disconnect();
+        } catch (e) {
+            console.error("TON Disconnect error:", e);
+        }
+    }
+    localStorage.removeItem('ton_wallet');
+    if (typeof userState !== 'undefined') {
+        userState.tonWallet = '';
+    }
+    if (typeof showPage === 'function') showPage('wallet');
+};
+
+function updateTonUIState(address) {
+    const tonDisplay = document.getElementById('ton-wallet-display-info');
+    if (tonDisplay) {
+        if (address) {
+            tonDisplay.innerHTML = `
+                <div class="address-box-sm" style="color:#0088cc;">
+                    ${address.slice(0, 8)}...${address.slice(-8)}
+                </div>
+                <button class="btn-danger-sm" onclick="disconnectTonWallet()">🔌 Disconnect TON</button>
+            `;
+        } else {
+            tonDisplay.innerHTML = '';
+        }
+    }
+}
+
 function renderWalletPage(container) {
     try {
-        // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
         const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
             ? Number(userState.points)
             : ((typeof userState !== 'undefined' && userState.coins !== undefined)
@@ -62,11 +117,15 @@ function renderWalletPage(container) {
             ? userState.solanaWallet 
             : (localStorage.getItem('solana_wallet') || '');
 
-        // Sync global state
+        const tonWallet = (typeof userState !== 'undefined' && userState.tonWallet)
+            ? userState.tonWallet
+            : (localStorage.getItem('ton_wallet') || '');
+
         if (typeof userState !== 'undefined') {
             userState.points = userCoins;
             userState.coins = userCoins;
             userState.solanaWallet = solanaWallet;
+            userState.tonWallet = tonWallet;
         }
 
         const walletStyles = `
@@ -110,6 +169,13 @@ function renderWalletPage(container) {
                     margin-bottom: 10px;
                     word-break: break-all;
                 }
+                .btn-glass-ton {
+                    background: linear-gradient(135deg, #0088cc, #005580);
+                    color: white; border: none; border-radius: 10px;
+                    padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
+                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+                    margin-bottom: 8px;
+                }
                 .btn-glass-solana {
                     background: linear-gradient(135deg, #AB9FF2, #512DA8);
                     color: white; border: none; border-radius: 10px;
@@ -150,11 +216,11 @@ function renderWalletPage(container) {
         container.innerHTML = `
             ${walletStyles}
             
-            <!-- 1. TON WALLET CARD -->
+            <!-- 1. TON / TELEGRAM WALLET CARD -->
             <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
                 <div class="wallet-header-flex">
                     <div class="wallet-logo-title">
-                        <div class="wallet-logo-sm">
+                        <div class="wallet-logo-sm" style="border-color: rgba(0, 136, 204, 0.4);">
                             <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
                         </div>
                         <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
@@ -163,8 +229,23 @@ function renderWalletPage(container) {
                     </div>
                 </div>
 
-                <!-- زر TON CONNECT الأصلي والمباشر -->
-                <div id="ton-connect-button-container" style="display:flex; justify-content:center; margin-top:5px; min-height:40px;"></div>
+                ${tonWallet ? `
+                    <div class="address-box-sm" style="color:#0088cc;">
+                        ${tonWallet.slice(0, 8)}...${tonWallet.slice(-8)}
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 Copy Address</button>
+                        <button class="btn-danger-sm" onclick="disconnectTonWallet()">🔌 Disconnect</button>
+                    </div>
+                ` : `
+                    <button class="btn-glass-ton" onclick="connectTonWalletDirect()">
+                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px; height:18px;" alt="TON">
+                        Connect Telegram Wallet (TON)
+                    </button>
+                    <!-- TON Connect Native Container -->
+                    <div id="ton-connect-button-container" style="display:flex; justify-content:center; margin-top:5px; min-height:35px;"></div>
+                `}
+                <div id="ton-wallet-display-info"></div>
             </div>
 
             <!-- 2. SOLANA WALLET CARD -->
@@ -237,7 +318,6 @@ function renderWalletPage(container) {
             <div style="height: 20px;"></div>
         `;
 
-        // Initialize TonConnect and Fetch Balance
         setTimeout(initTonConnect, 100);
         if (solanaWallet) {
             fetchRealSolanaBalance(solanaWallet);
@@ -269,7 +349,7 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
-// 🔗 Connection & Manual Save Handlers
+// 🔗 Solana Handlers
 // ==========================================
 window.connectPhantomWallet = function() {
     if ("solana" in window && window.solana.isPhantom) {
@@ -326,19 +406,16 @@ window.claimCoinsToSolanaWallet = async function() {
 
     const claimBtn = document.getElementById('btn-claim-action');
 
-    // 1. Verify wallet exists
     if (!solWallet) {
         alert('⚠️ Please connect or paste your Solana Wallet address first!');
         return;
     }
 
-    // 2. Verify points balance
     if (userCoins <= 0) {
         alert(`⚠️ You have no ${TOKEN_NAME} available to claim.`);
         return;
     }
 
-    // 3. Calculate receiving tokens
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
@@ -353,7 +430,6 @@ window.claimCoinsToSolanaWallet = async function() {
             claimBtn.innerText = '⏳ Executing On-Chain Transfer...';
         }
 
-        // 4. Send request to Render Backend to sign & send On-Chain transaction
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
             method: 'POST',
             headers: {
@@ -368,7 +444,6 @@ window.claimCoinsToSolanaWallet = async function() {
         const result = await response.json().catch(() => null);
 
         if (response.ok && result && result.success) {
-            // 5. Zero out balance upon successful On-Chain transfer
             localStorage.setItem('user_coins', 0);
             if (typeof userState !== 'undefined') {
                 userState.points = 0;
@@ -376,30 +451,4 @@ window.claimCoinsToSolanaWallet = async function() {
             }
 
             if (typeof showPage === 'function') {
-                showPage('wallet');
-            }
-
-            alert(`✅ Transfer Successful!\n\nTokens were sent On-Chain to your wallet.\nTx Hash: ${result.txHash}`);
-        } else {
-            let errorDetails = "Unknown Error";
-            if (result && result.error) {
-                errorDetails = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
-            } else if (result && result.message) {
-                errorDetails = result.message;
-            } else {
-                errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
-            }
-
-            alert(`❌ On-Chain Transfer Failed:\n${errorDetails}`);
-        }
-
-    } catch (error) {
-        console.error("Claim Error:", error);
-        alert(`❌ Server Connection Error:\n${error.message}`);
-    } finally {
-        if (claimBtn) {
-            claimBtn.disabled = false;
-            claimBtn.innerText = `⚡ Claim ${TOKEN_NAME} Tokens`;
-        }
-    }
-};
+           
