@@ -1,5 +1,5 @@
 // ==========================================
-// 👛 ملف قسم المحفظة - الربط الحقيقي المباشر بـ Phantom و TON 💎
+// 👛 ملف قسم المحفظة - TON & Solana Connect 💎
 // ==========================================
 
 function renderWalletPage(container) {
@@ -59,6 +59,7 @@ function renderWalletPage(container) {
                 padding: 14px 20px; font-weight: 900; font-size: 1rem;
                 cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
                 width: 100%; transition: all 0.3s; box-shadow: 0 8px 20px rgba(171, 159, 242, 0.3);
+                margin-bottom: 12px;
             }
             .solana-input {
                 width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.5);
@@ -119,13 +120,13 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- SOLANA REAL WALLET CARD -->
+        <!-- SOLANA WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid rgba(171, 159, 242, 0.8);">
             <div class="wallet-logo-container" style="border-color: rgba(171, 159, 242, 0.4); box-shadow: 0 0 20px rgba(171, 159, 242, 0.2);">
                 <img src="https://cryptologos.cc/logos/solana-sol-logo.png" alt="Solana" style="width: 35px; height: 35px;">
             </div>
             <h3 style="color: #fff; margin: 0 0 10px 0; font-size: 1.2rem; font-weight: 900;">
-                ${isAr ? 'محفظة سولانا (Phantom Wallet)' : 'Solana (Phantom Wallet)'}
+                ${isAr ? 'محفظة سولانا (Solana Wallet)' : 'Solana Wallet (SPL)'}
             </h3>
             
             ${solanaWallet ? `
@@ -140,21 +141,19 @@ function renderWalletPage(container) {
                 </div>
             ` : `
                 <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px;">
-                    ${isAr ? 'ربط مباشر بمحفظة Phantom لتلقي المكافآت' : 'Direct connect with Phantom Wallet to receive rewards'}
+                    ${isAr ? 'أدخل عنوان محفظة سولانا لتلقي الجوائز والمكافآت' : 'Provide your Solana wallet address for payouts'}
                 </p>
 
-                <!-- زر الاتصال المباشر بـ Phantom -->
+                <!-- زر الاتصال التلقائي إن وُجد متصفح المحفظة -->
                 <button class="btn-glass-solana" onclick="connectPhantomWallet()">
                     <img src="https://phantom.app/img/phantom-logo.svg" style="width:20px; height:20px;" alt="">
-                    ${isAr ? 'اتصال بمحفظة Phantom' : 'Connect Phantom Wallet'}
+                    ${isAr ? 'اتصال تلقائي (Phantom Web3)' : 'Auto Connect (Phantom)'}
                 </button>
 
-                <div style="margin: 15px 0 10px 0; color: #64748b; font-size: 0.8rem;">— ${isAr ? 'أو أدخل العنوان يدوياً' : 'OR Enter Address Manually'} —</div>
-
                 <input type="text" id="solana-address-input" class="solana-input" 
-                       placeholder="${isAr ? 'أدخل عنوان Solana SPL...' : 'Enter Solana SPL address...'}">
+                       placeholder="${isAr ? 'أدخل عنوان Solana (مثال: 7xKX...)' : 'Enter Solana SPL address...'}">
 
-                <button class="btn-glass-copy" style="width: 100%; border-color: rgba(171, 159, 242, 0.3);" onclick="saveSolanaWalletAddress()">
+                <button class="btn-glass-copy" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()">
                     💾 ${isAr ? 'حفظ العنوان' : 'Save Address'}
                 </button>
             `}
@@ -169,12 +168,11 @@ function renderWalletPage(container) {
 }
 
 // ==========================================
-// 👻 دالة الربط المباشر مع محفظة Phantom
+// 👻 دالة الاتصال المباشر عبر Provider المتصفح
 // ==========================================
 window.connectPhantomWallet = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     
-    // التحقق مما إذا كان تطبيق Phantom متاحاً كـ Web3 Provider في المتصفح
     if ("solana" in window && window.solana.isPhantom) {
         window.solana.connect().then((res) => {
             const pubKey = res.publicKey.toString();
@@ -183,12 +181,7 @@ window.connectPhantomWallet = function() {
             console.error("Phantom Error:", err);
         });
     } else {
-        // في حال عدم توفره مباشرة (داخل تليجرام)، يتم فتح Phantom عبر Deep Link
-        const appUrl = encodeURIComponent(window.location.href);
-        const phantomDeepLink = `https://phantom.app/ul/v1/connect?app_url=${appUrl}&dapp_encryption_public_key=`;
-        
-        // توجيه المستخدم لمحفظة Phantom
-        window.open(phantomDeepLink, '_blank');
+        alert(isAr ? 'يرجى نسخ عنوان محفظتك من Phantom ولصقه في الحقل أدناه.' : 'Please copy your Solana wallet address from Phantom and paste it below.');
     }
 };
 
@@ -200,6 +193,7 @@ async function saveSolanaAddressToStateAndDB(solAddress) {
     
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = solAddress;
+        localStorage.setItem('solana_wallet', solAddress);
     }
 
     try {
@@ -209,7 +203,7 @@ async function saveSolanaAddressToStateAndDB(solAddress) {
                 .update({ solana_wallet: solAddress })
                 .eq('telegram_id', userState.userId);
         }
-        alert(isAr ? '✅ تم ربط محفظة Solana بنجاح!' : '✅ Solana Wallet Connected Successfully!');
+        alert(isAr ? '✅ تم حفظ محفظة Solana بنجاح!' : '✅ Solana Wallet Saved Successfully!');
         showPage('wallet');
     } catch (err) {
         console.error("Save Error:", err);
@@ -220,10 +214,12 @@ window.saveSolanaWalletAddress = function() {
     const input = document.getElementById('solana-address-input');
     if (!input) return;
     const solAddress = input.value.trim();
+    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+
     if (solAddress.length >= 32) {
         saveSolanaAddressToStateAndDB(solAddress);
     } else {
-        alert('Please enter a valid Solana address');
+        alert(isAr ? 'يرجى إدخال عنوان محفظة سولانا صحيح!' : 'Please enter a valid Solana address');
     }
 };
 
@@ -231,6 +227,7 @@ window.disconnectSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if (confirm(isAr ? 'هل تريد فصل محفظة سولانا؟' : 'Disconnect Solana Wallet?')) {
         if (typeof userState !== 'undefined') userState.solanaWallet = null;
+        localStorage.removeItem('solana_wallet');
         if (typeof supabaseClient !== 'undefined' && userState.userId) {
             await supabaseClient.from('users').update({ solana_wallet: null }).eq('telegram_id', userState.userId);
         }
