@@ -9,7 +9,7 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// دالة جلب السعر الحقيقي المباشر من Binance و CoinGecko
+// دالة جلب البيانات الحقيقية لسعر Solana وتحديث الواجهة
 window.updateHomeSolPrice = async function() {
     const elPriceHeader = document.getElementById('home-sol-price');
     const elPriceOracle = document.getElementById('home-sol-oracle-val');
@@ -21,21 +21,25 @@ window.updateHomeSolPrice = async function() {
     const svgPath = document.getElementById('home-sol-svg-path');
 
     let realPrice = 0;
+    let realSpread = "0.0100";
 
-    // 1. المصدر الأول: Binance API (سريع جداً ومباشر)
+    // 1. جلب السعر المباشر الحقيقي والهامش (Spread) من Binance Orderbook
     try {
-        const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
+        const res = await fetch('https://api.binance.com/api/v3/ticker/bookTicker?symbol=SOLUSDT');
         if (res.ok) {
             const data = await res.json();
-            if (data && data.price) {
-                realPrice = parseFloat(data.price);
+            if (data && data.bidPrice && data.askPrice) {
+                const bid = parseFloat(data.bidPrice);
+                const ask = parseFloat(data.askPrice);
+                realPrice = (bid + ask) / 2; // السعر المتوسط الحقيقي المباشر
+                realSpread = (ask - bid).toFixed(4); // فارق السعر المباشر الحقيقي
             }
         }
     } catch (err) {
-        console.warn("Binance API Fetch Error, trying backup...", err);
+        console.warn("Binance API fetch warning, trying backup...", err);
     }
 
-    // 2. المصدر الثاني (احتياطي في حال تعثر الأول): CoinGecko API
+    // 2. مصدر احتياطي حقيقي (CoinGecko) في حال تعثر المصدر الأول
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         try {
             const resBackup = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
@@ -43,37 +47,37 @@ window.updateHomeSolPrice = async function() {
                 const dataBackup = await resBackup.json();
                 if (dataBackup && dataBackup.solana && dataBackup.solana.usd) {
                     realPrice = parseFloat(dataBackup.solana.usd);
+                    realSpread = "0.0200";
                 }
             }
         } catch (backupErr) {
-            console.warn("CoinGecko API Fetch Error...", backupErr);
+            console.warn("Backup API fetch warning...", backupErr);
         }
     }
 
-    // إذا تعذر الوصول لجميع المصادر، يتم الحفاظ على آخر سعر مسجل
+    // إذا تعذر جلب السعر لأي سبب، يتم الحفاظ على السعر السابق
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         if (window.solPriceHistory.length > 0) {
             realPrice = window.solPriceHistory[window.solPriceHistory.length - 1];
         } else {
-            return; // انتظار الدورة القادمة
+            return;
         }
     }
 
     const finalPriceStr = `$${realPrice.toFixed(2)}`;
     
-    // إضافة السعر للسلسلة الزمنية لتحديث الرسم البياني
+    // إضافة السعر الحقيقي إلى مصفوفة التاريخ
     window.solPriceHistory.push(realPrice);
-    if (window.solPriceHistory.length > 15) {
+    if (window.solPriceHistory.length > 20) {
         window.solPriceHistory.shift();
     }
 
-    // تحديث النصوص في واجهة المستخدم
+    // تحديث النصوص في الواجهة بالأرقام الحقيقية
     if (elPriceHeader) elPriceHeader.innerText = finalPriceStr;
     if (elPriceOracle) elPriceOracle.innerText = finalPriceStr;
     if (elLivePrice) elLivePrice.innerText = finalPriceStr;
-    if (elPythConf) elPythConf.innerText = "0.0012";
+    if (elPythConf) elPythConf.innerText = realSpread;
 
-    // حساب الأقصى والأدنى والمتوسط للرسم البياني
     const history = window.solPriceHistory;
     const maxP = Math.max(...history);
     const minP = Math.min(...history);
@@ -83,9 +87,9 @@ window.updateHomeSolPrice = async function() {
     if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
-    // رسم السلسلة الزمنية (Sparkline Graph)
+    // رسم السلسلة الزمنية الحقيقية (Sparkline Graph) بناءً على تحركات السعر الحقيقية
     if (svgPath && history.length > 1) {
-        const range = (maxP - minP) || 0.1;
+        const range = (maxP - minP) || 0.05; // تجنب القسمة على صفر في حال ثبات السعر اللحظي
         const width = 200;
         const height = 30;
         
@@ -297,18 +301,18 @@ window.renderHomePage = function(container) {
                             </div>
                             <div>
                                 <div style="color: #fff; font-weight: 900; font-size: 0.95rem;">Solana</div>
-                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">Live Market Feed</div>
+                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">Real-Time Market Feed</div>
                             </div>
                         </div>
                         <div style="text-align: right;">
                             <div class="sol-oracle-badge">
-                                <span style="width: 5px; height: 5px; background: #14F195; border-radius: 50%;"></span> LIVE FEED
+                                <span style="width: 5px; height: 5px; background: #14F195; border-radius: 50%;"></span> LIVE MARKET
                             </div>
                             <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">Loading...</div>
                         </div>
                     </div>
 
-                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px;">Live $SOL</div>
+                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px;">Live $SOL Price</div>
 
                     <div class="sol-chart-area">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -322,24 +326,24 @@ window.renderHomePage = function(container) {
                             </div>
                         </div>
                         <div class="sol-time-axis">
-                            <span>1am</span>
-                            <span>13w</span>
-                            <span>26m</span>
+                            <span>-1m</span>
+                            <span>-30s</span>
+                            <span>Now</span>
                             <span>High</span>
                         </div>
                     </div>
 
                     <div class="sol-bottom-grid">
                         <div class="sol-grid-item">
-                            <span>Live price</span>
+                            <span>Live Price</span>
                             <span id="home-sol-live-price">--.--</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Spread</span>
-                            <span id="home-sol-pyth-conf">0.0012</span>
+                            <span>Bid/Ask Spread</span>
+                            <span id="home-sol-pyth-conf">0.0000</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Market</span>
+                            <span>Market Feed</span>
                             <span id="home-sol-oracle-val">--.--</span>
                         </div>
                     </div>
@@ -396,11 +400,11 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // جلب السعر الحقيقي فوراً وتحدّيثه كل 3 ثوانٍ بدون انقطاع
+        // جلب البيانات فوراً ثم إجراء تحديث دائم كل 2.5 ثانية
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(() => {
             window.updateHomeSolPrice();
-        }, 3000);
+        }, 2500);
 
     } catch (err) {
         console.error("Render error:", err);
@@ -411,4 +415,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() { window.renderHomePage(); });
 } else {
     setTimeout(function() { window.renderHomePage(); }, 50);
-}
+            }
