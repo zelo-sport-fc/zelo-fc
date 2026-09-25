@@ -313,9 +313,17 @@ window.claimCoinsToSolanaWallet = async function() {
                 : `✅ Success! Tokens transferred On-Chain!\n\nTx Hash: ${result.txHash}`
             );
         } else {
-            // استخراج وتوضيح نص الخطأ القادم من السيرفر
-            const errorMsg = (result && result.error) ? result.error : `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
-            alert(isAr ? `❌ فشلت عملية التحويل:\n${errorMsg}` : `❌ Transfer failed:\n${errorMsg}`);
+            // استخراج وتوضيح نص الخطأ القادم من السيرفر بشكل كامل ومفصل
+            let errorDetails = "Unknown Error";
+            if (result && result.error) {
+                errorDetails = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
+            } else if (result && result.message) {
+                errorDetails = result.message;
+            } else {
+                errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
+            }
+
+            alert(isAr ? `❌ فشلت عملية التحويل:\n${errorDetails}` : `❌ Transfer failed:\n${errorDetails}`);
         }
 
     } catch (error) {
