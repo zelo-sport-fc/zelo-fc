@@ -19,17 +19,16 @@ window.updateHomeSolPrice = async function() {
     const elMinPrice = document.getElementById('home-sol-min-price');
     const svgPath = document.getElementById('home-sol-svg-path');
 
-    // SOL/USD Feed ID الرسمي في Pyth Network
     const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
     
     let rawPrice = 0;
     let confVal = "0.0000";
 
+    // 1. المحاولة الأولى: جلب السعر من Pyth Oracle
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        // جلب السعر مباشرةً من Pyth Hermes Oracle API
         const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`, {
             signal: controller.signal
         });
@@ -39,21 +38,33 @@ window.updateHomeSolPrice = async function() {
             const data = await res.json();
             if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
                 const p = data.parsed[0].price;
-                
-                // حساب السعر الحقيقي باستخدام الأس (Expo) الخاص بـ Pyth
                 rawPrice = Number(p.price) * Math.pow(10, Number(p.expo));
-                
-                // حساب قيمة هامش الثقة Confidence Interval
                 if (p.conf !== undefined) {
                     confVal = (Number(p.conf) * Math.pow(10, Number(p.expo))).toFixed(4);
                 }
             }
         }
     } catch (err) {
-        console.error("Pyth Fetch Error:", err);
+        console.warn("Pyth Oracle Fetch Warning:", err);
     }
 
-    // إذا تعذر الاتصال بأوراكل Pyth، يتم الحفاظ على آخر سعر تم جلبه من Pyth
+    // 2. المحاولة الثانية (احتياطية): CoinGecko API في حال فشل Pyth
+    if (!rawPrice || isNaN(rawPrice) || rawPrice <= 0) {
+        try {
+            const resBackup = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+            if (resBackup.ok) {
+                const dataBackup = await resBackup.json();
+                if (dataBackup && dataBackup.solana && dataBackup.solana.usd) {
+                    rawPrice = Number(dataBackup.solana.usd);
+                    confVal = "0.0120";
+                }
+            }
+        } catch (backupErr) {
+            console.warn("Backup API Fetch Warning:", backupErr);
+        }
+    }
+
+    // 3. المحاولة الأخيرة: الحفاظ على آخر قيمة مسجلة
     if (!rawPrice || isNaN(rawPrice) || rawPrice <= 0) {
         rawPrice = window.solPriceHistory[window.solPriceHistory.length - 1] || 120.93;
     }
@@ -79,13 +90,14 @@ window.updateHomeSolPrice = async function() {
     if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
-    if (svgPath && history.length > 1) {
-        const range = (maxP - minP) || 0.01;
+    // رسم السلسلة الزمنية لخط الرسم البياني (Sparkline)
+    if (svgPath && history.length > 0) {
+        const range = (maxP - minP) || 0.1;
         const width = 200;
         const height = 30;
         
         const points = history.map((val, idx) => {
-            const x = (idx / (history.length - 1)) * width;
+            const x = history.length === 1 ? 100 : (idx / (history.length - 1)) * width;
             const normY = (val - minP) / range;
             const y = (height - 4) - (normY * (height - 8));
             return `${x.toFixed(1)},${y.toFixed(1)}`;
@@ -127,8 +139,8 @@ window.renderHomePage = function(container) {
                     overflow-y: auto;
                     padding: 10px 16px 90px 16px;
                     box-sizing: border-box;
-                    background: radial-gradient(circle at 10% 8%, rgba(153, 69, 255, 0.22) 0%, transparent 35%),
-                                radial-gradient(circle at 90% 12%, rgba(20, 241, 149, 0.22) 0%, transparent 35%),
+                    background: radial-gradient(circle at 10% 8%, rgba(153, 69, 255, 0.15) 0%, transparent 35%),
+                                radial-gradient(circle at 90% 12%, rgba(20, 241, 149, 0.15) 0%, transparent 35%),
                                 #08090C;
                     color: #fff;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -177,8 +189,8 @@ window.renderHomePage = function(container) {
                 .gold-official-btn:active { transform: scale(0.96); }
 
                 .solana-chronicle-card {
-                    background: rgba(18, 18, 24, 0.8);
-                    border: 1px solid rgba(153, 69, 255, 0.25);
+                    background: rgba(18, 18, 24, 0.75);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
                     border-radius: 18px;
                     padding: 14px 16px;
                     margin-bottom: 12px;
@@ -227,19 +239,25 @@ window.renderHomePage = function(container) {
                     font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace;
                 }
 
+                /* توحيد تصميم وتناسق ألوان بطاقات التحديات والترتيب */
                 .action-banner {
-                    position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
-                    display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
+                    position: relative; 
+                    border-radius: 18px; 
+                    padding: 12px 15px; 
+                    margin-bottom: 10px;
+                    display: flex; 
+                    align-items: center; 
+                    gap: 12px; 
+                    cursor: pointer; 
+                    backdrop-filter: blur(15px);
+                    background: rgba(18, 18, 24, 0.75); 
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    transition: background 0.2s, border-color 0.2s;
                 }
 
-                .banner-challenges { 
-                    background: rgba(18, 18, 24, 0.75); 
-                    border: 1px solid rgba(59, 130, 246, 0.35); 
-                }
-
-                .banner-ranking { 
-                    background: rgba(18, 18, 24, 0.75); 
-                    border: 1px solid rgba(255, 69, 58, 0.35); 
+                .action-banner:active {
+                    background: rgba(30, 30, 40, 0.85);
+                    border-color: rgba(255, 255, 255, 0.15);
                 }
 
                 .banner-icon-wrapper {
@@ -335,7 +353,7 @@ window.renderHomePage = function(container) {
                     </div>
                 </div>
 
-                <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
+                <div id="challenges-card" class="action-banner" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
                     <div class="banner-icon-wrapper">
                         <span style="font-size:1.2rem;">🇬🇧</span>
                     </div>
@@ -346,7 +364,7 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
                 </div>
 
-                <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
+                <div id="ranking-card" class="action-banner" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper">🔥</div>
                     <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">Challenges Ranking</h3>
@@ -386,11 +404,11 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // جلب السعر فوراً ثم التحديث كل 3 ثوانٍ من أوراكل Pyth
+        // جلب وتحديث السعر فوراً ثم التحديث كل 5 ثوانٍ
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(() => {
             window.updateHomeSolPrice();
-        }, 3000);
+        }, 5000);
 
     } catch (err) {
         console.error("Render error:", err);
