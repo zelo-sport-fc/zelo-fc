@@ -18,34 +18,52 @@ window.updateHomeSolPrice = async function() {
         if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
             const p = data.parsed[0].price;
             const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
-            el.innerText = `$${finalPrice}`;
+            
+            const newPriceStr = `$${finalPrice}`;
+            if (el.innerText !== newPriceStr) {
+                el.innerText = newPriceStr;
+                el.classList.add('price-updated');
+                setTimeout(() => el.classList.remove('price-updated'), 300);
+            }
         }
     } catch (err) {
-        el.innerText = `$118.12`;
+        if (!el.innerText || el.innerText === '') {
+            el.innerText = `$118.12`;
+        }
     }
 };
 
 window.renderHomePage = async function(container) {
-    const isAr = userState.lang === 'ar';
+    if (!container) return;
+
+    // تنظيف أي مؤقت سابق لمنع تكرار الاستدعاءات وسحب الموارد
+    if (window.solPriceInterval) {
+        clearInterval(window.solPriceInterval);
+    }
+
+    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
     const getSafeText = (key, fallbackAr, fallbackEn) => {
-        if (typeof i18n !== 'undefined' && i18n[userState.lang] && i18n[userState.lang][key]) {
+        if (typeof i18n !== 'undefined' && typeof userState !== 'undefined' && i18n[userState.lang] && i18n[userState.lang][key]) {
             return i18n[userState.lang][key];
         }
         return isAr ? fallbackAr : fallbackEn;
     };
 
-    container.innerHTML = `<div style="text-align:center; padding:50px; color:#888; font-weight:bold;">${isAr ? '⏳ Preparing the pitch...' : '⏳ Preparing the pitch...'}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:50px; color:#14F195; font-weight:bold;">${isAr ? '⚡ جاري تحضير الواجهة...' : '⚡ Preparing the pitch...'}</div>`;
 
-    let selectedClubsData = userState.selectedClubs.map(id => {
-        if (typeof allWorldCupCountriesClubs !== 'undefined') {
-            for (const country in allWorldCupCountriesClubs) {
-                const foundClub = allWorldCupCountriesClubs[country].find(c => String(c.id) === String(id));
-                if (foundClub) return foundClub;
+    let selectedClubsData = [];
+    if (typeof userState !== 'undefined' && userState.selectedClubs) {
+        selectedClubsData = userState.selectedClubs.map(id => {
+            if (typeof allWorldCupCountriesClubs !== 'undefined') {
+                for (const country in allWorldCupCountriesClubs) {
+                    const foundClub = allWorldCupCountriesClubs[country].find(c => String(c.id) === String(id));
+                    if (foundClub) return foundClub;
+                }
             }
-        }
-        return null;
-    }).filter(Boolean);
+            return null;
+        }).filter(Boolean);
+    }
  
     if (selectedClubsData.length === 0 && typeof allWorldCupCountriesClubs !== 'undefined') {
         const firstCountry = Object.keys(allWorldCupCountriesClubs)[0];
@@ -83,38 +101,40 @@ window.renderHomePage = async function(container) {
     }
 
     const primaryClub = selectedClubsData[0];
-    let fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userState.username)}&background=1c1c22&color=fcb045&size=128&bold=true`;
-    let avatarSrc = userState.photoUrl ? userState.photoUrl : fallbackAvatar;
+    const username = (typeof userState !== 'undefined' && userState.username) ? userState.username : 'Player';
+    const userId = (typeof userState !== 'undefined' && userState.userId) ? userState.userId : '---';
+    const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
+    const avatarSrc = (typeof userState !== 'undefined' && userState.photoUrl) ? userState.photoUrl : fallbackAvatar;
   
     let clubsCardsHtml = selectedClubsData.map(club => `
         <div class="glass-club-card">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div class="club-logo-wrapper">
-                    <img src="${club.logo}" onerror="this.style.display='none'" style="width: 35px; height: 35px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));">
+                    <img src="${club.logo || ''}" onerror="this.style.display='none'" style="width: 35px; height: 35px; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));">
                 </div>
                 <div>
-                    <h3 style="margin: 0; color: #fff; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.5px;">${typeof getClubName === "function" ? getClubName(club) : club.name} ${club.countryFlag}</h3>
-                    <p style="margin: 2px 0 0 0; color: #10b981; font-size: 0.75rem; font-weight: bold; text-shadow: 0 0 5px rgba(16, 185, 129, 0.4);">
-                        👥 ${club.members ? club.members.toLocaleString() : '0'} Fans
+                    <h3 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px;">${typeof getClubName === "function" ? getClubName(club) : (club.name || '')} ${club.countryFlag || ''}</h3>
+                    <p style="margin: 2px 0 0 0; color: #14F195; font-size: 0.75rem; font-weight: bold; text-shadow: 0 0 5px rgba(20, 241, 149, 0.4); display: flex; align-items: center; gap: 4px;">
+                        <span class="pulse-green"></span> ${club.members ? club.members.toLocaleString() : '0'} ${isAr ? 'مشجع' : 'Fans'}
                     </p>
                 </div>
             </div>
             <div style="text-align: center;">
                 <div class="club-points-badge">
-                    <span style="font-size: 0.9rem;">🏆</span> ${club.points ? club.points.toLocaleString() : '0'}
+                    <span style="font-size: 0.85rem;">🏆</span> ${club.points ? club.points.toLocaleString() : '0'}
                 </div>
             </div>
         </div>
     `).join('');
 
-    let titleWeeklyChallenges = getSafeText('weeklyChallenges', 'Weekly Challenges', 'Weekly Challenges');
-    let textEuropeCups = getSafeText('europeCups', 'European Cups', 'European Cups');
-    let textSpainCups = getSafeText('spainCups', 'Spanish Cups', 'Spanish Cups');
-    let titleRanking = getSafeText('challengesRanking', 'Challenges Ranking', 'Challenges Ranking');
-    let textRankingDesc = getSafeText('rankingDesc', 'Discover top players and your rank', 'Discover top players and your rank');
-    let supportedClubsTitle = getSafeText('supportedClubs', 'Supported Clubs', 'Supported Clubs');
-    let loadingAlert = getSafeText('loading', 'Loading...', 'Loading...');
-    let websiteBtnText = getSafeText('officialSite', 'Official Site', 'Official Site');
+    let titleWeeklyChallenges = getSafeText('weeklyChallenges', 'التحديات الأسبوعية', 'Weekly Challenges');
+    let textEuropeCups = getSafeText('europeCups', 'الكؤوس الأوروبية', 'European Cups');
+    let textSpainCups = getSafeText('spainCups', 'الكؤوس الإسبانية', 'Spanish Cups');
+    let titleRanking = getSafeText('challengesRanking', 'ترتيب التحديات', 'Challenges Ranking');
+    let textRankingDesc = getSafeText('rankingDesc', 'اكتشف أفضل اللاعبين وترتيبك', 'Discover top players and your rank');
+    let supportedClubsTitle = getSafeText('supportedClubs', 'الأندية المدعومة', 'Supported Clubs');
+    let loadingAlert = getSafeText('loading', 'جاري التحميل...', 'Loading...');
+    let websiteBtnText = getSafeText('officialSite', 'الموقع الرسمي', 'Official Site');
     
     let solTitle = 'Solana Ecosystem';
     let solSub = '⚡ Instant & Micro-Fee Rewards';
@@ -122,39 +142,46 @@ window.renderHomePage = async function(container) {
     container.innerHTML = `
         <style>
             @keyframes profileGlow {
-                0% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(252, 176, 69, 0.1); }
-                50% { box-shadow: 0 15px 30px rgba(0,0,0,0.9), inset 0 0 25px rgba(252, 176, 69, 0.3); }
-                100% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(252, 176, 69, 0.1); }
+                0% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(20, 241, 149, 0.1); }
+                50% { box-shadow: 0 15px 30px rgba(0,0,0,0.9), inset 0 0 25px rgba(153, 69, 255, 0.25); }
+                100% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(20, 241, 149, 0.1); }
             }
             @keyframes levitateAvatar {
                 0% { transform: translateY(0px); }
-                50% { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(252, 176, 69, 0.6); }
+                50% { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(20, 241, 149, 0.6); }
                 100% { transform: translateY(0px); }
             }
             @keyframes shimmerEffect {
                 0% { transform: translateX(-150%) skewX(-25deg); }
                 100% { transform: translateX(200%) skewX(-25deg); }
             }
+            @keyframes pulseLive {
+                0% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.4; transform: scale(1.2); }
+                100% { opacity: 1; transform: scale(1); }
+            }
 
             .home-fixed-container {
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                height: 100vh;
-                max-height: 100%;
-                overflow: hidden;
-                padding: 10px 20px;
+                justify-content: flex-start;
+                min-height: 100vh;
+                overflow-y: auto;
+                padding: 10px 16px 80px 16px;
                 box-sizing: border-box;
+                background: #08090C;
+                color: #fff;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
 
             .royal-profile-card {
                 position: relative;
-                background: linear-gradient(180deg, rgba(22, 22, 30, 0.9) 0%, rgba(13, 13, 18, 0.95) 100%);
+                background: linear-gradient(180deg, rgba(22, 22, 30, 0.85) 0%, rgba(13, 13, 18, 0.95) 100%);
                 border-radius: 20px;
                 padding: 30px 15px 15px 15px;
                 margin-top: 25px;
                 margin-bottom: 12px;
-                border: 1px solid rgba(255, 215, 0, 0.15);
+                border: 1px solid rgba(153, 69, 255, 0.25);
                 text-align: center;
                 animation: profileGlow 4s infinite alternate;
                 backdrop-filter: blur(20px);
@@ -172,10 +199,10 @@ window.renderHomePage = async function(container) {
                 top: -35px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 75px;
-                height: 75px;
+                width: 70px;
+                height: 70px;
                 border-radius: 50%;
-                background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
+                background: linear-gradient(135deg, #9945FF, #14F195);
                 padding: 3px;
                 animation: levitateAvatar 3s ease-in-out infinite;
                 z-index: 2;
@@ -190,158 +217,181 @@ window.renderHomePage = async function(container) {
             .website-glass-btn {
                 position: absolute; top: 12px;
                 ${isAr ? 'left: 12px;' : 'right: 12px;'}
-                background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 15px;
-                color: #fff; font-size: 0.75rem; font-weight: bold;
+                background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12);
+                backdrop-filter: blur(10px); padding: 5px 10px; border-radius: 12px;
+                color: #fff; font-size: 0.72rem; font-weight: bold;
                 display: flex; align-items: center; gap: 5px; cursor: pointer; transition: all 0.3s; z-index: 10;
             }
             .website-glass-btn:hover {
-                background: rgba(252, 176, 69, 0.2); border-color: rgba(252, 176, 69, 0.5); box-shadow: 0 0 10px rgba(252, 176, 69, 0.3);
+                background: rgba(20, 241, 149, 0.15); border-color: rgba(20, 241, 149, 0.4);
             }
 
+            /* كارت سولانا المتناسق والمعزز للتحديث اللحظي */
             .solana-action-banner {
                 position: relative;
-                border-radius: 16px;
+                border-radius: 18px;
                 padding: 12px 15px;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                background: linear-gradient(135deg, rgba(22, 25, 34, 0.95), rgba(13, 14, 18, 0.98));
-                border: 1px solid rgba(153, 69, 255, 0.2);
-                border-${isAr ? 'right' : 'left'}: 4px solid #14F195;
-                box-shadow: 0 5px 18px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(153, 69, 255, 0.08);
+                background: linear-gradient(135deg, rgba(20, 241, 149, 0.08) 0%, rgba(153, 69, 255, 0.12) 100%);
+                border: 1px solid rgba(20, 241, 149, 0.35);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(20, 241, 149, 0.05);
+                backdrop-filter: blur(15px);
                 flex-shrink: 0;
                 overflow: hidden;
             }
 
             .solana-action-banner::after {
                 content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(20, 241, 149, 0.15), transparent);
-                animation: shimmerEffect 4s infinite;
+                background: linear-gradient(90deg, transparent, rgba(20, 241, 149, 0.2), transparent);
+                animation: shimmerEffect 3s infinite;
             }
 
             .solana-badge-icon {
                 width: 38px;
                 height: 38px;
                 border-radius: 12px;
-                background: rgba(153, 69, 255, 0.12);
-                border: 1px solid rgba(153, 69, 255, 0.3);
+                background: rgba(153, 69, 255, 0.2);
+                border: 1px solid rgba(20, 241, 149, 0.3);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 0 10px rgba(153, 69, 255, 0.2);
+                box-shadow: 0 0 10px rgba(20, 241, 149, 0.2);
             }
 
+            .pulse-green {
+                display: inline-block;
+                width: 6px;
+                height: 6px;
+                background: #14F195;
+                border-radius: 50%;
+                animation: pulseLive 1.2s infinite ease-in-out;
+                box-shadow: 0 0 8px #14F195;
+            }
+
+            /* إعادة تصميم كروت التحديات الأسبوعية وترتيب التحديات لتناسب كارت سول */
             .action-banner {
                 position: relative;
-                border-radius: 16px;
+                border-radius: 18px;
                 padding: 12px 15px;
                 margin-bottom: 10px;
                 display: flex; align-items: center; gap: 12px;
-                cursor: pointer; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
-                border: 1px solid rgba(255,255,255,0.05);
+                cursor: pointer; overflow: hidden; transition: all 0.25s ease;
+                backdrop-filter: blur(15px);
                 flex-shrink: 0;
             }
             
             .action-banner::after {
                 content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
                 animation: shimmerEffect 4s infinite;
             }
             .action-banner:active { transform: scale(0.97); }
 
-            .banner-challenges { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(15, 23, 42, 0.95)); border-${isAr ? 'right' : 'left'}: 4px solid #3b82f6; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(59, 130, 246, 0.1); }
-            .banner-ranking { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(67, 20, 7, 0.95)); border-${isAr ? 'right' : 'left'}: 4px solid #fd1d1d; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(253, 29, 29, 0.1); }
+            .banner-challenges { 
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(153, 69, 255, 0.06) 100%); 
+                border: 1px solid rgba(59, 130, 246, 0.35); 
+                box-shadow: 0 6px 18px rgba(59, 130, 246, 0.12); 
+            }
+
+            .banner-ranking { 
+                background: linear-gradient(135deg, rgba(255, 69, 58, 0.08) 0%, rgba(255, 159, 10, 0.06) 100%); 
+                border: 1px solid rgba(255, 69, 58, 0.35); 
+                box-shadow: 0 6px 18px rgba(255, 69, 58, 0.12); 
+            }
 
             .banner-icon-wrapper {
                 width: 42px; height: 42px;
                 border-radius: 12px; display: flex; align-items: center; justify-content: center;
-                font-size: 1.5rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05);
-                box-shadow: inset 0 2px 10px rgba(255,255,255,0.1);
+                font-size: 1.3rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+                box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
             }
 
-            .clubs-section { flex-grow: 1; overflow-y: auto; margin-top: 5px; }
-            .clubs-section::-webkit-scrollbar { display: none; }
+            /* إعادة تصميم كروت الأندية المتوافقة مع ستايل Glassmorphism الفاخر */
+            .clubs-section { flex-grow: 1; margin-top: 5px; }
             
             .glass-club-card {
-                background: rgba(26, 26, 34, 0.6); backdrop-filter: blur(12px);
-                border: 1px solid rgba(255,255,255,0.03); border-radius: 14px;
-                padding: 10px 12px;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(20, 241, 149, 0.02) 100%);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.08); 
+                border-radius: 16px;
+                padding: 10px 14px;
                 display: flex; align-items: center; justify-content: space-between;
                 margin-bottom: 8px;
-                transition: transform 0.3s, background 0.3s;
-                border-${isAr ? 'left' : 'right'}: 3px solid rgba(252, 176, 69, 0.5);
+                transition: transform 0.2s, background 0.2s;
             }
-            .glass-club-card:hover { transform: translateX(${isAr ? '3px' : '-3px'}); background: rgba(36, 36, 44, 0.8); border-color: var(--accent-gold); }
+            .glass-club-card:hover { 
+                transform: translateY(-2px); 
+                background: rgba(255, 255, 255, 0.05); 
+                border-color: rgba(20, 241, 149, 0.3); 
+            }
+
+            .club-logo-wrapper {
+                width: 38px; height: 38px;
+                background: rgba(0,0,0,0.4);
+                border-radius: 12px;
+                display: flex; align-items: center; justify-content: center;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
 
             .club-points-badge {
-                background: linear-gradient(90deg, rgba(252, 176, 69, 0.1), rgba(253, 29, 29, 0.1));
-                color: var(--accent-gold); padding: 4px 10px; border-radius: 10px;
-                font-weight: 900; font-size: 0.85rem; border: 1px solid rgba(252, 176, 69, 0.2);
-                box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+                background: linear-gradient(135deg, rgba(153, 69, 255, 0.15), rgba(20, 241, 149, 0.15));
+                color: #FFD700; padding: 5px 12px; border-radius: 10px;
+                font-weight: 900; font-size: 0.85rem; border: 1px solid rgba(153, 69, 255, 0.3);
+            }
+
+            .price-updated {
+                color: #ffffff !important;
+                text-shadow: 0 0 10px #14F195;
             }
         </style>
 
         <div class="home-fixed-container">
+            <!-- البروفايل الملكي -->
             <div class="royal-profile-card">
                 <div class="royal-avatar-wrapper"><div class="royal-avatar-inner"><img src="${avatarSrc}" alt="Avatar"></div></div>
-                <button class="website-glass-btn" onclick="window.openOfficialWebsite()"><span style="font-size: 0.9rem;">🌍</span> ${websiteBtnText}</button>
-                <h2 style="margin: 20px 0 5px 0; color: #fff; font-size: 1.3rem; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 4px 8px rgba(0,0,0,0.8);">${userState.username}</h2>
+                <button class="website-glass-btn" onclick="window.openOfficialWebsite()"><span style="font-size: 0.85rem;">🌍</span> ${websiteBtnText}</button>
+                <h2 style="margin: 20px 0 5px 0; color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: 0.5px; text-shadow: 0 4px 8px rgba(0,0,0,0.8);">${username}</h2>
                 <div style="display: inline-block; background: rgba(0,0,0,0.4); padding: 3px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: #888; font-size: 0.75rem; font-weight: bold;">ID:</span> 
-                    <span style="color: #ccc; font-size: 0.8rem; font-family: monospace;">${userState.userId}</span>
+                    <span style="color: #888; font-size: 0.72rem; font-weight: bold;">ID:</span> 
+                    <span style="color: #ccc; font-size: 0.78rem; font-family: monospace;">${userId}</span>
                 </div>
             </div>
 
+            <!-- كارت بيانات سولانا المباشرة -->
             <div class="solana-action-banner">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="solana-badge-icon">
                         <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
                     </div>
                     <div style="text-align: ${isAr ? 'right' : 'left'};">
-                        <div style="color: #fff; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.3px;">${solTitle}</div>
-                        <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 600; margin-top: 1px;">${solSub}</div>
+                        <div style="color: #fff; font-weight: 800; font-size: 0.88rem; letter-spacing: 0.3px;">${solTitle}</div>
+                        <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600; margin-top: 1px;">${solSub}</div>
                     </div>
                 </div>
                 <div style="text-align: ${isAr ? 'left' : 'right'};">
-                    <span style="color: #c084fc; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; display: block;">🔮 Pyth Oracle</span>
-                    <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 800; font-size: 0.95rem; margin-top: 2px;">$118.12</div>
+                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                        <span class="pulse-green"></span>
+                        <span style="color: #c084fc; font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Pyth Live</span>
+                    </div>
+                    <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.05rem; margin-top: 2px;">$118.12</div>
                 </div>
             </div>
           
+            <!-- كروت التحديات والترتيب المتوافقة مع نيون وزجاج سولانا -->
             <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { alert('${loadingAlert}'); }">
-                <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);">${primaryClub ? primaryClub.countryFlag : '⚽'}</div>
+                <div class="banner-icon-wrapper">${primaryClub ? (primaryClub.countryFlag || '⚽') : '⚽'}</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.05rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
-                    <p style="color: #94a3b8; font-size: 0.75rem; margin: 0; font-weight: bold;">🇪🇺 ${textEuropeCups} <span style="color:#555;">•</span> 🇪🇸 ${textSpainCups}</p>
+                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
+                    <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: bold;">🇪🇺 ${textEuropeCups} <span style="color:#555;">•</span> 🇪🇸 ${textSpainCups}</p>
                 </div>
-                <div style="color: #3b82f6; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
+                <div style="color: #3b82f6; font-size: 1.1rem; font-weight: bold;">${isAr ? '👈' : '👉'}</div>
             </div>
 
             <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else { alert('${loadingAlert}'); }">
-                <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(253, 29, 29, 0.6);">🔥</div>
+                <div class="banner-icon-wrapper">🔥</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.05rem; font-weight: 900;">${titleRanking}</h3>
-                    <p style="color: #fca5a5; font-size: 0.75rem; margin: 0; font-weight: bold;">⭐ ${textRankingDesc}</p>
-                </div>
-                <div style="color: #fd1d1d; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
-            </div>
-
-            <div class="clubs-section">
-                <div style="display:flex; align-items:center; gap:6px; margin-bottom: 8px;">
-                    <span style="font-size: 1.1rem;">🛡️</span>
-                    <h4 style="color: #fff; margin: 0; font-size: 0.95rem; font-weight: 800;">${supportedClubsTitle}</h4>
-                </div>
-                ${clubsCardsHtml}
-            </div>
-        </div>
-    `;
-
-    setTimeout(() => {
-        if (typeof window.updateHomeSolPrice === 'function') {
-            window.updateHomeSolPrice();
-        }
-    }, 100);
-};
-        
+                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1rem; font-weight: 900;">${titleRanking}</h3>
+                    <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; fo
