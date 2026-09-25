@@ -252,7 +252,6 @@ async function updateTopBar() {
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString()} ZELOFC`;
     }
     
-    // إصلاح نص الأندية بدون اعتماد على المفتاح الخام
     if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
         let logos = userState.selectedClubs.map(id => {
             let foundClub = null;
@@ -297,10 +296,19 @@ function showPage(pageId) {
             if(typeof renderLeaderboardPage === "function") renderLeaderboardPage(contentDiv); 
             break;
         case 'wallet': 
-            if(typeof renderWalletPage === "function") {
+            // التعديل هنا لضمان استدعاء الدالة بشكل آمن ومنع التعليق
+            if (typeof renderWalletPage === "function") {
                 renderWalletPage(contentDiv);
             } else {
+                console.warn("⚠️ renderWalletPage not found yet, retrying in 200ms...");
                 contentDiv.innerHTML = `<div style="color:white; text-align:center; padding:30px;">Loading Wallet...</div>`;
+                setTimeout(() => {
+                    if (typeof renderWalletPage === "function") {
+                        renderWalletPage(contentDiv);
+                    } else {
+                        contentDiv.innerHTML = `<div style="color:#ff4d4d; text-align:center; padding:30px;">Error: Wallet module failed to load. Please refresh.</div>`;
+                    }
+                }, 200);
             }
             break;
     }
@@ -326,4 +334,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-    }
+                }
