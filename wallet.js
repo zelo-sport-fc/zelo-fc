@@ -1,17 +1,20 @@
 // ==========================================
-// 👛 Zelo Sport Wallet - Frontend Script 💎
+// 👛 Zelo Sport Wallet - Solana Real Web3 Integration 💎
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100; // Conversion rate: 100 coins = 1 ZELOFC Token
 const BACKEND_URL = "https://zelo-fc.onrender.com"; // Your Render backend URL
 const TOKEN_NAME = "ZELOFC"; // Token symbol
 
-// Load Solana Web3 official library
-if (!window.solanaWeb3) {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
-    document.head.appendChild(script);
+// ensure Solana Web3 SDK is accessible
+function ensureSolanaLoaded() {
+    if (!window.solanaWeb3 && typeof solanaWeb3 === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
+        document.head.appendChild(script);
+    }
 }
+ensureSolanaLoaded();
 
 function renderWalletPage(container) {
     // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
@@ -82,15 +85,9 @@ function renderWalletPage(container) {
             .btn-glass-solana {
                 background: linear-gradient(135deg, #AB9FF2, #512DA8);
                 color: white; border: none; border-radius: 10px;
-                padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
-                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-                margin-bottom: 8px;
-            }
-            .solana-input-sm {
-                width: 100%; padding: 8px 10px; background: rgba(0, 0, 0, 0.5);
-                border: 1px solid rgba(171, 159, 242, 0.3); border-radius: 8px;
-                color: #fff; font-family: monospace; font-size: 0.8rem;
-                box-sizing: border-box; margin-bottom: 8px; text-align: center;
+                padding: 12px 14px; font-weight: bold; font-size: 0.95rem;
+                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+                box-shadow: 0 4px 15px rgba(171, 159, 242, 0.3);
             }
             .btn-action-sm {
                 background: rgba(255, 255, 255, 0.05); color: #fff;
@@ -148,7 +145,7 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- 2. SOLANA WALLET CARD -->
+        <!-- 2. REAL SOLANA WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -156,9 +153,10 @@ function renderWalletPage(container) {
                         <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:18px;height:18px;" alt="Solana">
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        Solana Wallet
+                        Solana Wallet (Phantom)
                     </span>
                 </div>
+                ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">● Verified Real Connection</span>` : ''}
             </div>
 
             ${solanaWallet ? `
@@ -177,15 +175,7 @@ function renderWalletPage(container) {
                 </div>
             ` : `
                 <button class="btn-glass-solana" onclick="connectPhantomWallet()">
-                    <img src="https://phantom.app/img/phantom-logo.svg" style="width:16px; height:16px;" alt="">
-                    Auto Connect Phantom
-                </button>
-
-                <input type="text" id="solana-address-input" class="solana-input-sm" 
-                       placeholder="Or paste Solana address...">
-
-                <button class="btn-action-sm" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()">
-                    💾 Save Address
+                    🟣 Connect Solana Wallet (Real Web3)
                 </button>
             `}
         </div>
@@ -229,11 +219,12 @@ function renderWalletPage(container) {
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
-        if (window.solanaWeb3) {
-            const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-            const pubKey = new window.solanaWeb3.PublicKey(address);
+        const solanaWeb3Obj = window.solanaWeb3 || window.solana;
+        if (solanaWeb3Obj && solanaWeb3Obj.Connection) {
+            const connection = new solanaWeb3Obj.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+            const pubKey = new solanaWeb3Obj.PublicKey(address);
             const balance = await connection.getBalance(pubKey);
-            const solVal = (balance / window.solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
+            const solVal = (balance / 1000000000).toFixed(4);
             if (el) el.innerText = `${solVal} SOL`;
             return;
         }
@@ -242,6 +233,93 @@ async function fetchRealSolanaBalance(address) {
     }
     if (el) el.innerText = `0.0000 SOL`;
 }
+
+// ==========================================
+// 🟣 Real Solana Connection Handler
+// ==========================================
+window.connectPhantomWallet = async function() {
+    try {
+        const isSolanaAvailable = "solana" in window;
+        
+        if (isSolanaAvailable) {
+            // Request direct Web3 Connection from Provider
+            const response = await window.solana.connect();
+            const walletAddress = response.publicKey.toString();
+
+            console.log("✅ Solana Real Wallet Connected:", walletAddress);
+            await saveSolanaAddressToStateAndDB(walletAddress);
+        } else {
+            // Open Deep Link for mobile browsers/Telegram Mini Apps
+            const currentUrl = encodeURIComponent(window.location.href);
+            const phantomDeepLink = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
+            window.open(phantomDeepLink, '_blank');
+            alert('يرجى تثبيت محفظة Phantom أو فتح التطبيق داخل متصفح Phantom للربط الحقيقي!');
+        }
+    } catch (err) {
+        console.error("Solana Connection Error:", err);
+        alert('تم رفض أو إلغاء عملية الربط المحفظة.');
+    }
+};
+
+async function saveSolanaAddressToStateAndDB(solAddress) {
+    localStorage.setItem('solana_wallet', solAddress);
+    
+    if (typeof userState !== 'undefined') {
+        userState.solanaWallet = solAddress;
+    }
+
+    // Save strictly to Supabase if available
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const currentUserId = (typeof userState !== 'undefined' && userState.userId) ? userState.userId : null;
+            if (currentUserId) {
+                await supabaseClient
+                    .from('users')
+                    .update({ wallet_address: solAddress })
+                    .eq('telegram_id', String(currentUserId));
+            }
+        } catch (dbErr) {
+            console.error("Database save error:", dbErr);
+        }
+    }
+
+    if (typeof showPage === 'function') {
+        showPage('wallet');
+    }
+}
+
+window.disconnectSolanaWallet = async function() {
+    try {
+        if ("solana" in window && window.solana.disconnect) {
+            await window.solana.disconnect();
+        }
+    } catch (e) {
+        console.log("Disconnect trace:", e);
+    }
+
+    localStorage.removeItem('solana_wallet');
+    if (typeof userState !== 'undefined') {
+        userState.solanaWallet = '';
+    }
+
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const currentUserId = (typeof userState !== 'undefined' && userState.userId) ? userState.userId : null;
+            if (currentUserId) {
+                await supabaseClient
+                    .from('users')
+                    .update({ wallet_address: null })
+                    .eq('telegram_id', String(currentUserId));
+            }
+        } catch (dbErr) {
+            console.error("Database disconnect update error:", dbErr);
+        }
+    }
+
+    if (typeof showPage === 'function') {
+        showPage('wallet');
+    }
+};
 
 // ==========================================
 // ⚡ Claim Action Handler
@@ -257,15 +335,15 @@ window.claimCoinsToSolanaWallet = async function() {
 
     const claimBtn = document.getElementById('btn-claim-action');
 
-    // 1. Verify wallet connection
+    // 1. Verify real wallet connection
     if (!solWallet) {
-        alert('⚠️ Please connect or save your Solana Wallet first!');
+        alert('⚠️ يرجى ربط محفظة Solana الحقيقية أولاً قبل المطالبة!');
         return;
     }
 
     // 2. Verify sufficient balance
     if (userCoins <= 0) {
-        alert(`⚠️ You have no ${TOKEN_NAME} available to claim.`);
+        alert(`⚠️ لا تملك رصيداً كافياً من ${TOKEN_NAME} للمطالبة.`);
         return;
     }
 
@@ -273,7 +351,7 @@ window.claimCoinsToSolanaWallet = async function() {
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
-        `Confirm deducting ${userCoins.toLocaleString()} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
+        `تأكيد خصم ${userCoins.toLocaleString()} نقطة لاستلام ${tokenAmountToReceive} من توكن ${TOKEN_NAME} على المحفظة؟`
     );
 
     if (!confirmClaim) return;
@@ -281,10 +359,10 @@ window.claimCoinsToSolanaWallet = async function() {
     try {
         if (claimBtn) {
             claimBtn.disabled = true;
-            claimBtn.innerText = '⏳ Connecting server & transferring...';
+            claimBtn.innerText = '⏳ جاري الاتصال بالخادم وتحويل التوكن...';
         }
 
-        // 4. Send claim request to server
+        // 4. Send claim request to backend
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
             method: 'POST',
             headers: {
@@ -310,9 +388,9 @@ window.claimCoinsToSolanaWallet = async function() {
                 showPage('wallet');
             }
 
-            alert(`✅ Success! Tokens transferred On-Chain!\n\nTx Hash: ${result.txHash}`);
+            alert(`✅ تمت المطالبة بنجاح وتوثيق المعاملة على الشبكة!\n\nTx Hash: ${result.txHash}`);
         } else {
-            let errorDetails = "Unknown Error";
+            let errorDetails = "خطأ غير معروف";
             if (result && result.error) {
                 errorDetails = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
             } else if (result && result.message) {
@@ -321,12 +399,12 @@ window.claimCoinsToSolanaWallet = async function() {
                 errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
             }
 
-            alert(`❌ Transfer failed:\n${errorDetails}`);
+            alert(`❌ فشلت عملية التحويل:\n${errorDetails}`);
         }
 
     } catch (error) {
         console.error("Claim Error:", error);
-        alert(`❌ Server connection error:\n${error.message}`);
+        alert(`❌ خطأ في الاتصال بالسيرفر:\n${error.message}`);
     } finally {
         if (claimBtn) {
             claimBtn.disabled = false;
@@ -335,47 +413,7 @@ window.claimCoinsToSolanaWallet = async function() {
     }
 };
 
-window.connectPhantomWallet = function() {
-    if ("solana" in window && window.solana.isPhantom) {
-        window.solana.connect().then((res) => {
-            saveSolanaAddressToStateAndDB(res.publicKey.toString());
-        }).catch((err) => console.error(err));
-    } else {
-        alert('Please copy your wallet address from the Phantom app and paste it in the field.');
-    }
-};
-
-async function saveSolanaAddressToStateAndDB(solAddress) {
-    localStorage.setItem('solana_wallet', solAddress);
-    if (typeof userState !== 'undefined') {
-        userState.solanaWallet = solAddress;
-    }
-    if (typeof showPage === 'function') showPage('wallet');
-}
-
-window.saveSolanaWalletAddress = function() {
-    const input = document.getElementById('solana-address-input');
-    if (!input) return;
-    const solAddress = input.value.trim();
-    if (solAddress.length >= 32) {
-        saveSolanaAddressToStateAndDB(solAddress);
-    } else {
-        alert('Please enter a valid Solana address');
-    }
-};
-
-window.disconnectSolanaWallet = function() {
-    localStorage.removeItem('solana_wallet');
-    localStorage.removeItem('user_coins');
-    if (typeof userState !== 'undefined') {
-        userState.solanaWallet = '';
-        userState.points = 0;
-        userState.coins = 0;
-    }
-    if (typeof showPage === 'function') showPage('wallet');
-};
-
 window.copyToClipboard = function(text) {
-    navigator.clipboard.writeText(text).then(() => alert('Address copied to clipboard!'));
+    navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان بنجاح!'));
 };
-                
+            
