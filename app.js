@@ -227,7 +227,10 @@ async function updateTopBar() {
         }
     }
     
-    if(pointsEl && typeof t === 'function') pointsEl.innerText = `${t('coins')} ${userState.points.toLocaleString()}`;
+    // Display balance with token name ZELOFC
+    if (pointsEl) {
+        pointsEl.innerText = `🪙 ${userState.points.toLocaleString()} ZELOFC`;
+    }
     
     if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
         let logos = userState.selectedClubs.map(id => {
@@ -297,4 +300,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-        }
+            }
