@@ -1,5 +1,5 @@
 // ==========================================
-// 📱 login.js - Glassmorphism VIP Edition (Solana Rewards Integrated) 🚀
+// 📱 login.js - Glassmorphism Fixed Viewport Edition
 // ==========================================
 
 window.tempSelectedClubs = window.tempSelectedClubs || [];
@@ -8,22 +8,42 @@ window.tempSelectedClubs = window.tempSelectedClubs || [];
 function getInjectableStyles() {
     return `
         <style>
+            /* Lock main viewport to prevent page-level scroll */
+            .login-screen-wrapper {
+                height: 100vh;
+                max-height: 100vh;
+                width: 100%;
+                max-width: 500px;
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                overflow: hidden;
+                position: relative;
+                box-sizing: border-box;
+                padding: 15px 12px 20px 12px;
+            }
+
             .animate-screen {
-                animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
             @keyframes slideUpFade {
-                0% { opacity: 0; transform: translateY(20px); }
+                0% { opacity: 0; transform: translateY(15px); }
                 100% { opacity: 1; transform: translateY(0); }
             }
 
-            .smooth-scroll {
+            /* Dedicated Inner Scroll Container */
+            .inner-scroll-area {
+                flex: 1;
                 overflow-y: auto;
                 scroll-behavior: smooth;
-                padding-right: 5px;
+                padding-right: 4px;
+                margin-top: 10px;
+                margin-bottom: 15px;
             }
-            .smooth-scroll::-webkit-scrollbar { width: 4px; }
-            .smooth-scroll::-webkit-scrollbar-track { background: transparent; }
-            .smooth-scroll::-webkit-scrollbar-thumb {
+            .inner-scroll-area::-webkit-scrollbar { width: 4px; }
+            .inner-scroll-area::-webkit-scrollbar-track { background: transparent; }
+            .inner-scroll-area::-webkit-scrollbar-thumb {
                 background: rgba(255, 255, 255, 0.15);
                 border-radius: 10px;
             }
@@ -33,70 +53,97 @@ function getInjectableStyles() {
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
                 border: 1px solid rgba(255, 255, 255, 0.05);
-                border-radius: 18px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-                transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-            }
-            .interactive-card:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
-                border-color: rgba(0, 255, 135, 0.3);
+                border-radius: 16px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+                transition: transform 0.2s ease, border-color 0.2s ease;
             }
             .interactive-card:active {
-                transform: scale(0.97);
+                transform: scale(0.98);
                 background: rgba(30, 30, 42, 0.8);
             }
 
             .solana-badge-card {
                 background: linear-gradient(135deg, rgba(153, 69, 255, 0.15), rgba(20, 241, 149, 0.12));
                 border: 1px solid rgba(20, 241, 149, 0.3);
-                border-radius: 16px;
-                padding: 10px 14px;
-                margin-bottom: 20px;
+                border-radius: 14px;
+                padding: 10px 12px;
+                margin-bottom: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 backdrop-filter: blur(10px);
-                box-shadow: 0 4px 15px rgba(153, 69, 255, 0.15);
             }
 
             .btn-pulse {
                 animation: pulseGlowBtn 2s infinite;
-                transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s;
                 background: linear-gradient(135deg, #2AABEE, #00FF87);
+                color: #000;
+                font-weight: 900;
+                border-radius: 35px;
+                padding: 14px 20px;
+                text-align: center;
+                cursor: pointer;
+                box-shadow: 0 4px 20px rgba(0, 255, 135, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.2);
             }
             .btn-pulse:active {
-                transform: translateX(-50%) scale(0.95) !important;
-                background: linear-gradient(135deg, #00FF87, #059669);
+                transform: scale(0.97);
             }
             @keyframes pulseGlowBtn {
-                0% { box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.6); }
-                70% { box-shadow: 0 0 0 15px rgba(0, 255, 135, 0); }
+                0% { box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.5); }
+                70% { box-shadow: 0 0 0 12px rgba(0, 255, 135, 0); }
                 100% { box-shadow: 0 0 0 0 rgba(0, 255, 135, 0); }
             }
 
             .club-selected {
                 background: linear-gradient(135deg, rgba(0, 255, 135, 0.15), rgba(0, 255, 135, 0.05)) !important;
                 border: 2px solid #00FF87 !important;
-                box-shadow: inset 0 0 15px rgba(0, 255, 135, 0.1);
             }
-            
+
             .lang-btn {
                 background: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.1);
-                padding: 10px 24px; border-radius: 30px; cursor: pointer;
-                color: white; font-weight: bold; font-size: 0.88rem;
-                transition: all 0.3s ease;
+                padding: 8px 20px; border-radius: 25px; cursor: pointer;
+                color: white; font-weight: bold; font-size: 0.85rem;
                 backdrop-filter: blur(10px);
             }
             .lang-btn-active {
                 background: linear-gradient(135deg, #2AABEE, #00FF87);
                 border-color: transparent;
-                box-shadow: 0 4px 15px rgba(0, 255, 135, 0.3);
                 color: #000;
+            }
+
+            /* Professional Back Button */
+            .btn-back-vip {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: rgba(255, 255, 255, 0.08);
+                color: #00FF87;
+                padding: 8px 16px;
+                border-radius: 20px;
+                cursor: pointer;
+                font-weight: 800;
+                font-size: 0.82rem;
+                border: 1px solid rgba(0, 255, 135, 0.25);
+                backdrop-filter: blur(10px);
+                transition: all 0.2s ease;
+            }
+            .btn-back-vip:active {
+                transform: scale(0.95);
+                background: rgba(0, 255, 135, 0.15);
             }
         </style>
     `;
+}
+
+// Helper to Safely Get Translation or English Fallback
+function safeT(key, fallbackText) {
+    if (typeof t === 'function') {
+        const translated = t(key);
+        if (translated && translated !== key) return translated;
+    }
+    return fallbackText;
 }
 
 // ====================== Get Default Language ======================
@@ -111,7 +158,7 @@ function getDefaultLanguage() {
 function getLanguageSelector() {
     const isAr = userState.lang === 'ar';
     return `
-        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px;">
             <div class="lang-btn ${isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">
                 🇸🇦 العربية
             </div>
@@ -145,20 +192,18 @@ window.setLanguage = async function(lang) {
 // ====================== Confirm Floating Button ======================
 function getFloatingButton() {
     if (window.tempSelectedClubs.length === 0) return '';
-    const tFunc = typeof t === 'function' ? t : (k) => k;
-    const btnLabel = tFunc('confirmAndContinue') || 'Confirm & Continue';
+    const btnLabel = safeT('confirmAndContinue', 'Confirm & Continue');
 
     return `
-        <div id="confirm-btn" class="btn-pulse" onclick="confirmLogin()" 
-             style="position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); 
-                    color: #000; padding: 15px 30px; border-radius: 40px; font-weight: 900; font-size: 1.05rem; 
-                    cursor: pointer; z-index: 9999; width: 85%; max-width: 380px; text-align: center; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
-            ${btnLabel} (${window.tempSelectedClubs.length}/2) ✅
+        <div style="padding-top: 10px; width: 100%;">
+            <div id="confirm-btn" class="btn-pulse" onclick="confirmLogin()">
+                ✅ ${btnLabel} (${window.tempSelectedClubs.length}/2)
+            </div>
         </div>
     `;
 }
 
-// ====================== Main Login Screen ======================
+// ====================== Main Login Screen (Countries List) ======================
 window.renderLoginScreen = function() {
     const topBar = document.getElementById('top-bar');
     const bottomNav = document.getElementById('bottom-nav');
@@ -169,7 +214,6 @@ window.renderLoginScreen = function() {
 
     const mainContent = document.getElementById("main-content");
     const isAr = userState.lang === 'ar';
-    const tFunc = typeof t === 'function' ? t : (k) => k;
 
     let countriesHtml = "";
 
@@ -190,61 +234,67 @@ window.renderLoginScreen = function() {
 
         countriesHtml += `
             <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
-                 style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 10px;">
+                 style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 1.8rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
-                    <h4 style="margin: 0; color: #fff; font-size: 1rem; font-weight: 800;">${countryName}</h4>
+                    <span style="font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
+                    <h4 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 800;">${countryName}</h4>
                     ${selectionBadge}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
+                    <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
                         ${clubsInCountry.length} ⚽
                     </span>
-                    <span style="color: #666; font-size: 1rem;">${isAr ? '👈' : '👉'}</span>
+                    <span style="color: #666; font-size: 0.9rem;">${isAr ? '👈' : '👉'}</span>
                 </div>
             </div>
         `;
     }
 
-    const titleText = tFunc('chooseYourClubs') || 'Choose Your Clubs';
-    const subTitleText = tFunc('clubSelectionLimit') || '1 Local + 1 Global Club (Max 2)';
-    const solanaTitle = tFunc('solanaRewardsTitle') || 'SOL & Crypto Rewards';
-    const solanaDesc = tFunc('solanaRewardsSub') || 'Compete & support to earn $SOL';
+    const titleText = safeT('chooseYourClubs', 'Choose Your Clubs');
+    const subTitleText = safeT('clubSelectionLimit', '1 Local + 1 Global Club (Max 2)');
+    const solanaTitle = safeT('solanaRewardsTitle', 'SOL & Crypto Rewards');
+    const solanaDesc = safeT('solanaRewardsSub', 'Compete & support to earn $SOL');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
-        <div class="animate-screen" style="padding: 20px 12px; text-align: center; max-width: 500px; margin: 0 auto; padding-bottom: 110px; position: relative;">
+        <div class="login-screen-wrapper animate-screen">
             
-            ${getLanguageSelector()}
+            <!-- Fixed Header Section -->
+            <div>
+                ${getLanguageSelector()}
 
-            <!-- ⚡ Solana Rewards Badge Card ⚡ -->
-            <div class="solana-badge-card">
-                <div style="display: flex; align-items: center; gap: 10px; text-align: ${isAr ? 'right' : 'left'};">
-                    <span style="font-size: 1.5rem;">⚡</span>
-                    <div>
-                        <div style="color: #14F195; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.5px;">${solanaTitle}</div>
-                        <div style="color: #94a3b8; font-size: 0.72rem; font-weight: bold;">${solanaDesc}</div>
+                <!-- Solana Rewards Banner -->
+                <div class="solana-badge-card">
+                    <div style="display: flex; align-items: center; gap: 10px; text-align: ${isAr ? 'right' : 'left'};">
+                        <span style="font-size: 1.4rem;">⚡</span>
+                        <div>
+                            <div style="color: #14F195; font-size: 0.8rem; font-weight: 900;">${solanaTitle}</div>
+                            <div style="color: #94a3b8; font-size: 0.7rem; font-weight: bold;">${solanaDesc}</div>
+                        </div>
                     </div>
+                    <span style="background: rgba(153, 69, 255, 0.2); color: #c084fc; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(153, 69, 255, 0.4);">
+                        SOLANA
+                    </span>
                 </div>
-                <span style="background: rgba(153, 69, 255, 0.2); color: #c084fc; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(153, 69, 255, 0.4);">
-                    SOLANA
-                </span>
+
+                <div style="text-align: center; margin-bottom: 8px;">
+                    <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 4px 0; font-size: 1.3rem; font-weight: 900;">
+                        ${titleText}
+                    </h2>
+                    <p style="color: #94a3b8; font-size: 0.8rem; margin: 0; font-weight: bold;">
+                        ${subTitleText}
+                    </p>
+                </div>
             </div>
 
-            <div style="margin-top: 10px; margin-bottom: 20px;">
-                <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 6px 0; font-size: 1.4rem; font-weight: 900;">
-                    ${titleText}
-                </h2>
-                <p style="color: #94a3b8; font-size: 0.85rem; margin: 0; font-weight: bold;">
-                    ${subTitleText}
-                </p>
-            </div>
-
-            <div class="smooth-scroll" style="display: flex; flex-direction: column; height: 52vh; text-align: ${isAr ? 'right' : 'left'};">
+            <!-- Only Inner Area Scrolls -->
+            <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
                 ${countriesHtml}
             </div>
+
+            <!-- Fixed Footer Section -->
+            ${getFloatingButton()}
         </div>
-        ${getFloatingButton()}
     `;
 };
 
@@ -255,7 +305,6 @@ window.showClubsForCountry = function(countryKey) {
 
     const mainContent = document.getElementById("main-content");
     const isAr = userState.lang === 'ar';
-    const tFunc = typeof t === 'function' ? t : (k) => k;
 
     let clubsHtml = clubs.map(club => {
         const stringClubId = String(club.id);
@@ -269,15 +318,15 @@ window.showClubsForCountry = function(countryKey) {
 
         return `
             <div class="glass-card-elegant interactive-card ${selectedClass}" onclick="toggleClubSelection('${stringClubId}', '${countryKey}')" 
-                 style="padding: 12px 16px; border-radius: 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                        <img src="${club.logo}" onerror="this.style.display='none'" style="width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                 style="padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <img src="${club.logo}" onerror="this.style.display='none'" style="width: 32px; height: 32px; object-fit: contain;">
                     </div>
-                    <span style="color: #fff; font-size: 0.95rem; font-weight: 800;">${clubName}</span>
+                    <span style="color: #fff; font-size: 0.9rem; font-weight: 800;">${clubName}</span>
                 </div>
-                <div style="font-size: 1.2rem;">
-                    ${isSelected ? '<span style="filter: drop-shadow(0 0 6px rgba(0, 255, 135, 0.8));">✅</span>' : '<span style="opacity: 0.2;">⭕</span>'}
+                <div style="font-size: 1.1rem;">
+                    ${isSelected ? '✅' : '<span style="opacity: 0.2;">⭕</span>'}
                 </div>
             </div>
         `;
@@ -289,28 +338,36 @@ window.showClubsForCountry = function(countryKey) {
         countryName = getCountryName(flag) || countryName;
     }
 
-    const backText = tFunc('btnBack') || 'Back to list';
-    const tapHint = tFunc('tapClubHint') || 'Tap a club to select it';
+    const backText = safeT('btnBack', 'Back to countries');
+    const tapHint = safeT('tapClubHint', 'Tap a club to select it');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
-        <div class="animate-screen" style="padding: 20px 12px; max-width: 500px; margin: 0 auto; padding-bottom: 110px;">
-            <div onclick="renderLoginScreen()" 
-                 style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin-bottom: 18px; font-weight: bold; font-size: 0.82rem; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
-                <span>🔙</span> ${backText}
-            </div>
+        <div class="login-screen-wrapper animate-screen">
             
-            <div style="text-align: center; margin-bottom: 18px; background: rgba(20, 20, 28, 0.65); padding: 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
-                <span style="font-size: 2.5rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));">${flag}</span>
-                <h3 style="color: #fff; margin: 6px 0 0 0; font-weight: 900; font-size: 1.3rem;">${countryName}</h3>
-                <p style="color: #00FF87; font-size: 0.78rem; margin: 4px 0 0 0; font-weight: bold;">${tapHint}</p>
+            <!-- Fixed Header Section -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div class="btn-back-vip" onclick="renderLoginScreen()">
+                        <span>🔙</span> <span>${backText}</span>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-bottom: 10px; background: rgba(20, 20, 28, 0.65); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
+                    <h3 style="color: #fff; margin: 4px 0 0 0; font-weight: 900; font-size: 1.1rem;">${countryName}</h3>
+                    <p style="color: #00FF87; font-size: 0.75rem; margin: 2px 0 0 0; font-weight: bold;">${tapHint}</p>
+                </div>
             </div>
-            
-            <div class="smooth-scroll" style="display: flex; flex-direction: column; height: 50vh; text-align: ${isAr ? 'right' : 'left'};">
+
+            <!-- Only Inner Area Scrolls -->
+            <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
                 ${clubsHtml}
             </div>
+
+            <!-- Fixed Footer Section -->
+            ${getFloatingButton()}
         </div>
-        ${getFloatingButton()}
     `;
 };
 
@@ -318,7 +375,6 @@ window.showClubsForCountry = function(countryKey) {
 window.toggleClubSelection = function(clubId, countryKey) {
     const stringClubId = String(clubId);
     const index = window.tempSelectedClubs.findIndex(id => String(id) === stringClubId);
-    const tFunc = typeof t === 'function' ? t : (k) => k;
     
     if (index > -1) {
         window.tempSelectedClubs.splice(index, 1);
@@ -326,7 +382,7 @@ window.toggleClubSelection = function(clubId, countryKey) {
         if (window.tempSelectedClubs.length < 2) {
             window.tempSelectedClubs.push(stringClubId);
         } else {
-            const limitMsg = tFunc('maxClubsAlert') || 'You can select a maximum of 2 clubs (Local & Global) ⚠️';
+            const limitMsg = safeT('maxClubsAlert', 'You can select a maximum of 2 clubs (Local & Global) ⚠️');
             alert(limitMsg);
             return; 
         }
@@ -337,10 +393,8 @@ window.toggleClubSelection = function(clubId, countryKey) {
 
 // ====================== Confirm Login Function ======================
 window.confirmLogin = async function() {
-    const tFunc = typeof t === 'function' ? t : (k) => k;
-
     if (window.tempSelectedClubs.length === 0) {
-        const selectAlert = tFunc('selectAtLeastOne') || 'Please select at least one club to continue.';
+        const selectAlert = safeT('selectAtLeastOne', 'Please select at least one club to continue.');
         alert(selectAlert);
         return;
     }
@@ -392,15 +446,15 @@ window.confirmLogin = async function() {
                 throw rankErr;
             }
 
-            // Referral processing
+            // Process Referral
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
                 userState.pendingReferrer = null; 
             }
 
         } catch (error) {
-            console.error("⚠️ Login process stopped due to error:", error);
-            if (btn) btn.innerHTML = tFunc('retry') || 'Retry 🔄';
+            console.error("⚠️ Login process error:", error);
+            if (btn) btn.innerHTML = safeT('retry', 'Retry 🔄');
             return; 
         }
     }
@@ -420,4 +474,4 @@ window.confirmLogin = async function() {
         showPage('home');
     }
 };
-            
+        
