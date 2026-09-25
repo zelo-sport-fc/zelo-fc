@@ -1,7 +1,3 @@
-// ==========================================
-// 🏠 الصفحة الرئيسية (home.js) - نسخة الـ VIP الأسطورية (تدعم Solana + Pyth)
-// ==========================================
-
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
@@ -11,7 +7,6 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// 🔮 دالة تحديث سعر سولانا المباشر من أوراكل Pyth
 window.updateHomeSolPrice = async function() {
     const el = document.getElementById('home-sol-price');
     const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
@@ -32,7 +27,6 @@ window.updateHomeSolPrice = async function() {
 window.renderHomePage = async function(container) {
     const isAr = userState.lang === 'ar';
 
-    // 🛡️ نظام حماية للترجمة
     const getSafeText = (key, fallbackAr, fallbackEn) => {
         if (typeof i18n !== 'undefined' && i18n[userState.lang] && i18n[userState.lang][key]) {
             return i18n[userState.lang][key];
@@ -40,9 +34,8 @@ window.renderHomePage = async function(container) {
         return isAr ? fallbackAr : fallbackEn;
     };
 
-    container.innerHTML = `<div style="text-align:center; padding:50px; color:#888; font-weight:bold; animation: pulseGlowIcon 1.5s infinite;">${isAr ? '⏳ جاري تجهيز الملعب...' : '⏳ Preparing the pitch...'}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:50px; color:#888; font-weight:bold; animation: pulseGlowIcon 1.5s infinite;">${isAr ? '⏳ Loading Pitch...' : '⏳ Preparing the pitch...'}</div>`;
 
-    // 1. معالجة بيانات الأندية
     let selectedClubsData = userState.selectedClubs.map(id => {
         if (typeof allWorldCupCountriesClubs !== 'undefined') {
             for (const country in allWorldCupCountriesClubs) {
@@ -60,7 +53,6 @@ window.renderHomePage = async function(container) {
         }
     }
 
-    // 🚀 2. جلب عدد المشجعين والنقاط الحقيقية من Supabase
     if (typeof supabaseClient !== 'undefined' && selectedClubsData.length > 0) {
         const clubIds = selectedClubsData.map(c => String(c.id));
         
@@ -85,7 +77,7 @@ window.renderHomePage = async function(container) {
                 });
             }
         } catch (err) {
-            console.error("خطأ في جلب إحصائيات الأندية:", err);
+            console.error("Error fetching club stats:", err);
         }
     }
 
@@ -93,7 +85,6 @@ window.renderHomePage = async function(container) {
     let fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userState.username)}&background=1c1c22&color=fcb045&size=128&bold=true`;
     let avatarSrc = userState.photoUrl ? userState.photoUrl : fallbackAvatar;
   
-    // 3. بناء واجهة الأندية (ستايل زجاجي أنيق)
     let clubsCardsHtml = selectedClubsData.map(club => `
         <div class="glass-club-card">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -103,7 +94,7 @@ window.renderHomePage = async function(container) {
                 <div>
                     <h3 style="margin: 0; color: #fff; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.5px;">${typeof getClubName === "function" ? getClubName(club) : club.name} ${club.countryFlag}</h3>
                     <p style="margin: 2px 0 0 0; color: #10b981; font-size: 0.75rem; font-weight: bold; text-shadow: 0 0 5px rgba(16, 185, 129, 0.4);">
-                        👥 ${club.members ? club.members.toLocaleString() : '0'} ${isAr ? 'مشجع' : 'Fans'}
+                        👥 ${club.members ? club.members.toLocaleString() : '0'} ${isAr ? 'Fans' : 'Fans'}
                     </p>
                 </div>
             </div>
@@ -115,23 +106,20 @@ window.renderHomePage = async function(container) {
         </div>
     `).join('');
 
-    let titleWeeklyChallenges = getSafeText('weeklyChallenges', 'تحديات الأسبوع', 'Weekly Challenges');
-    let textEuropeCups = getSafeText('europeCups', 'كؤوس أوروبا', 'European Cups');
-    let textSpainCups = getSafeText('spainCups', 'كؤوس إسبانيا', 'Spanish Cups');
-    let titleRanking = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
-    let textRankingDesc = isAr ? 'اكتشف المتصدرين وتعرف على ترتيبك' : 'Discover top players and your rank';
-    let supportedClubsTitle = isAr ? 'أنديتك المفضلة' : 'Supported Clubs';
-    let loadingAlert = isAr ? '⏳ جاري التحميل...' : '⏳ Loading...';
-    let websiteBtnText = isAr ? 'الموقع الرسمي' : 'Official Site';
+    let titleWeeklyChallenges = getSafeText('weeklyChallenges', 'Weekly Challenges', 'Weekly Challenges');
+    let textEuropeCups = getSafeText('europeCups', 'European Cups', 'European Cups');
+    let textSpainCups = getSafeText('spainCups', 'Spanish Cups', 'Spanish Cups');
+    let titleRanking = getSafeText('challengesRanking', 'Challenges Ranking', 'Challenges Ranking');
+    let textRankingDesc = getSafeText('rankingDesc', 'Discover top players and your rank', 'Discover top players and your rank');
+    let supportedClubsTitle = getSafeText('supportedClubs', 'Supported Clubs', 'Supported Clubs');
+    let loadingAlert = getSafeText('loading', 'Loading...', 'Loading...');
+    let websiteBtnText = getSafeText('officialSite', 'Official Site', 'Official Site');
     
-    // نصوص كارت سولانا بـ 2 لغات
-    let solTitle = isAr ? 'منظومة Solana' : 'Solana Ecosystem';
-    let solSub = isAr ? '⚡ جوائز فورية ورسوم مجهرية' : '⚡ Instant & Micro-Fee Rewards';
+    let solTitle = 'Solana Ecosystem';
+    let solSub = '⚡ Instant & Micro-Fee Rewards';
 
-    // 4. تجميع الصفحة (مع إضافة كارت سولانا المتناسق)
     container.innerHTML = `
         <style>
-            /* ====== التأثيرات الحركية ====== */
             @keyframes profileGlow {
                 0% { box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(252, 176, 69, 0.1); }
                 50% { box-shadow: 0 15px 30px rgba(0,0,0,0.9), inset 0 0 25px rgba(252, 176, 69, 0.3); }
@@ -147,7 +135,6 @@ window.renderHomePage = async function(container) {
                 100% { transform: translateX(200%) skewX(-25deg); }
             }
 
-            /* ====== الحاوية الرئيسية ====== */
             .home-fixed-container {
                 display: flex;
                 flex-direction: column;
@@ -159,7 +146,6 @@ window.renderHomePage = async function(container) {
                 box-sizing: border-box;
             }
 
-            /* ====== بطاقة الملف الشخصي ====== */
             .royal-profile-card {
                 position: relative;
                 background: linear-gradient(180deg, rgba(22, 22, 30, 0.9) 0%, rgba(13, 13, 18, 0.95) 100%);
@@ -212,7 +198,6 @@ window.renderHomePage = async function(container) {
                 background: rgba(252, 176, 69, 0.2); border-color: rgba(252, 176, 69, 0.5); box-shadow: 0 0 10px rgba(252, 176, 69, 0.3);
             }
 
-            /* ====== كارت شبكة Solana & Pyth المنسق بنفس ستايل النيون ====== */
             .solana-action-banner {
                 position: relative;
                 border-radius: 16px;
@@ -247,7 +232,6 @@ window.renderHomePage = async function(container) {
                 box-shadow: 0 0 10px rgba(153, 69, 255, 0.2);
             }
 
-            /* ====== بطاقات الأقسام ====== */
             .action-banner {
                 position: relative;
                 border-radius: 16px;
@@ -276,7 +260,6 @@ window.renderHomePage = async function(container) {
                 box-shadow: inset 0 2px 10px rgba(255,255,255,0.1);
             }
 
-            /* ====== قائمة الأندية ====== */
             .clubs-section { flex-grow: 1; overflow-y: auto; margin-top: 5px; }
             .clubs-section::-webkit-scrollbar { display: none; }
             
@@ -300,7 +283,6 @@ window.renderHomePage = async function(container) {
         </style>
 
         <div class="home-fixed-container">
-            <!-- 👑 البطاقة الملكية للمستخدم -->
             <div class="royal-profile-card">
                 <div class="royal-avatar-wrapper"><div class="royal-avatar-inner"><img src="${avatarSrc}" alt="Avatar"></div></div>
                 <button class="website-glass-btn" onclick="window.openOfficialWebsite()"><span style="font-size: 0.9rem;">🌍</span> ${websiteBtnText}</button>
@@ -311,7 +293,6 @@ window.renderHomePage = async function(container) {
                 </div>
             </div>
 
-            <!-- ⚡ كارت منظومة SOLANA & PYTH ORACLE -->
             <div class="solana-action-banner">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="solana-badge-icon">
@@ -328,7 +309,6 @@ window.renderHomePage = async function(container) {
                 </div>
             </div>
           
-            <!-- 🎯 لافتة التحديات -->
             <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { alert('${loadingAlert}'); }">
                 <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);">${primaryClub ? primaryClub.countryFlag : '⚽'}</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
@@ -338,7 +318,6 @@ window.renderHomePage = async function(container) {
                 <div style="color: #3b82f6; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
             </div>
 
-            <!-- 🏆 لافتة الترتيب -->
             <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else { alert('${loadingAlert}'); }">
                 <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(253, 29, 29, 0.6);">🔥</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
@@ -348,7 +327,6 @@ window.renderHomePage = async function(container) {
                 <div style="color: #fd1d1d; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
             </div>
 
-            <!-- 🛡️ قائمة الأندية -->
             <div class="clubs-section">
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom: 8px;">
                     <span style="font-size: 1.1rem;">🛡️</span>
@@ -359,11 +337,10 @@ window.renderHomePage = async function(container) {
         </div>
     `;
 
-    // 🔮 استدعاء دالة تحديث سعر سولانا فور عرض الواجهة
     setTimeout(() => {
         if (typeof window.updateHomeSolPrice === 'function') {
             window.updateHomeSolPrice();
         }
     }, 100);
 };
-                
+            
