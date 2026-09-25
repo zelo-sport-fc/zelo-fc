@@ -36,7 +36,8 @@ const tg = window.Telegram?.WebApp;
 function safeT(key, fallback) {
     try {
         if (typeof window.t === 'function') {
-            return window.t(key) || fallback;
+            const res = window.t(key);
+            if (res && res !== key) return res;
         }
     } catch (e) {
         console.warn("Translation function error:", e);
@@ -246,12 +247,12 @@ async function updateTopBar() {
         }
     }
     
-    // Display balance with token name ZELOFC
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString()} ZELOFC`;
     }
     
+    // إصلاح نص الأندية بدون اعتماد على المفتاح الخام
     if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
         let logos = userState.selectedClubs.map(id => {
             let foundClub = null;
@@ -267,7 +268,8 @@ async function updateTopBar() {
             return foundClub ? `<img src="${foundClub.logo}" style="height: 20px; vertical-align: middle; margin: 0 4px; object-fit: contain;">` : '';
         }).join('');
         
-        clubEl.innerHTML = `<span style="color:#aaa;">${safeT('your_clubs', 'Clubs:')}</span> ${logos}`;
+        const labelText = (userState.lang === 'ar') ? 'أنديتك:' : 'Clubs:';
+        clubEl.innerHTML = `<span style="color:#aaa;">${labelText}</span> ${logos}`;
     }
 }
 
@@ -295,7 +297,11 @@ function showPage(pageId) {
             if(typeof renderLeaderboardPage === "function") renderLeaderboardPage(contentDiv); 
             break;
         case 'wallet': 
-            if(typeof renderWalletPage === "function") renderWalletPage(contentDiv); 
+            if(typeof renderWalletPage === "function") {
+                renderWalletPage(contentDiv);
+            } else {
+                contentDiv.innerHTML = `<div style="color:white; text-align:center; padding:30px;">Loading Wallet...</div>`;
+            }
             break;
     }
 }
@@ -310,15 +316,14 @@ if (typeof window.openChallengesScreen !== 'function') {
             } else {
                 contentDiv.innerHTML = `
                     <div style="padding: 30px 20px; text-align: center; color: white;">
-                        <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${safeT('weekly_challenges', 'Weekly Challenges')}</h2>
-                        <p style="color: #ccc; margin-bottom: 25px;">${safeT('coming_soon', 'Challenges coming soon...')}</p>
+                        <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${userState.lang === 'ar' ? 'تحديات الأسبوع' : 'Weekly Challenges'}</h2>
+                        <p style="color: #ccc; margin-bottom: 25px;">${userState.lang === 'ar' ? 'قريباً سيتم عرض التحديات هنا...' : 'Challenges coming soon...'}</p>
                         <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                            ${safeT('back_to_home', 'Back to Home')}
+                            ${userState.lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
                         </button>
                     </div>
                 `;
             }
         }
     };
-}
-    
+    }
