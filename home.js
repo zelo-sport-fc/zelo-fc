@@ -1,6 +1,4 @@
-window.solPriceHistory = (window.solPriceHistory && window.solPriceHistory.length >= 5) 
-    ? window.solPriceHistory 
-    : [118.05, 118.10, 118.15, 118.08, 118.12];
+window.solPriceHistory = window.solPriceHistory || [118.05, 118.10, 118.15, 118.08, 118.12];
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
@@ -28,7 +26,7 @@ window.updateHomeSolPrice = async function() {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         
@@ -41,6 +39,16 @@ window.updateHomeSolPrice = async function() {
             }
         }
     } catch (err) {}
+
+    if (!rawPrice || isNaN(rawPrice)) {
+        try {
+            const res2 = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+            const data2 = await res2.json();
+            if (data2 && data2.solana && data2.solana.usd) {
+                rawPrice = data2.solana.usd;
+            }
+        } catch (e) {}
+    }
 
     if (!rawPrice || isNaN(rawPrice)) {
         const lastP = window.solPriceHistory[window.solPriceHistory.length - 1] || 118.12;
@@ -381,7 +389,7 @@ window.renderHomePage = function(container) {
 
         window.solPriceInterval = setInterval(() => {
             window.updateHomeSolPrice();
-        }, 1000);
+        }, 1500);
 
     } catch (err) {
         console.error("Render error:", err);
@@ -392,4 +400,4 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() { window.renderHomePage(); });
 } else {
     setTimeout(function() { window.renderHomePage(); }, 50);
-                                }
+}
