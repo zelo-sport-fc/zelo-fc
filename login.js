@@ -150,13 +150,14 @@ function getInjectableStyles() {
     `;
 }
 
-// Helper to Safely Get Translation or English Fallback
-function safeT(key, fallbackText) {
+// Helper to Safely Get Translation (Bilingual Fallbacks)
+function safeT(key, fallbackAr, fallbackEn) {
+    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if (typeof t === 'function') {
         const translated = t(key);
         if (translated && translated !== key) return translated;
     }
-    return fallbackText;
+    return isAr ? fallbackAr : fallbackEn;
 }
 
 // ====================== Get Default Language ======================
@@ -205,7 +206,7 @@ window.setLanguage = async function(lang) {
 // ====================== Confirm Floating Button ======================
 function getFloatingButton() {
     if (window.tempSelectedClubs.length === 0) return '';
-    const btnLabel = safeT('confirmAndContinue', 'Confirm & Continue');
+    const btnLabel = safeT('confirmAndContinue', 'تأكيد والمتابعة', 'Confirm & Continue');
 
     return `
         <div style="padding-top: 10px; width: 100%;">
@@ -263,12 +264,12 @@ window.renderLoginScreen = function() {
         `;
     }
 
-    const titleText = safeT('chooseYourClubs', 'Choose Your Clubs');
-    const subTitleText = safeT('clubSelectionLimit', '1 Local + 1 Global Club (Max 2)');
+    const titleText = safeT('chooseYourClubs', 'اختر أنديتك', 'Choose Your Clubs');
+    const subTitleText = safeT('clubSelectionLimit', 'نادي محلي + نادي عالمي (الحد الأقصى 2)', '1 Local + 1 Global Club (Max 2)');
     
     // النصوص الخاصة بعملة $ZELOFC والمكافآت
-    const zelofcTitle = safeT('zelofcRewardsTitle', 'Earn $ZELOFC & SOL');
-    const zelofcSub = safeT('zelofcRewardsSub', 'Compete & win official $ZELOFC token rewards');
+    const zelofcTitle = safeT('zelofcRewardsTitle', 'اربح عملة ZELOFC$ و SOL', 'Earn $ZELOFC & SOL');
+    const zelofcSub = safeT('zelofcRewardsSub', 'تنافس ودعم ناديك لتكسب جوائز بـ ZELOFC$', 'Compete & win official$ZELOFC token rewards');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
@@ -311,6 +312,9 @@ window.renderLoginScreen = function() {
     `;
 };
 
+// ====================== Alias To Fix Missing Screen Error ======================
+window.showLoginScreen = window.renderLoginScreen;
+
 // ====================== Show Clubs For Selected Country ======================
 window.showClubsForCountry = function(countryKey) {
     const clubs = allWorldCupCountriesClubs[countryKey];
@@ -351,8 +355,8 @@ window.showClubsForCountry = function(countryKey) {
         countryName = getCountryName(flag) || countryName;
     }
 
-    const backText = safeT('btnBack', 'Back to countries');
-    const tapHint = safeT('tapClubHint', 'Tap a club to select it');
+    const backText = safeT('btnBack', 'العودة للدول', 'Back to countries');
+    const tapHint = safeT('tapClubHint', 'اضغط على النادي للاختيار', 'Tap a club to select it');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
@@ -395,7 +399,7 @@ window.toggleClubSelection = function(clubId, countryKey) {
         if (window.tempSelectedClubs.length < 2) {
             window.tempSelectedClubs.push(stringClubId);
         } else {
-            const limitMsg = safeT('maxClubsAlert', 'You can select a maximum of 2 clubs (Local & Global) ⚠️');
+            const limitMsg = safeT('maxClubsAlert', 'يمكنك اختيار ناديين فقط كحد أقصى (محلي وعالمي) ⚠️', 'You can select a maximum of 2 clubs (Local & Global) ⚠️');
             alert(limitMsg);
             return; 
         }
@@ -407,7 +411,7 @@ window.toggleClubSelection = function(clubId, countryKey) {
 // ====================== Confirm Login Function ======================
 window.confirmLogin = async function() {
     if (window.tempSelectedClubs.length === 0) {
-        const selectAlert = safeT('selectAtLeastOne', 'Please select at least one club to continue.');
+        const selectAlert = safeT('selectAtLeastOne', 'الرجاء اختيار نادي واحد على الأقل للمتابعة.', 'Please select at least one club to continue.');
         alert(selectAlert);
         return;
     }
@@ -467,23 +471,9 @@ window.confirmLogin = async function() {
 
         } catch (error) {
             console.error("⚠️ Login process error:", error);
-            if (btn) btn.innerHTML = safeT('retry', 'Retry 🔄');
+            if (btn) btn.innerHTML = safeT('retry', 'إعادة المحاولة 🔄', 'Retry 🔄');
             return; 
         }
     }
 
-    userState.hasLoggedIn = true;
-
-    const topBar = document.getElementById('top-bar');
-    const bottomNav = document.getElementById('bottom-nav');
-    if (topBar) topBar.style.display = 'flex';
-    if (bottomNav) bottomNav.style.display = 'flex';
-
-    if (typeof updateTopBar === 'function') {
-        updateTopBar();
-    }
-
-    if (typeof showPage === 'function') {
-        showPage('home');
-    }
-};
+    userSta
