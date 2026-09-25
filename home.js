@@ -9,6 +9,7 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
 
 window.updateHomeSolPrice = async function() {
     const el = document.getElementById('home-sol-price');
+    if (!el) return;
     const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
     
     try {
@@ -17,10 +18,10 @@ window.updateHomeSolPrice = async function() {
         if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
             const p = data.parsed[0].price;
             const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
-            if (el) el.innerText = `$${finalPrice}`;
+            el.innerText = `$${finalPrice}`;
         }
     } catch (err) {
-        if (el) el.innerText = `$118.12`;
+        el.innerText = `$118.12`;
     }
 };
 
@@ -34,7 +35,7 @@ window.renderHomePage = async function(container) {
         return isAr ? fallbackAr : fallbackEn;
     };
 
-    container.innerHTML = `<div style="text-align:center; padding:50px; color:#888; font-weight:bold; animation: pulseGlowIcon 1.5s infinite;">${isAr ? '⏳ Loading Pitch...' : '⏳ Preparing the pitch...'}</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:50px; color:#888; font-weight:bold;">${isAr ? '⏳ Preparing the pitch...' : '⏳ Preparing the pitch...'}</div>`;
 
     let selectedClubsData = userState.selectedClubs.map(id => {
         if (typeof allWorldCupCountriesClubs !== 'undefined') {
@@ -94,7 +95,7 @@ window.renderHomePage = async function(container) {
                 <div>
                     <h3 style="margin: 0; color: #fff; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.5px;">${typeof getClubName === "function" ? getClubName(club) : club.name} ${club.countryFlag}</h3>
                     <p style="margin: 2px 0 0 0; color: #10b981; font-size: 0.75rem; font-weight: bold; text-shadow: 0 0 5px rgba(16, 185, 129, 0.4);">
-                        👥 ${club.members ? club.members.toLocaleString() : '0'} ${isAr ? 'Fans' : 'Fans'}
+                        👥 ${club.members ? club.members.toLocaleString() : '0'} Fans
                     </p>
                 </div>
             </div>
@@ -343,3 +344,4 @@ window.renderHomePage = async function(container) {
         }
     }, 100);
 };
+        
