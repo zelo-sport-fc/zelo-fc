@@ -15,9 +15,11 @@ let userState = {
     userId: "",
     photoUrl: null,
     points: 0, 
+    coins: 0,
     selectedClubs: [], 
     walletConnected: false,
     walletAddress: null,
+    solanaWallet: "",
     walletBalance: "0.00",
     hasLoggedIn: false,
     lang: "ar",
@@ -30,6 +32,18 @@ let userState = {
 let tonConnectUI = null;
 const tg = window.Telegram?.WebApp;
 
+// Safe Translation Helper
+function safeT(key, fallback) {
+    try {
+        if (typeof window.t === 'function') {
+            return window.t(key) || fallback;
+        }
+    } catch (e) {
+        console.warn("Translation function error:", e);
+    }
+    return fallback;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -39,8 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             const tgUser = tg.initDataUnsafe.user;
             userState.username = tgUser.username ? `@${tgUser.username}` : `${tgUser.first_name} ${tgUser.last_name || ''}`.trim();
-            userState.userId = tgUser.id;
-            userState.userParam = tgUser.username || tgUser.id;
+            userState.userId = String(tgUser.id);
+            userState.userParam = tgUser.username || String(tgUser.id);
             
             if (tgUser.photo_url) {
                 userState.photoUrl = tgUser.photo_url;
@@ -73,31 +87,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initTonConnect() {
     try {
-        if (typeof TON_CONNECT_UI !== 'undefined') {
+        if (typeof TON_CONNECT_UI !== 'undefined' && !tonConnectUI) {
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: 'https://zelo-sport-fc.github.io/zelo-fc/tonconnect-manifest.json',
+                manifestUrl: 'https://zelo-fc.onrender.com/tonconnect-manifest.json',
                 buttonRootId: null
             });
 
             tonConnectUI.onStatusChange(async (walletInfo) => {
                 if (walletInfo) {
+                    const rawAddress = walletInfo.account.address;
+                    const userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress ? TON_CONNECT_UI.toUserFriendlyAddress(rawAddress) : rawAddress;
+
                     userState.walletConnected = true;
-                    userState.walletAddress = walletInfo.account.address;
-                    userState.walletBalance = "0.00"; 
+                    userState.walletAddress = userFriendlyAddress;
+                    localStorage.setItem('ton_wallet', userFriendlyAddress);
                     
                     if (typeof window.saveWalletAddressToDB === "function") {
-                        await window.saveWalletAddressToDB(walletInfo.account.address);
+                        await window.saveWalletAddressToDB(userFriendlyAddress);
                     } else if (supabaseClient && userState.userId) {
                         const { error } = await supabaseClient.from('users')
-                            .update({ wallet_address: walletInfo.account.address })
+                            .update({ wallet_address: userFriendlyAddress })
                             .eq('telegram_id', userState.userId);
                         if (error) console.error("❌ Wallet save error:", error);
-                        else console.log("✅ Wallet saved successfully!");
+                        else console.log("✅ TON Wallet saved successfully!");
                     }
                 } else {
                     userState.walletConnected = false;
                     userState.walletAddress = null;
-                    userState.walletBalance = "0.00";
+                    localStorage.removeItem('ton_wallet');
 
                     if (typeof window.removeWalletAddressFromDB === "function") {
                         await window.removeWalletAddressFromDB();
@@ -143,6 +160,7 @@ async function fetchDataAndRoute() {
         if (data) {
             console.log("✅ [4] Existing user found.");
             userState.points = data.points || 0;
+            userState.coins = data.points || 0;
             userState.selectedClubs = data.selected_clubs || [];
             
             userState.lang = data.lang || userState.lang;
@@ -175,7 +193,7 @@ async function fetchDataAndRoute() {
     } else {
         console.log("🏠 [6] Routing to Home Screen...");
         userState.hasLoggedIn = true;
-        updateTopBar();
+        await updateTopBar();
         showPage('home'); 
     }
 }
@@ -219,8 +237,9 @@ async function updateTopBar() {
                 .eq('telegram_id', userState.userId)
                 .maybeSingle();
                 
-            if (data && data.total_fan_points !== undefined) {
+            if (data && data.total_fan_points !== undefined && data.total_fan_points !== null) {
                 userState.points = data.total_fan_points;
+                userState.coins = data.total_fan_points;
             }
         } catch(error) {
             console.error("❌ Error fetching points from ranking table:", error);
@@ -229,7 +248,8 @@ async function updateTopBar() {
     
     // Display balance with token name ZELOFC
     if (pointsEl) {
-        pointsEl.innerText = `🪙 ${userState.points.toLocaleString()} ZELOFC`;
+        const displayPoints = Number(userState.points || 0);
+        pointsEl.innerText = `🪙 ${displayPoints.toLocaleString()} ZELOFC`;
     }
     
     if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
@@ -247,7 +267,7 @@ async function updateTopBar() {
             return foundClub ? `<img src="${foundClub.logo}" style="height: 20px; vertical-align: middle; margin: 0 4px; object-fit: contain;">` : '';
         }).join('');
         
-        clubEl.innerHTML = `<span style="color:#aaa;">${userState.lang === 'ar' ? 'أنديتك:' : 'Clubs:'}</span> ${logos}`;
+        clubEl.innerHTML = `<span style="color:#aaa;">${safeT('your_clubs', 'Clubs:')}</span> ${logos}`;
     }
 }
 
@@ -290,14 +310,15 @@ if (typeof window.openChallengesScreen !== 'function') {
             } else {
                 contentDiv.innerHTML = `
                     <div style="padding: 30px 20px; text-align: center; color: white;">
-                        <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${userState.lang === 'ar' ? 'تحديات الأسبوع' : 'Weekly Challenges'}</h2>
-                        <p style="color: #ccc; margin-bottom: 25px;">${userState.lang === 'ar' ? 'قريباً سيتم عرض التحديات هنا...' : 'Challenges coming soon...'}</p>
+                        <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${safeT('weekly_challenges', 'Weekly Challenges')}</h2>
+                        <p style="color: #ccc; margin-bottom: 25px;">${safeT('coming_soon', 'Challenges coming soon...')}</p>
                         <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                            ${userState.lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
+                            ${safeT('back_to_home', 'Back to Home')}
                         </button>
                     </div>
                 `;
             }
         }
     };
-            }
+}
+    
