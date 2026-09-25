@@ -11,22 +11,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* ==========================================
-           🌟 تطبيق زيلو إف سي - ستايل التوهج النبضي (Glowing & Animated)
-           ========================================== */
-
         :root {
             --bg-dark: #121215;        
             --bg-card: rgba(28, 28, 34, 0.6); 
             --text-main: #f8fafc;      
             --text-muted: #888899;     
-            
-            /* ألوان التوهج الفخمة */
             --accent-purple: #833ab4;
             --accent-red: #fd1d1d;
             --accent-gold: #fcb045;
-            
-            /* تأثير الزجاج المتوهج */
             --glass-border: rgba(255, 255, 255, 0.05);
         }
 
@@ -53,7 +45,6 @@
             animation: fadeUp 0.6s ease-out forwards; 
         }
 
-        /* 👑 الهيدر العلوي */
         .top-bar {
             position: fixed;
             top: 10px;
@@ -73,7 +64,6 @@
             z-index: 1000;
         }
 
-        /* 📱 شريط التنقل السفلي المتوهج */
         .bottom-nav {
             position: fixed;
             bottom: 20px;
@@ -123,7 +113,6 @@
             transition: color 0.3s ease;
         }
 
-        /* ✨ حالة الزر النشط في الشريط السفلي */
         .nav-item.active {
             background: linear-gradient(135deg, rgba(131, 58, 180, 0.15), rgba(253, 29, 29, 0.15));
             border: 1px solid rgba(253, 29, 29, 0.3);
@@ -140,7 +129,6 @@
             text-shadow: 0 0 5px var(--accent-red);
         }
 
-        /* 🃏 البطاقات (تأثير الزجاج الداكن) */
         .card {
             background: var(--bg-card);
             backdrop-filter: blur(10px);
@@ -160,7 +148,6 @@
             box-shadow: 0 0 20px rgba(253, 29, 29, 0.2);
         }
 
-        /* 🔘 الأزرار الرئيسية المتوهجة والمتحركة */
         .btn-action {
             position: relative;
             width: 100%;
@@ -198,7 +185,6 @@
             transform: scale(0.95);
         }
 
-        /* ⬅️ زر العودة الأنيق */
         .btn-back {
             background: rgba(253, 29, 29, 0.1);
             color: var(--accent-gold);
@@ -222,7 +208,6 @@
             transform: translateX(5px); 
         }
 
-        /* ✨ التأثيرات الحركية (Keyframes) */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -260,7 +245,6 @@
 </head>
 <body>
 
-    <!-- تم إفراغ النصوص الثابتة ليتم ملؤها ديناميكياً بواسطة الجافاسكريبت -->
     <header class="top-bar" id="top-bar" style="display: none;">
         <div id="club" style="font-size: 0.9rem; color: #e0e0e0; font-weight: bold;"></div>
         <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); box-shadow: 0 0 10px rgba(252, 176, 69, 0.2);"></div>
@@ -271,44 +255,41 @@
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text">الرئيسية</span>
+            <span class="nav-text">Home</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">🛠️</span>
-            <span class="nav-text">المهام</span>
+            <span class="nav-text">Tasks</span>
         </button>
         <button class="nav-item" onclick="showPage('friends')">
             <span class="icon icon-wrapper">👥</span>
-            <span class="nav-text">الأصدقاء</span>
+            <span class="nav-text">Friends</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text">الترتيب</span>
+            <span class="nav-text">Ranking</span>
         </button>
         <button class="nav-item" onclick="showPage('wallet')">
             <span class="icon icon-wrapper">👛</span>
-            <span class="nav-text">المحفظة</span>
+            <span class="nav-text">Wallet</span>
         </button>
     </nav>
 
-    <!-- تم الترتيب بشكل منطقي: الترجمة والبيانات أولاً -->
     <script src="clubsData.js?v=6"></script>
     <script src="data.js?v=6"></script> 
     <script src="countries.js?v=6"></script>
     <script src="i18n-helpers.js?v=6"></script>
     <script src="ranking.js?v=6"></script>
     
-    <!-- ثم ملفات الواجهة المنطقية -->
     <script src="login.js?v=7"></script>
     <script src="weekly_match_rankings.js?v=6"></script>
     <script src="predictions_ranking.js?v=6"></script> 
-    <script src="home.js?v=6"></script>
+    <script src="home.js?v=10"></script>
     <script src="tasks.js?v=6"></script>
     <script src="leaderboard.js?v=6"></script>
     <script src="friends.js?v=6"></script>
     <script src="wallet.js?v=6"></script>
     
-    <!-- التطبيق الرئيسي يُشغل في النهاية -->
     <script src="app.js?v=6"></script>
 
 </body>
