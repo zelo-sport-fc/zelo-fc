@@ -127,6 +127,9 @@ function renderWalletPage(container) {
         </style>
     `;
 
+    // i18n Translation Helper Wrapper
+    const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
+
     container.innerHTML = `
         ${walletStyles}
         
@@ -141,7 +144,7 @@ function renderWalletPage(container) {
                         TON Wallet
                     </span>
                 </div>
-                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
+                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● ${t('connected', 'Connected')}</span>` : ''}
             </div>
 
             ${isTonConnected ? `
@@ -149,12 +152,12 @@ function renderWalletPage(container) {
                     ${tonWallet.slice(0, 8)}...${tonWallet.slice(-8)}
                 </div>
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 Copy</button>
-                    <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 Disconnect</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 ${t('copy', 'Copy')}</button>
+                    <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 ${t('disconnect', 'Disconnect')}</button>
                 </div>
             ` : `
                 <button class="btn-glass-ton" onclick="triggerConnect()">
-                    <span>💎</span> Connect TON Wallet
+                    <span>💎</span> ${t('connect_ton_wallet', 'Connect TON Wallet')}
                 </button>
             `}
         </div>
@@ -170,7 +173,7 @@ function renderWalletPage(container) {
                         Solana Wallet (Phantom)
                     </span>
                 </div>
-                ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">● Verified Real Connection</span>` : ''}
+                ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">● ${t('verified', 'Verified Real Connection')}</span>` : ''}
             </div>
 
             ${solanaWallet ? `
@@ -179,17 +182,17 @@ function renderWalletPage(container) {
                 </div>
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
-                    <span style="color:#8e8e93; font-size:0.8rem;">On-Chain SOL:</span>
-                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">⏳ Checking...</span>
+                    <span style="color:#8e8e93; font-size:0.8rem;">${t('onchain_sol', 'On-Chain SOL:')}</span>
+                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">⏳ ${t('checking', 'Checking...')}</span>
                 </div>
 
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 Copy</button>
-                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 Disconnect</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 ${t('copy', 'Copy')}</button>
+                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 ${t('disconnect', 'Disconnect')}</button>
                 </div>
             ` : `
                 <button class="btn-glass-solana" onclick="connectPhantomWallet()">
-                    🟣 Connect Solana Wallet (Real Web3)
+                    🟣 ${t('connect_solana_wallet', 'Connect Solana Wallet (Real Web3)')}
                 </button>
             `}
         </div>
@@ -202,20 +205,20 @@ function renderWalletPage(container) {
                         <span style="font-size: 1.1rem;">🪙</span>
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        ${TOKEN_NAME} Balance
+                        ${TOKEN_NAME} ${t('balance', 'Balance')}
                     </span>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
-                <span style="color: #aaa; font-size: 0.85rem;">Total Earned:</span>
+                <span style="color: #aaa; font-size: 0.85rem;">${t('total_earned', 'Total Earned:')}</span>
                 <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
                     ${userCoins.toLocaleString()} ${TOKEN_NAME}
                 </span>
             </div>
 
             <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
-                ⚡ Claim ${TOKEN_NAME} Tokens
+                ⚡ ${t('claim_tokens', 'Claim')} ${TOKEN_NAME} ${t('tokens', 'Tokens')}
             </button>
         </div>
         
@@ -275,7 +278,8 @@ window.triggerConnect = async function() {
             console.error("TON Connect Error:", err);
         }
     } else {
-        alert("TON Connect SDK is loading, please try again in a moment.");
+        const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
+        alert(t('ton_loading', 'TON Connect SDK is loading, please try again in a moment.'));
     }
 };
 
@@ -317,6 +321,7 @@ async function fetchRealSolanaBalance(address) {
 // 🟣 Real Solana Connection Handler
 // ==========================================
 window.connectPhantomWallet = async function() {
+    const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
     try {
         const isSolanaAvailable = "solana" in window;
         
@@ -330,11 +335,11 @@ window.connectPhantomWallet = async function() {
             const currentUrl = encodeURIComponent(window.location.href);
             const phantomDeepLink = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
             window.open(phantomDeepLink, '_blank');
-            alert('Please install Phantom Wallet or open this app inside Phantom Browser!');
+            alert(t('install_phantom', 'Please install Phantom Wallet or open this app inside Phantom Browser!'));
         }
     } catch (err) {
         console.error("Solana Connection Error:", err);
-        alert('Solana wallet connection request was rejected or cancelled.');
+        alert(t('solana_rejected', 'Solana wallet connection request was rejected or cancelled.'));
     }
 };
 
@@ -401,6 +406,8 @@ window.disconnectSolanaWallet = async function() {
 // ⚡ Claim Action Handler
 // ==========================================
 window.claimCoinsToSolanaWallet = async function() {
+    const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
+    
     const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
         ? userState.solanaWallet 
         : (localStorage.getItem('solana_wallet') || '');
@@ -412,19 +419,19 @@ window.claimCoinsToSolanaWallet = async function() {
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
-        alert('⚠️ Please connect your verified Solana wallet first!');
+        alert(t('connect_solana_first', '⚠️ Please connect your verified Solana wallet first!'));
         return;
     }
 
     if (userCoins <= 0) {
-        alert(`⚠️ You do not have enough ${TOKEN_NAME} balance to claim.`);
+        alert(t('not_enough_balance', `⚠️ You do not have enough ${TOKEN_NAME} balance to claim.`));
         return;
     }
 
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
-        `Confirm deducting ${userCoins.toLocaleString()} points to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens on your wallet?`
+        t('confirm_claim_msg', `Confirm deducting ${userCoins.toLocaleString()} points to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens on your wallet?`)
     );
 
     if (!confirmClaim) return;
@@ -432,7 +439,7 @@ window.claimCoinsToSolanaWallet = async function() {
     try {
         if (claimBtn) {
             claimBtn.disabled = true;
-            claimBtn.innerText = '⏳ Connecting to backend & sending tokens...';
+            claimBtn.innerText = t('connecting_backend', '⏳ Connecting to backend & sending tokens...');
         }
 
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
@@ -459,30 +466,6 @@ window.claimCoinsToSolanaWallet = async function() {
                 showPage('wallet');
             }
 
-            alert(`✅ Claim successful!\n\nTx Hash: ${result.txHash}`);
+            alert(`${t('claim_success', '✅ Claim successful!')}\n\nTx Hash: ${result.txHash}`);
         } else {
-            let errorDetails = "Unknown error";
-            if (result && result.error) {
-                errorDetails = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
-            } else if (result && result.message) {
-                errorDetails = result.message;
-            } else {
-                errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
-            }
-
-            alert(`❌ Claim transaction failed:\n${errorDetails}`);
-        }
-
-    } catch (error) {
-        console.error("Claim Error:", error);
-        alert(`❌ Connection error:\n${error.message}`);
-    } finally {
-        if (claimBtn) {
-            claimBtn.disabled = false;
-            claimBtn.innerText = `⚡ Claim ${TOKEN_NAME} Tokens`;
-        }
-    }
-};
-
-window.copyToClipboard = function(text) {
-    navigator.clipboard.writeText(text).then(() => alert('Wallet address copied to clipboard
+            le
