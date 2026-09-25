@@ -1,4 +1,4 @@
-window.solPriceHistory = window.solPriceHistory || [118.05, 118.10, 118.15, 118.08, 118.12];
+window.solPriceHistory = window.solPriceHistory || [120.93];
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
@@ -19,41 +19,43 @@ window.updateHomeSolPrice = async function() {
     const elMinPrice = document.getElementById('home-sol-min-price');
     const svgPath = document.getElementById('home-sol-svg-path');
 
-    const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
+    // SOL/USD Feed ID الرسمي في Pyth Network
+    const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
     
     let rawPrice = 0;
-    let confVal = "0.0022";
+    let confVal = "0.0000";
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`, { signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+        // جلب السعر مباشرةً من Pyth Hermes Oracle API
+        const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`, {
+            signal: controller.signal
+        });
         clearTimeout(timeoutId);
-        
+
         if (res.ok) {
             const data = await res.json();
             if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
                 const p = data.parsed[0].price;
+                
+                // حساب السعر الحقيقي باستخدام الأس (Expo) الخاص بـ Pyth
                 rawPrice = Number(p.price) * Math.pow(10, Number(p.expo));
-                confVal = (Number(p.conf) * Math.pow(10, Number(p.expo))).toFixed(4);
+                
+                // حساب قيمة هامش الثقة Confidence Interval
+                if (p.conf !== undefined) {
+                    confVal = (Number(p.conf) * Math.pow(10, Number(p.expo))).toFixed(4);
+                }
             }
         }
-    } catch (err) {}
-
-    if (!rawPrice || isNaN(rawPrice)) {
-        try {
-            const res2 = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-            const data2 = await res2.json();
-            if (data2 && data2.solana && data2.solana.usd) {
-                rawPrice = data2.solana.usd;
-            }
-        } catch (e) {}
+    } catch (err) {
+        console.error("Pyth Fetch Error:", err);
     }
 
-    if (!rawPrice || isNaN(rawPrice)) {
-        const lastP = window.solPriceHistory[window.solPriceHistory.length - 1] || 118.12;
-        const delta = (Math.random() - 0.49) * 0.18;
-        rawPrice = Number((lastP + delta).toFixed(2));
+    // إذا تعذر الاتصال بأوراكل Pyth، يتم الحفاظ على آخر سعر تم جلبه من Pyth
+    if (!rawPrice || isNaN(rawPrice) || rawPrice <= 0) {
+        rawPrice = window.solPriceHistory[window.solPriceHistory.length - 1] || 120.93;
     }
 
     const finalPriceStr = `$${rawPrice.toFixed(2)}`;
@@ -78,7 +80,7 @@ window.updateHomeSolPrice = async function() {
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
     if (svgPath && history.length > 1) {
-        const range = (maxP - minP) || 0.1;
+        const range = (maxP - minP) || 0.01;
         const width = 200;
         const height = 30;
         
@@ -114,7 +116,6 @@ window.renderHomePage = function(container) {
         const isAr = state.lang === 'ar';
 
         const username = state.username || '@Zelo_fc';
-        const userId = state.userId || '1654537339';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
         const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
 
@@ -293,7 +294,7 @@ window.renderHomePage = function(container) {
                             <div class="sol-oracle-badge">
                                 <span style="width: 5px; height: 5px; background: #c084fc; border-radius: 50%;"></span> PYTH ORACLE
                             </div>
-                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">$118.12</div>
+                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">--.--</div>
                         </div>
                     </div>
 
@@ -302,12 +303,12 @@ window.renderHomePage = function(container) {
                     <div class="sol-chart-area">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <svg class="sol-sparkline-svg" viewBox="0 0 200 30">
-                                <path id="home-sol-svg-path" d="M0,15 L50,15 L100,15 L150,15 L200,15" />
+                                <path id="home-sol-svg-path" d="M0,15 L200,15" />
                             </svg>
                             <div class="sol-price-axis">
-                                <div id="home-sol-max-price">$118.15</div>
-                                <div id="home-sol-mid-price">$118.10</div>
-                                <div id="home-sol-min-price">$118.05</div>
+                                <div id="home-sol-max-price">--.--</div>
+                                <div id="home-sol-mid-price">--.--</div>
+                                <div id="home-sol-min-price">--.--</div>
                             </div>
                         </div>
                         <div class="sol-time-axis">
@@ -321,15 +322,15 @@ window.renderHomePage = function(container) {
                     <div class="sol-bottom-grid">
                         <div class="sol-grid-item">
                             <span>Live price</span>
-                            <span id="home-sol-live-price">$118.12</span>
+                            <span id="home-sol-live-price">--.--</span>
                         </div>
                         <div class="sol-grid-item">
                             <span>Pyth Conf</span>
-                            <span id="home-sol-pyth-conf">0.0022</span>
+                            <span id="home-sol-pyth-conf">0.0000</span>
                         </div>
                         <div class="sol-grid-item">
                             <span>Oracle</span>
-                            <span id="home-sol-oracle-val">$118.12</span>
+                            <span id="home-sol-oracle-val">--.--</span>
                         </div>
                     </div>
                 </div>
@@ -385,11 +386,11 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
+        // جلب السعر فوراً ثم التحديث كل 3 ثوانٍ من أوراكل Pyth
         window.updateHomeSolPrice();
-
         window.solPriceInterval = setInterval(() => {
             window.updateHomeSolPrice();
-        }, 1500);
+        }, 3000);
 
     } catch (err) {
         console.error("Render error:", err);
