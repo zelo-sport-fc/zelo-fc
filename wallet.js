@@ -4,6 +4,7 @@
 
 const PYTH_SOL_FEED_ID = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
 const COINS_PER_ZELO_TOKEN = 100; // نسبة التحويل: كل 100 نقطة = 1 عملة ZELOFC
+const BACKEND_URL = "https://zelo-fc.onrender.com"; // رابط سيرفر Render الخاص بك
 
 // استدعاء مكتبة Solana Web3 الرسمية
 if (!window.solanaWeb3) {
@@ -229,7 +230,7 @@ function renderWalletPage(container) {
                 </span>
             </div>
 
-            <button class="btn-claim-main" onclick="claimCoinsToSolanaWallet()">
+            <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
                 ⚡ ${isAr ? 'تحويل النقاط إلى عملة ZELOFC (Claim)' : 'Claim Coins to ZELOFC Token'}
             </button>
         </div>
@@ -284,12 +285,13 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
-// ⚡ دالة الخصم والتحويل عند الضغط على Claim
+// ⚡ دالة الخصم والتحويل عند الضغط على Claim (مرتبطة بسيرفر Render)
 // ==========================================
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 0;
     const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
+    const claimBtn = document.getElementById('btn-claim-action');
 
     // 1. التأكد من ربط المحفظة
     if (!solWallet) {
@@ -315,30 +317,53 @@ window.claimCoinsToSolanaWallet = async function() {
     if (!confirmClaim) return;
 
     try {
-        alert(isAr ? '⏳ جاري الخصم وتحويل العملات على شبكة Solana...' : '⏳ Deducting coins and transferring tokens on Solana...');
-
-        // 4. خصم النقاط من حساب المستخدم
-        if (typeof userState !== 'undefined') {
-            userState.coins = 0;
-            localStorage.setItem('user_coins', 0);
+        if (claimBtn) {
+            claimBtn.disabled = true;
+            claimBtn.innerText = isAr ? '⏳ جاري الاتصال بالسيرفر والتحويل On-Chain...' : '⏳ Connecting server & transferring...';
         }
 
-        // 5. تحديث الشاشة فوراً لإظهار الخصم (0 Coins)
-        if (typeof showPage === 'function') {
-            showPage('wallet');
-        }
+        // 4. إرسال طلب تحويل حقيقي إلى السيرفر ليقوم بخصم العملات من محفظة المشروع
+        const response = await fetch(`${BACKEND_URL}/api/claim`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userWalletAddress: solWallet,
+                userCoins: userCoins
+            })
+        });
 
-        setTimeout(() => {
+        const result = await response.json();
+
+        if (result.success) {
+            // 5. خصم النقاط وتصغيرها في التطبيق فور نجاح العملية On-Chain
+            if (typeof userState !== 'undefined') {
+                userState.coins = 0;
+                localStorage.setItem('user_coins', 0);
+            }
+
+            if (typeof showPage === 'function') {
+                showPage('wallet');
+            }
+
             alert(
                 isAr 
-                ? `✅ تم خصم النقاط بنجاح وتم تحويل ${tokenAmountToReceive} ZELOFC On-Chain إلى محفظتك!` 
-                : `✅ Success! Points deducted and ${tokenAmountToReceive} ZELOFC transferred to your wallet!`
+                ? `✅ تم التحويل بنجاح من محفظة الخزينة!\n\nرقم المعاملة (Tx): ${result.txHash}` 
+                : `✅ Success! Tokens transferred On-Chain!\n\nTx Hash: ${result.txHash}`
             );
-        }, 1000);
+        } else {
+            alert(isAr ? `❌ فشلت عملية التحويل: ${result.error}` : `❌ Transfer failed: ${result.error}`);
+        }
 
     } catch (error) {
         console.error("Claim Error:", error);
-        alert(isAr ? '❌ حدث خطأ أثناء عملية السحب، يرجى المحاولة لاحقاً.' : '❌ Transaction failed, please try again.');
+        alert(isAr ? '❌ تعذر الاتصال بالسيرفر، يرجى التأكد من تشغيل السيرفر والمحاولة لاحقاً.' : '❌ Server connection error, please try again.');
+    } finally {
+        if (claimBtn) {
+            claimBtn.disabled = false;
+            claimBtn.innerText = isAr ? '⚡ تحويل النقاط إلى عملة ZELOFC (Claim)' : 'Claim Coins to ZELOFC Token';
+        }
     }
 };
 
@@ -380,4 +405,4 @@ window.disconnectSolanaWallet = function() {
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان!'));
 };
-            
+    
