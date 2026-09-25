@@ -1,5 +1,5 @@
 // ==========================================
-// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme
+// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme (Official SVG Icons)
 // ==========================================
 
 (function() {
@@ -161,7 +161,7 @@
     }
 
     // ==========================================
-    // 🎨 UI Rendering - Sleek Compact Glass Theme
+    // 🎨 UI Rendering - Official App Icons
     // ==========================================
 
     window.renderTasksPage = async function(container) {
@@ -211,20 +211,25 @@
                 }
 
                 .task-icon-box {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 10px;
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 1.2rem;
                     flex-shrink: 0;
                 }
 
-                .icon-x { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.2); color: white; }
-                .icon-tg { background: linear-gradient(135deg, rgba(42, 171, 238, 0.25), rgba(34, 158, 217, 0.1)); border: 1px solid rgba(42, 171, 238, 0.4); color: #2AABEE; }
-                .icon-yt { background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.1)); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; }
-                .icon-pump { background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(4, 120, 87, 0.1)); border: 1px solid rgba(0, 255, 135, 0.4); color: #00FF87; }
+                .icon-x { background: #000; border: 1px solid rgba(255,255,255,0.2); }
+                .icon-tg { background: rgba(36, 161, 222, 0.15); border: 1px solid rgba(36, 161, 222, 0.4); }
+                .icon-yt { background: rgba(255, 0, 0, 0.15); border: 1px solid rgba(255, 0, 0, 0.4); }
+                .icon-pump { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(0, 255, 135, 0.4); }
+
+                .task-icon-svg {
+                    width: 22px;
+                    height: 22px;
+                    fill: currentColor;
+                }
 
                 .task-info {
                     flex-grow: 1;
@@ -275,19 +280,27 @@
 
         await syncTasksFromDB();
 
+        // 🌟 شعارات المنصات الأصلية بـ SVG عالية الدقة
+        const svgIcons = {
+            tg: `<svg class="task-icon-svg" style="color:#24A1DE;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.07-.02.16-.04.25z"/></svg>`,
+            x: `<svg class="task-icon-svg" style="color:#fff;" viewBox="0 0 24 24"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+            yt: `<svg class="task-icon-svg" style="color:#FF0000;" viewBox="0 0 24 24"><path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+            pump: `<svg class="task-icon-svg" style="color:#00FF87;" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 10.5C3.67 10.5 3 11.17 3 12s.67 1.5 1.5 1.5h15c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5h-15zM10.5 4.5C10.5 3.67 11.17 3 12 3s1.5.67 1.5 1.5v15c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-15z"/></svg>`
+        };
+
         let tasksHtml = userState.tasks.map(task => {
             let iconClass = 'icon-tg';
-            let iconSymbol = '✈️';
+            let iconSvg = svgIcons.tg;
             
             if (task.id.startsWith('x') || task.id === 'connect_x') {
                 iconClass = 'icon-x';
-                iconSymbol = '𝕏';
+                iconSvg = svgIcons.x;
             } else if (task.id === 'youtube') {
                 iconClass = 'icon-yt';
-                iconSymbol = '▶️';
+                iconSvg = svgIcons.yt;
             } else if (task.id === 'pump_fun') {
                 iconClass = 'icon-pump';
-                iconSymbol = '💊';
+                iconSvg = svgIcons.pump;
             }
 
             const btnClass = task.completed ? 'btn-task-done' : 'btn-task-go';
@@ -302,7 +315,7 @@
             return `
                 <div class="task-premium-card" style="border-${isAr ? 'right' : 'left'}: 3px solid ${task.completed ? '#00FF87' : 'transparent'};">
                     <div class="task-icon-box ${iconClass}">
-                        ${iconSymbol}
+                        ${iconSvg}
                     </div>
                     
                     <div class="task-info" style="text-align: ${isAr ? 'right' : 'left'};">
@@ -412,48 +425,4 @@
                     alert(isAr ? "حدث خطأ أثناء حفظ المهمة، يرجى المحاولة لاحقاً." : "An error occurred, please try again.");
                     if (btn) {
                         btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                        btn.className = "btn-task-go";
-                        btn.disabled = false;
-                    }
-                }
-            } catch (error) {
-                console.error("Connection error:", error);
-                task.isProcessing = false; 
-                if (btn) {
-                    btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                    btn.className = "btn-task-go";
-                    btn.disabled = false;
-                }
-            }
-        }, 4000); 
-    };
-
-    window.claimDaily = async function() {
-        if (userState.dailyCheckInClaimed) return;
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-
-        const btn = document.getElementById('btn-daily-claim');
-        if (btn) {
-            btn.innerHTML = "⏳ ...";
-            btn.disabled = true;
-        }
-
-        const res = await apiClaimDaily();
-        if (res.success) {
-            userState.dailyCheckInClaimed = true;
-            userState.points = (userState.points || 0) + res.pointsAdded;
-            
-            alert(`🎁 ${isAr ? 'تم استلام المكافأة اليومية:' : 'Daily reward claimed:'} +${res.pointsAdded} ZELO!`);
-            
-            if (typeof updateTopBar === "function") updateTopBar();
-            renderTasksPage(document.getElementById("main-content"));
-        } else {
-            alert(isAr ? "فشل استلام المكافأة اليومية. حاول لاحقاً." : "Failed to claim daily reward.");
-            if (btn) {
-                btn.innerHTML = isAr ? 'استلام ✨' : 'Claim ✨';
-                btn.disabled = false;
-            }
-        }
-    };
-})();
-            
+                        btn.classN
