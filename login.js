@@ -1,5 +1,5 @@
 // ==========================================
-// 📱 login.js - Glassmorphism Fixed Viewport Edition
+// 📱 login.js - Glassmorphism Fixed Viewport ($ZELOFC Edition) 🚀
 // ==========================================
 
 window.tempSelectedClubs = window.tempSelectedClubs || [];
@@ -62,16 +62,29 @@ function getInjectableStyles() {
                 background: rgba(30, 30, 42, 0.8);
             }
 
+            /* ⚡ ZELOFC Token Solana Badge Card ⚡ */
             .solana-badge-card {
-                background: linear-gradient(135deg, rgba(153, 69, 255, 0.15), rgba(20, 241, 149, 0.12));
-                border: 1px solid rgba(20, 241, 149, 0.3);
-                border-radius: 14px;
-                padding: 10px 12px;
+                background: linear-gradient(135deg, rgba(153, 69, 255, 0.2), rgba(20, 241, 149, 0.15));
+                border: 1px solid rgba(20, 241, 149, 0.35);
+                border-radius: 16px;
+                padding: 10px 14px;
                 margin-bottom: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                backdrop-filter: blur(10px);
+                backdrop-filter: blur(12px);
+                box-shadow: 0 4px 15px rgba(153, 69, 255, 0.2);
+            }
+
+            .token-pill {
+                background: linear-gradient(135deg, #9945FF, #14F195);
+                color: #000;
+                font-size: 0.7rem;
+                font-weight: 900;
+                padding: 3px 8px;
+                border-radius: 8px;
+                letter-spacing: 0.5px;
+                box-shadow: 0 2px 8px rgba(20, 241, 149, 0.3);
             }
 
             .btn-pulse {
@@ -252,8 +265,10 @@ window.renderLoginScreen = function() {
 
     const titleText = safeT('chooseYourClubs', 'Choose Your Clubs');
     const subTitleText = safeT('clubSelectionLimit', '1 Local + 1 Global Club (Max 2)');
-    const solanaTitle = safeT('solanaRewardsTitle', 'SOL & Crypto Rewards');
-    const solanaDesc = safeT('solanaRewardsSub', 'Compete & support to earn $SOL');
+    
+    // النصوص الخاصة بعملة $ZELOFC والمكافآت
+    const zelofcTitle = safeT('zelofcRewardsTitle', 'Earn $ZELOFC & SOL');
+    const zelofcSub = safeT('zelofcRewardsSub', 'Compete & win official $ZELOFC token rewards');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
@@ -263,18 +278,16 @@ window.renderLoginScreen = function() {
             <div>
                 ${getLanguageSelector()}
 
-                <!-- Solana Rewards Banner -->
+                <!-- ⚡ ZELOFC Token & Solana Banner ⚡ -->
                 <div class="solana-badge-card">
                     <div style="display: flex; align-items: center; gap: 10px; text-align: ${isAr ? 'right' : 'left'};">
-                        <span style="font-size: 1.4rem;">⚡</span>
+                        <span style="font-size: 1.5rem; filter: drop-shadow(0 0 5px rgba(20, 241, 149, 0.6));">🪙</span>
                         <div>
-                            <div style="color: #14F195; font-size: 0.8rem; font-weight: 900;">${solanaTitle}</div>
-                            <div style="color: #94a3b8; font-size: 0.7rem; font-weight: bold;">${solanaDesc}</div>
+                            <div style="color: #14F195; font-size: 0.82rem; font-weight: 900;">${zelofcTitle}</div>
+                            <div style="color: #94a3b8; font-size: 0.7rem; font-weight: bold;">${zelofcSub}</div>
                         </div>
                     </div>
-                    <span style="background: rgba(153, 69, 255, 0.2); color: #c084fc; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(153, 69, 255, 0.4);">
-                        SOLANA
-                    </span>
+                    <span class="token-pill">$ZELOFC</span>
                 </div>
 
                 <div style="text-align: center; margin-bottom: 8px;">
