@@ -7,7 +7,7 @@ const COINS_PER_ZELO_TOKEN = 100; // سعر الصرف: 100 عملة = 1 ZELOFC 
 const BACKEND_CLAIM_URL = "https://zelo-fc.onrender.com/api/claim"; // رابط معالجة الاستبدال في السيرفر
 const TOKEN_NAME = "ZELOFC"; // رمز التوكن
 
-// 2. تهيئة مكتبة TON Connect
+// 2. تهيئة مكتبة TON Connect العالمية
 let tonConnectUI = null;
 try {
     if (typeof TON_CONNECT_UI !== 'undefined') {
@@ -19,11 +19,13 @@ try {
         // مراقبة تغيير حالة محفظة TON
         tonConnectUI.onStatusChange(async (walletInfo) => {
             if (walletInfo) {
-                console.log("✅ TON Wallet Connected:", walletInfo.account.address);
-                // حفظ العنوان في الحالة العامة
+                console.log("✅ TON Wallet Connected (Real):", walletInfo.account.address);
+                // حفظ العنوان في الحالة العامة للتطبيق
                 if (typeof userState !== 'undefined') {
                     userState.tonWalletAddress = walletInfo.account.address;
                     userState.tonWalletConnected = true;
+                    // اختياري: حفظ العنوان في localStorage لجلسة المتصفح
+                    localStorage.setItem('ton_wallet_address', walletInfo.account.address);
                 }
             } else {
                 console.log("🔌 TON Wallet Disconnected");
@@ -32,23 +34,25 @@ try {
                     userState.tonWalletAddress = null;
                     userState.tonWalletConnected = false;
                 }
+                 localStorage.removeItem('ton_wallet_address');
             }
             // إعادة عرض الصفحة لتحديث الأزرار
-            if (typeof showPage === 'function' && typeof userState !== 'undefined' && userState.hasLoggedIn) {
-                showPage('wallet');
-            }
+            if (typeof showPage === 'function') showPage('wallet');
         });
     }
 } catch (error) {
     console.error("❌ TON Connect Initialization Error:", error);
 }
 
-// 3. تحميل مكتبة Solana Web3 الرسمية
+// 3. تحميل مكتبة Solana Web3 الرسمية (إذا لم تكن محملة)
 if (!window.solanaWeb3) {
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
+    // الانتظار حتى يتم تحميل المكتبة قبل محاولة الاتصال
+    script.onload = () => console.log("✅ Solana Web3 lib loaded");
     document.head.appendChild(script);
 }
+
 
 // 4. الدالة الرئيسية لعرض الواجهة
 function renderWalletPage(container) {
@@ -61,22 +65,18 @@ function renderWalletPage(container) {
         ? userState.solanaWallet
         : (localStorage.getItem('solana_wallet') || '');
     
-    // التأكد من تحميل عنوان TON من الحالة الحية
     const tonWalletConnected = (typeof userState !== 'undefined' && userState.tonWalletConnected);
-    const tonWalletAddress = (typeof userState !== 'undefined' && userState.tonWalletAddress) ? userState.tonWalletAddress : localStorage.getItem('ton_wallet_address_fallback');
+    const tonWalletAddress = (typeof userState !== 'undefined' && userState.tonWalletAddress) ? userState.tonWalletAddress : localStorage.getItem('ton_wallet_address');
 
     // Sync global state (safety)
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
         userState.solanaWallet = solanaWallet;
-        // إذا كان العنوان غير مخزن في الحالة ولكن تم الاتصال به، احتفظ به
         if(!userState.tonWalletAddress && tonWalletAddress) {
              userState.tonWalletAddress = tonWalletAddress;
+             userState.tonWalletConnected = true;
         }
     }
-    
-    // تخزين احتياطي لعنوان تون محلياً لجلسة المستخدم
-    if(userState.tonWalletAddress) localStorage.setItem('ton_wallet_address_fallback', userState.tonWalletAddress);
 
     const walletStyles = `
         <style>
@@ -85,32 +85,32 @@ function renderWalletPage(container) {
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
                 border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 18px;
-                padding: 16px;
+                border-radius: 20px;
+                padding: 20px;
                 text-align: center;
                 box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-                margin-bottom: 16px;
+                margin-bottom: 20px;
                 overflow: hidden;
                 position: relative;
             }
-            .card-border-ton { border-top: 3px solid #0088cc; }
-            .card-border-solana { border-top: 3px solid #AB9FF2; }
-            .card-border-balance { border-top: 3px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.9), rgba(18, 18, 22, 1)); }
+            .card-border-ton { border-top: 4px solid #0088cc; }
+            .card-border-solana { border-top: 4px solid #AB9FF2; }
+            .card-border-balance { border-top: 4px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.9), rgba(18, 18, 22, 1)); }
 
             .wallet-header-flex {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 12px;
+                margin-bottom: 15px;
             }
             .wallet-logo-title {
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 12px;
             }
             .wallet-logo-sm {
-                width: 34px; height: 34px;
-                border-radius: 10px;
+                width: 40px; height: 40px;
+                border-radius: 12px;
                 background: rgba(255,255,255,0.05);
                 display: flex; align-items: center; justify-content: center;
                 border: 1px solid rgba(255,255,255,0.1);
@@ -119,52 +119,61 @@ function renderWalletPage(container) {
             .address-box-sm {
                 background: rgba(0, 0, 0, 0.5);
                 border: 1px solid rgba(255, 255, 255, 0.1);
-                padding: 10px 14px;
-                border-radius: 10px;
+                padding: 12px 16px;
+                border-radius: 14px;
                 font-family: monospace;
-                font-size: 0.82rem;
-                margin-bottom: 12px;
+                font-size: 0.9rem;
+                margin-bottom: 15px;
                 word-break: break-all;
             }
             
             /* TON Connect Button Override */
-            #tc-ui-button { width: 100%; }
+            #tc-ui-button { width: 100%; border-radius: 14px !important; font-weight: bold !important; }
 
             .btn-glass-solana {
                 background: linear-gradient(135deg, #AB9FF2, #512DA8);
-                color: white; border: none; border-radius: 12px;
-                padding: 12px 16px; font-weight: bold; font-size: 0.95rem;
-                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-                margin-bottom: 10px;
+                color: white; border: none; border-radius: 14px;
+                padding: 14px 18px; font-weight: bold; font-size: 1rem;
+                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+                margin-bottom: 12px;
                 box-shadow: 0 4px 15px rgba(171, 159, 242, 0.3);
+                transition: transform 0.2s;
             }
+             .btn-glass-solana:active { transform: scale(0.98); }
+
             .solana-input-sm {
-                width: 100%; padding: 10px 12px; background: rgba(0, 0, 0, 0.6);
-                border: 1px solid rgba(171, 159, 242, 0.4); border-radius: 10px;
-                color: #fff; font-family: monospace; font-size: 0.85rem;
-                box-sizing: border-box; margin-bottom: 10px; text-align: center;
+                width: 100%; padding: 12px 16px; background: rgba(0, 0, 0, 0.6);
+                border: 1px solid rgba(171, 159, 242, 0.4); border-radius: 14px;
+                color: #fff; font-family: monospace; font-size: 0.9rem;
+                box-sizing: border-box; margin-bottom: 12px; text-align: center;
+                transition: border-color 0.2s;
             }
+             .solana-input-sm:focus { outline: none; border-color: #AB9FF2; }
+
             .btn-action-sm {
                 background: rgba(255, 255, 255, 0.08); color: #fff;
-                border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px;
-                padding: 8px 14px; font-size: 0.85rem; font-weight: bold; cursor: pointer;
+                border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+                padding: 10px 16px; font-size: 0.9rem; font-weight: bold; cursor: pointer;
                 transition: all 0.2s;
             }
             .btn-action-sm:hover { background: rgba(255,255,255,0.15); }
             
             .btn-danger-sm {
                 background: rgba(253, 29, 29, 0.12); color: #ff4d4d;
-                border: 1px solid rgba(253, 29, 29, 0.4); border-radius: 10px;
-                padding: 8px 14px; font-size: 0.85rem; font-weight: bold; cursor: pointer;
+                border: 1px solid rgba(253, 29, 29, 0.4); border-radius: 12px;
+                padding: 10px 16px; font-size: 0.9rem; font-weight: bold; cursor: pointer;
+                transition: all 0.2s;
             }
+             .btn-danger-sm:hover { background: rgba(253, 29, 29, 0.25); }
+
             .btn-claim-main {
                 background: linear-gradient(135deg, #14F195, #00B4D8);
-                color: #000; border: none; border-radius: 14px;
-                padding: 14px 18px; font-size: 1.1rem; font-weight: 900; cursor: pointer;
-                width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+                color: #000; border: none; border-radius: 16px;
+                padding: 16px 20px; font-size: 1.1rem; font-weight: 900; cursor: pointer;
+                width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
                 box-shadow: 0 4px 20px rgba(20, 241, 149, 0.4);
                 transition: transform 0.2s;
-                margin-top: 10px;
+                margin-top: 15px;
             }
             .btn-claim-main:active { transform: scale(0.97); }
         </style>
@@ -178,9 +187,9 @@ function renderWalletPage(container) {
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
                     <div class="wallet-logo-sm">
-                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:20px;height:20px;" alt="TON">
+                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:24px;height:24px;" alt="TON">
                     </div>
-                    <span style="color:#fff; font-weight:bold; font-size:1rem;">
+                    <span style="color:#fff; font-weight:bold; font-size:1.1rem;">
                         TON Wallet (Real)
                     </span>
                 </div>
@@ -189,16 +198,16 @@ function renderWalletPage(container) {
 
             ${tonWalletConnected ? `
                 <div class="address-box-sm" style="color:#0088cc;">
-                    ${userState.tonWalletAddress.slice(0, 8)}...${userState.tonWalletAddress.slice(-8)}
+                    ${tonWalletAddress.slice(0, 10)}...${tonWalletAddress.slice(-10)}
                 </div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${userState.tonWalletAddress}')">📋 Copy</button>
-                    <button class="btn-danger-sm" onclick="triggerTonDisconnect()">🔌 Disconnect</button>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWalletAddress}')">📋 ${typeof t === 'function' ? t('copy') : 'Copy'}</button>
+                    <button class="btn-danger-sm" onclick="triggerTonDisconnect()">🔌 ${typeof t === 'function' ? t('disconnect') : 'Disconnect'}</button>
                 </div>
             ` : `
                 <!-- مكان وضع زر TonConnect الحقيقي -->
-                <div id="ton-connect-button-anchor" style="display: flex; justify-content: center;"></div>
-                <p style="color:#aaa; font-size:0.8rem; margin-top:8px;">Connect using Telegram TonHub, Tonkeeper, or @Wallet.</p>
+                <div id="ton-connect-button-anchor" style="display: flex; justify-content: center; margin-top: 5px;"></div>
+                <p style="color:#aaa; font-size:0.85rem; margin-top:10px;">Connect using Telegram Tonkeeper, MyTonWallet, or Tonhub.</p>
             `}
         </div>
 
@@ -207,9 +216,9 @@ function renderWalletPage(container) {
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
                     <div class="wallet-logo-sm" style="border-color: rgba(171, 159, 242, 0.4);">
-                        <img src="https://phantom.app/img/phantom-logo.svg" style="width:20px; height:20px;" alt="Phantom">
+                        <img src="https://phantom.app/img/phantom-logo.svg" style="width:24px; height:24px;" alt="Phantom">
                     </div>
-                    <span style="color:#fff; font-weight:bold; font-size:1rem;">
+                    <span style="color:#fff; font-weight:bold; font-size:1.1rem;">
                         Solana Wallet (Phantom)
                     </span>
                 </div>
@@ -218,21 +227,21 @@ function renderWalletPage(container) {
 
             ${solanaWallet ? `
                 <div class="address-box-sm" style="color:#AB9FF2;">
-                    ${solanaWallet.slice(0, 8)}...${solanaWallet.slice(-8)}
+                    ${solanaWallet.slice(0, 10)}...${solanaWallet.slice(-10)}
                 </div>
                 
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.4); padding:10px 14px; border-radius:10px; margin-bottom:12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color:#aaa; font-size:0.85rem;">On-Chain SOL:</span>
-                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:1rem;">⏳ Checking...</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.5); padding:12px 16px; border-radius:14px; margin-bottom:15px; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color:#aaa; font-size:0.9rem;">On-Chain SOL:</span>
+                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:1.1rem;">⏳ Checking...</span>
                 </div>
 
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 Copy</button>
-                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 Disconnect</button>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 ${typeof t === 'function' ? t('copy') : 'Copy'}</button>
+                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 ${typeof t === 'function' ? t('disconnect') : 'Disconnect'}</button>
                 </div>
             ` : `
                 <button class="btn-glass-solana" onclick="connectPhantomWallet()">
-                    <img src="https://phantom.app/img/phantom-logo.svg" style="width:18px; height:18px;" alt="">
+                    <img src="https://phantom.app/img/phantom-logo.svg" style="width:20px; height:20px;" alt="">
                     Auto Connect Phantom
                 </button>
 
@@ -250,17 +259,17 @@ function renderWalletPage(container) {
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
                     <div class="wallet-logo-sm" style="border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.15);">
-                        <span style="font-size: 1.3rem;">🪙</span>
+                        <span style="font-size: 1.4rem;">🪙</span>
                     </div>
-                    <span style="color:#fff; font-weight:bold; font-size:1rem;">
+                    <span style="color:#fff; font-weight:bold; font-size:1.1rem;">
                         ${TOKEN_NAME} Claim Portal
                     </span>
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.5); padding: 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(250, 204, 21, 0.2);">
-                <span style="color: #aaa; font-size: 0.9rem;">ZELOFC to Claim:</span>
-                <span style="color: #facc15; font-weight: 900; font-size: 1.3rem; font-family: monospace;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.6); padding: 16px; border-radius: 14px; margin-bottom: 18px; border: 1px solid rgba(250, 204, 21, 0.2);">
+                <span style="color: #aaa; font-size: 0.95rem;">ZELO Coins to Claim:</span>
+                <span style="color: #facc15; font-weight: 900; font-size: 1.4rem; font-family: monospace;">
                     ${userCoins.toLocaleString()}
                 </span>
             </div>
@@ -268,7 +277,7 @@ function renderWalletPage(container) {
             <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
                 ⚡ Claim ${TOKEN_NAME} Tokens
             </button>
-             <p style="color:#888; font-size:0.75rem; margin-top:10px;">*Ensure your Solana wallet is connected first. Claims sent to Phantom only.</p>
+             <p style="color:#888; font-size:0.8rem; margin-top:15px;">*Ensure your Solana wallet is connected first. Claims are sent directly to the active Phantom address.</p>
         </div>
         
         <div style="height: 30px;"></div>
@@ -280,25 +289,28 @@ function renderWalletPage(container) {
 }
 
 // ==========================================
-// 🔮 Wallet & Network Functions
+// 🔮 Wallet & Network Functions (Real Implementations)
 // ==========================================
 
-// 1. جلب الرصيد الحقيقي من شبكة سولانا
+// 1. جلب الرصيد الحقيقي من شبكة سولانا عبر RPC
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
         if (window.solanaWeb3) {
+            // استخدام Mainnet Beta العام (يمكن تغييره لرابط RPC خاص بك)
             const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
             const pubKey = new window.solanaWeb3.PublicKey(address);
             const balance = await connection.getBalance(pubKey);
             const solVal = (balance / window.solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
             if (el) el.innerText = `${solVal} SOL`;
             return;
+        } else {
+             console.warn("Solana Web3 lib not available yet.");
         }
     } catch (err) {
-        console.warn("Solana Balance Error:", err);
+        console.error("Solana Balance Fetch Error:", err);
     }
-    if (el) el.innerText = `0.0000 SOL`;
+    if (el) el.innerText = `Error`;
 }
 
 // 2. فصل محفظة TON الحقيقية
@@ -308,64 +320,66 @@ async function triggerTonDisconnect() {
     }
 }
 
-// 3. ربط محفظة Phantom (سولانا)
+// 3. ربط محفظة Phantom (سولانا) تلقائياً
 window.connectPhantomWallet = function() {
     if ("solana" in window && window.solana.isPhantom) {
         window.solana.connect().then((res) => {
-            console.log("✅ Phantom Wallet Connected:", res.publicKey.toString());
+            console.log("✅ Phantom Wallet Connected (Real):", res.publicKey.toString());
             saveSolanaAddressToStateAndDB(res.publicKey.toString());
         }).catch((err) => {
             console.error("❌ Phantom Connection Error:", err);
             if (err.code === 4001) {
-                alert('Connection request rejected by user.');
+                alert(typeof t === 'function' ? t('phantomRejected') : 'Connection request rejected by user.');
             } else {
-                alert('Phantom connection failed. Please try manual entry.');
+                alert(typeof t === 'function' ? t('phantomFailed') : 'Phantom connection failed. Please try manual entry.');
             }
         });
     } else {
-        alert('Phantom wallet not detected. Please install Phantom or paste your address manually.');
-        // التوجيه لصفحة تحميل فانتوم يمكن إضافته هنا
+        alert(typeof t === 'function' ? t('phantomNotFound') : 'Phantom wallet not detected. Please install Phantom mobile app or browser extension.');
+        // اختياري: توجيه لرابط تحميل فانتوم
+        // window.open('https://phantom.app/', '_blank');
     }
 };
 
-// 4. حفظ عنوان سولانا وتحديث الواجهة
+// 4. حفظ عنوان سولانا وتحديث الحالة العامة وقاعدة البيانات
 async function saveSolanaAddressToStateAndDB(solAddress) {
-    // حفظ في LocalStorage لجلسة التطبيق
+    // حفظ في LocalStorage لجلسة التطبيق الحالية
     localStorage.setItem('solana_wallet', solAddress);
     
-    // تحديث الحالة العامة (Sync Live State)
+    // تحديث الحالة العامة للتطبيق (Live State Sync)
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = solAddress;
         
-        // اختياري: حفظ في قاعدة بيانات Supabase إذا كان المستخدم مسجلاً
+        // اختياري: حفظ العنوان في قاعدة بيانات Supabase إذا كان المستخدم مسجلاً ومعرفاً
         if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState.userId) {
              supabaseClient.from('users')
                 .update({ solana_wallet_address: solAddress })
                 .eq('telegram_id', userState.userId)
                 .then(({ error }) => {
-                    if (error) console.error("Error saving Solana to Supabase:", error);
+                    if (error) console.error("❌ Error saving Solana to Supabase:", error);
+                    else console.log("✅ Solana address synced to DB");
                 });
         }
     }
     
-    // إعادة تحميل الصفحة فورياً
+    // إعادة تحميل الصفحة فورياً لإظهار التحديثات
     if (typeof showPage === 'function') showPage('wallet');
 }
 
-// 5. حفظ العنوان المدخل يدوياً
+// 5. حفظ العنوان المدخل يدوياً بعد التحقق البسيط
 window.saveManualSolanaWalletAddress = function() {
     const input = document.getElementById('solana-address-input');
     if (!input) return;
     const solAddress = input.value.trim();
-    // التحقق الأساسي من صحة العنوان (Base58 string length)
-    if (solAddress.length >= 32 && solAddress.length <= 44) {
+    // التحقق الأساسي من صحة العنوان (base58 string length should be 32-44)
+    if (solAddress.length >= 32 && solAddress.length <= 44 && /^[A-HJ-NP-Za-km-z1-9]*$/.test(solAddress)) {
         saveSolanaAddressToStateAndDB(solAddress);
     } else {
-        alert('Please enter a valid Solana address (typically 32-44 characters)');
+        alert(typeof t === 'function' ? t('invalidSolAddress') : 'Please enter a valid Solana address (typically 32-44 alphanumeric characters).');
     }
 };
 
-// 6. فصل محفظة سولانا
+// 6. فصل محفظة سولانا ومسحها من التخزين
 window.disconnectSolanaWallet = function() {
     localStorage.removeItem('solana_wallet');
     
@@ -375,15 +389,16 @@ window.disconnectSolanaWallet = function() {
         if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState.userId) {
              supabaseClient.from('users')
                 .update({ solana_wallet_address: null })
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userState.userId)
+                 .then(() => console.log("✅ Solana address removed from DB"));
         }
     }
     if (typeof showPage === 'function') showPage('wallet');
 };
 
-// 7. تنفيذ عملية الاستبدال (Claim)
+// 7. تنفيذ عملية الاستبدال (Claim) الحقيقية
 window.claimCoinsToSolanaWallet = async function() {
-    // جلب البيانات الحية من الحالة
+    // جلب البيانات الحية من الحالة العامة أو LocalStorage
     const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet)
         ? userState.solanaWallet
         : localStorage.getItem('solana_wallet');
@@ -396,56 +411,15 @@ window.claimCoinsToSolanaWallet = async function() {
 
     // 1. التحقق من وجود محفظة سولانا
     if (!solWallet) {
-        alert('⚠️ Please connect or save your Solana Wallet (Phantom) first!');
+        alert(typeof t === 'function' ? t('connectSolFirst') : '⚠️ Please connect or save your Solana Wallet (Phantom) first!');
         return;
     }
 
     // 2. التحقق من الرصيد
     if (userCoins <= 0) {
-        alert(`⚠️ You have no ${TOKEN_NAME} available to claim.`);
+        alert(typeof t === 'function' ? t('noTokensToClaim') : '⚠️ You have no ${TOKEN_NAME} available to claim.');
         return;
     }
 
-    // 3. حساب الكمية
-    const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
-
-    const confirmClaim = confirm(
-        `Confirm claiming ${userCoins.toLocaleString()} Zelo Coins to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens to address:\n${solWallet.slice(0,8)}...${solWallet.slice(-8)}?`
-    );
-
-    if (!confirmClaim) return;
-
-    try {
-        if (claimBtn) {
-            claimBtn.disabled = true;
-            claimBtn.innerText = '⏳ Connecting server & processing claim...';
-        }
-
-        // 4. إرسال طلب الاستبدال للسيرفر
-        const response = await fetch(BACKEND_CLAIM_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                userWalletAddress: solWallet,
-                userCoins: userCoins,
-                userId: typeof userState !== 'undefined' ? userState.userId : localStorage.getItem('user_id'), // لإثبات الهوية
-                lang: typeof userState !== 'undefined' ? userState.lang : 'ar'
-            })
-        });
-
-        const result = await response.json().catch(() => null);
-
-        if (response.ok && result && result.success) {
-            // 5. نجاح العملية: تصفية الرصيد المحلي في الحالة و LocalStorage
-            localStorage.setItem('user_coins', 0);
-            if (typeof userState !== 'undefined') {
-                userState.points = 0;
-                // إذا كان يستخدم coins بدل points في الـ state
-                if(userState.coins !== undefined) userState.coins = 0;
-            }
-
-            // تحديث الواجهة
-            if (typeof showPage === 'function') {
-          
+    // 3. حساب الكمية والرسالة التأكيدية
+    const tokenAmountToReceive = (userCoins
