@@ -337,10 +337,27 @@ window.renderHomePage = async function(container) {
         </div>
     `;
 
+    // تنظيف أي مؤقت سابق قبل بدء مؤقت جديد
+    if (window.solPriceInterval) {
+        clearInterval(window.solPriceInterval);
+    }
+
+    // جلب السعر فور فتح الواجهة
     setTimeout(() => {
         if (typeof window.updateHomeSolPrice === 'function') {
             window.updateHomeSolPrice();
         }
     }, 100);
+
+    // تكرار التحديث كل 30 ثانية مع التحقق الذكي من المكون
+    window.solPriceInterval = setInterval(() => {
+        const priceElem = document.getElementById('home-sol-price');
+        if (priceElem) {
+            if (typeof window.updateHomeSolPrice === 'function') {
+                window.updateHomeSolPrice();
+            }
+        } else {
+            clearInterval(window.solPriceInterval);
+        }
+    }, 30000);
 };
-            
