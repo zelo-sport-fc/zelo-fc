@@ -8,18 +8,10 @@ window.tempSelectedClubs = window.tempSelectedClubs || [];
 function getInjectableStyles() {
     return `
         <style>
-            /* Lock main viewport completely to prevent external page scrolling */
-            html, body {
-                overflow: hidden !important;
-                height: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                touch-action: none;
-            }
-
+            /* Lock main viewport to prevent page-level scroll */
             .login-screen-wrapper {
                 height: 100vh;
-                height: 100dvh;
+                max-height: 100vh;
                 width: 100%;
                 max-width: 500px;
                 margin: 0 auto;
@@ -27,15 +19,9 @@ function getInjectableStyles() {
                 flex-direction: column;
                 justify-content: space-between;
                 overflow: hidden;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                position: relative;
                 box-sizing: border-box;
                 padding: 15px 12px 20px 12px;
-                background: #0d0e12;
-                z-index: 9999;
             }
 
             .animate-screen {
@@ -46,16 +32,14 @@ function getInjectableStyles() {
                 100% { opacity: 1; transform: translateY(0); }
             }
 
-            /* Dedicated Inner Scroll Container ONLY */
+            /* Dedicated Inner Scroll Container */
             .inner-scroll-area {
                 flex: 1;
-                overflow-y: auto !important;
-                -webkit-overflow-scrolling: touch;
-                touch-action: pan-y;
-                overscroll-behavior: contain;
+                overflow-y: auto;
+                scroll-behavior: smooth;
                 padding-right: 4px;
-                margin-top: 8px;
-                margin-bottom: 10px;
+                margin-top: 10px;
+                margin-bottom: 15px;
             }
             .inner-scroll-area::-webkit-scrollbar { width: 4px; }
             .inner-scroll-area::-webkit-scrollbar-track { background: transparent; }
@@ -84,7 +68,7 @@ function getInjectableStyles() {
                 border: 1px solid rgba(20, 241, 149, 0.35);
                 border-radius: 16px;
                 padding: 10px 14px;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -95,9 +79,9 @@ function getInjectableStyles() {
             .token-pill {
                 background: linear-gradient(135deg, #9945FF, #14F195);
                 color: #000;
-                font-size: 0.72rem;
+                font-size: 0.7rem;
                 font-weight: 900;
-                padding: 4px 10px;
+                padding: 3px 8px;
                 border-radius: 8px;
                 letter-spacing: 0.5px;
                 box-shadow: 0 2px 8px rgba(20, 241, 149, 0.3);
@@ -166,14 +150,13 @@ function getInjectableStyles() {
     `;
 }
 
-// Safe translation function with fallback logic
-function safeT(key, fallbackAr, fallbackEn) {
-    const isAr = window.userState?.lang === 'ar';
+// Helper to Safely Get Translation or English Fallback
+function safeT(key, fallbackText) {
     if (typeof t === 'function') {
         const translated = t(key);
         if (translated && translated !== key) return translated;
     }
-    return isAr ? fallbackAr : fallbackEn;
+    return fallbackText;
 }
 
 // ====================== Get Default Language ======================
@@ -181,14 +164,14 @@ function getDefaultLanguage() {
     if (window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code) {
         return window.Telegram.WebApp.initDataUnsafe.user.language_code.startsWith('ar') ? 'ar' : 'en';
     }
-    return 'ar';
+    return 'en';
 }
 
 // ====================== Language Selector UI ======================
 function getLanguageSelector() {
-    const isAr = window.userState?.lang === 'ar';
+    const isAr = userState.lang === 'ar';
     return `
-        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px;">
             <div class="lang-btn ${isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">
                 🇸🇦 العربية
             </div>
@@ -201,17 +184,16 @@ function getLanguageSelector() {
 
 // ====================== Set Language ======================
 window.setLanguage = async function(lang) {
-    if (!window.userState) window.userState = {};
-    window.userState.lang = lang;
+    userState.lang = lang;
 
     if (typeof applyLanguageSettings === 'function') {
         applyLanguageSettings();
     }
 
-    if (typeof supabaseClient !== 'undefined' && window.userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && userState.userId) {
         try {
             await supabaseClient.from('users').upsert({
-                telegram_id: window.userState.userId,
+                telegram_id: userState.userId,
                 lang: lang
             }, { onConflict: 'telegram_id' });
         } catch (e) {}
@@ -223,10 +205,10 @@ window.setLanguage = async function(lang) {
 // ====================== Confirm Floating Button ======================
 function getFloatingButton() {
     if (window.tempSelectedClubs.length === 0) return '';
-    const btnLabel = safeT('confirmAndContinue', 'تأكيد والمتابعة', 'Confirm & Continue');
+    const btnLabel = safeT('confirmAndContinue', 'Confirm & Continue');
 
     return `
-        <div style="padding-top: 5px; width: 100%;">
+        <div style="padding-top: 10px; width: 100%;">
             <div id="confirm-btn" class="btn-pulse" onclick="confirmLogin()">
                 ✅ ${btnLabel} (${window.tempSelectedClubs.length}/2)
             </div>
@@ -241,56 +223,52 @@ window.renderLoginScreen = function() {
     if (topBar) topBar.style.display = 'none';
     if (bottomNav) bottomNav.style.display = 'none';
 
-    if (!window.userState) window.userState = {};
-    if (!window.userState.lang) window.userState.lang = getDefaultLanguage();
+    if (!userState.lang) userState.lang = getDefaultLanguage();
 
     const mainContent = document.getElementById("main-content");
-    if (!mainContent) return;
+    const isAr = userState.lang === 'ar';
 
-    const isAr = window.userState.lang === 'ar';
     let countriesHtml = "";
 
-    if (typeof allWorldCupCountriesClubs !== 'undefined') {
-        for (const countryKey in allWorldCupCountriesClubs) {
-            const clubsInCountry = allWorldCupCountriesClubs[countryKey];
-            if (!clubsInCountry || clubsInCountry.length === 0) continue;
+    for (const countryKey in allWorldCupCountriesClubs) {
+        const clubsInCountry = allWorldCupCountriesClubs[countryKey];
+        if (!clubsInCountry || clubsInCountry.length === 0) continue;
 
-            const flag = clubsInCountry[0].countryFlag;
-            let countryName = countryKey.charAt(0).toUpperCase() + countryKey.slice(1);
-            if (typeof getCountryName === 'function') {
-                countryName = getCountryName(flag) || countryName;
-            }
-
-            const selectedInThisCountry = clubsInCountry.filter(c => window.tempSelectedClubs.includes(String(c.id))).length;
-            const selectionBadge = selectedInThisCountry > 0 
-                ? `<span style="background: rgba(0, 255, 135, 0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: #00FF87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: bold;">✓ ${selectedInThisCountry}</span>`
-                : '';
-
-            countriesHtml += `
-                <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
-                     style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
-                        <h4 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 800;">${countryName}</h4>
-                        ${selectionBadge}
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
-                            ${clubsInCountry.length} ⚽
-                        </span>
-                        <span style="color: #666; font-size: 0.9rem;">${isAr ? '👈' : '👉'}</span>
-                    </div>
-                </div>
-            `;
+        const flag = clubsInCountry[0].countryFlag;
+        let countryName = countryKey.charAt(0).toUpperCase() + countryKey.slice(1);
+        if (typeof getCountryName === 'function') {
+            countryName = getCountryName(flag) || countryName;
         }
+
+        const selectedInThisCountry = clubsInCountry.filter(c => window.tempSelectedClubs.includes(String(c.id))).length;
+        const selectionBadge = selectedInThisCountry > 0 
+            ? `<span style="background: rgba(0, 255, 135, 0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: #00FF87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: bold;">✓ ${selectedInThisCountry}</span>`
+            : '';
+
+        countriesHtml += `
+            <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
+                 style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
+                    <h4 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 800;">${countryName}</h4>
+                    ${selectionBadge}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
+                        ${clubsInCountry.length} ⚽
+                    </span>
+                    <span style="color: #666; font-size: 0.9rem;">${isAr ? '👈' : '👉'}</span>
+                </div>
+            </div>
+        `;
     }
 
-    const titleText = safeT('chooseYourClubs', 'اختر أنديتك', 'Choose Your Clubs');
-    const subTitleText = safeT('clubSelectionLimit', 'نادي محلي + نادي عالمي (الحد الأقصى 2)', '1 Local + 1 Global Club (Max 2)');
+    const titleText = safeT('chooseYourClubs', 'Choose Your Clubs');
+    const subTitleText = safeT('clubSelectionLimit', '1 Local + 1 Global Club (Max 2)');
     
-    // النصوص المترجمة لبطاقة المكافآت ZELOFC
-    const zelofcTitle = safeT('zelofcRewardsTitle', 'اربح عملة ZELOFC$ و SOL', 'Earn $ZELOFC & SOL');
-    const zelofcSub = safeT('zelofcRewardsSub', 'تنافس ودعم ناديك لتكسب جوائز بـ ZELOFC$', 'Compete & win official$ZELOFC token rewards');
+    // النصوص الخاصة بعملة $ZELOFC والمكافآت
+    const zelofcTitle = safeT('zelofcRewardsTitle', 'Earn $ZELOFC & SOL');
+    const zelofcSub = safeT('zelofcRewardsSub', 'Compete & win official $ZELOFC token rewards');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
@@ -312,7 +290,7 @@ window.renderLoginScreen = function() {
                     <span class="token-pill">$ZELOFC</span>
                 </div>
 
-                <div style="text-align: center; margin-bottom: 6px;">
+                <div style="text-align: center; margin-bottom: 8px;">
                     <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 4px 0; font-size: 1.3rem; font-weight: 900;">
                         ${titleText}
                     </h2>
@@ -322,7 +300,7 @@ window.renderLoginScreen = function() {
                 </div>
             </div>
 
-            <!-- Scrollable Inner Container -->
+            <!-- Only Inner Area Scrolls -->
             <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
                 ${countriesHtml}
             </div>
@@ -333,18 +311,13 @@ window.renderLoginScreen = function() {
     `;
 };
 
-// Aliases to fix any "Missing Login Screen" function call errors
-window.showLoginScreen = window.renderLoginScreen;
-
 // ====================== Show Clubs For Selected Country ======================
 window.showClubsForCountry = function(countryKey) {
-    if (typeof allWorldCupCountriesClubs === 'undefined' || !allWorldCupCountriesClubs[countryKey]) return;
     const clubs = allWorldCupCountriesClubs[countryKey];
+    if (!clubs) return;
 
     const mainContent = document.getElementById("main-content");
-    if (!mainContent) return;
-
-    const isAr = window.userState?.lang === 'ar';
+    const isAr = userState.lang === 'ar';
 
     let clubsHtml = clubs.map(club => {
         const stringClubId = String(club.id);
@@ -378,8 +351,8 @@ window.showClubsForCountry = function(countryKey) {
         countryName = getCountryName(flag) || countryName;
     }
 
-    const backText = safeT('btnBack', 'العودة للدول', 'Back to countries');
-    const tapHint = safeT('tapClubHint', 'اضغط على النادي للاختيار', 'Tap a club to select it');
+    const backText = safeT('btnBack', 'Back to countries');
+    const tapHint = safeT('tapClubHint', 'Tap a club to select it');
 
     mainContent.innerHTML = `
         ${getInjectableStyles()}
@@ -400,7 +373,7 @@ window.showClubsForCountry = function(countryKey) {
                 </div>
             </div>
 
-            <!-- Scrollable Inner Container -->
+            <!-- Only Inner Area Scrolls -->
             <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
                 ${clubsHtml}
             </div>
@@ -422,7 +395,7 @@ window.toggleClubSelection = function(clubId, countryKey) {
         if (window.tempSelectedClubs.length < 2) {
             window.tempSelectedClubs.push(stringClubId);
         } else {
-            const limitMsg = safeT('maxClubsAlert', 'يمكنك اختيار ناديين فقط كحد أقصى (محلي وعالمي) ⚠️', 'You can select a maximum of 2 clubs (Local & Global) ⚠️');
+            const limitMsg = safeT('maxClubsAlert', 'You can select a maximum of 2 clubs (Local & Global) ⚠️');
             alert(limitMsg);
             return; 
         }
@@ -434,24 +407,23 @@ window.toggleClubSelection = function(clubId, countryKey) {
 // ====================== Confirm Login Function ======================
 window.confirmLogin = async function() {
     if (window.tempSelectedClubs.length === 0) {
-        const selectAlert = safeT('selectAtLeastOne', 'الرجاء اختيار نادي واحد على الأقل للمتابعة.', 'Please select at least one club to continue.');
+        const selectAlert = safeT('selectAtLeastOne', 'Please select at least one club to continue.');
         alert(selectAlert);
         return;
     }
 
-    if (!window.userState) window.userState = {};
-    window.userState.selectedClubs = [...window.tempSelectedClubs];
+    userState.selectedClubs = [...window.tempSelectedClubs];
     
     const btn = document.getElementById('confirm-btn');
     if (btn) btn.innerHTML = '⏳...';
 
-    if (typeof supabaseClient !== 'undefined' && window.userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && userState.userId) {
         try {
             const { error: userErr } = await supabaseClient.from('users').upsert({
-                telegram_id: window.userState.userId,
-                username: window.userState.username,
-                selected_clubs: window.userState.selectedClubs,
-                lang: window.userState.lang
+                telegram_id: userState.userId,
+                username: userState.username,
+                selected_clubs: userState.selectedClubs,
+                lang: userState.lang
             }, { onConflict: 'telegram_id' });
 
             if (userErr) {
@@ -463,12 +435,55 @@ window.confirmLogin = async function() {
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', window.userState.userId)
+                .eq('telegram_id', userState.userId)
                 .maybeSingle();
             
             if (userData && userData.points) {
                 startingPoints = userData.points;
             }
 
-            const rankingsData = window.userState.selectedClubs.map(clubId => ({
-   
+            const rankingsData = userState.selectedClubs.map(clubId => ({
+                telegram_id: userState.userId,
+                club_id: String(clubId),
+                total_fan_points: startingPoints,
+                points_activity: 0,
+                referrals_count: 0
+            }));
+
+            const { error: rankErr } = await supabaseClient
+                .from('club_fans_rankings')
+                .upsert(rankingsData, { onConflict: 'telegram_id,club_id' });
+            
+            if (rankErr) {
+                alert("❌ Database Error (rankings):\n" + rankErr.message);
+                throw rankErr;
+            }
+
+            // Process Referral
+            if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
+                window.apiProcessReferral(userState.pendingReferrer, userState.userId);
+                userState.pendingReferrer = null; 
+            }
+
+        } catch (error) {
+            console.error("⚠️ Login process error:", error);
+            if (btn) btn.innerHTML = safeT('retry', 'Retry 🔄');
+            return; 
+        }
+    }
+
+    userState.hasLoggedIn = true;
+
+    const topBar = document.getElementById('top-bar');
+    const bottomNav = document.getElementById('bottom-nav');
+    if (topBar) topBar.style.display = 'flex';
+    if (bottomNav) bottomNav.style.display = 'flex';
+
+    if (typeof updateTopBar === 'function') {
+        updateTopBar();
+    }
+
+    if (typeof showPage === 'function') {
+        showPage('home');
+    }
+};
