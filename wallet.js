@@ -14,16 +14,20 @@ if (!window.solanaWeb3) {
 }
 
 function renderWalletPage(container) {
+    // 💡 الحصول على ID مستخدم تلجرام الحالي للتفريق بين الحسابات
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
+
     // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
         : ((typeof userState !== 'undefined' && userState.coins !== undefined)
             ? Number(userState.coins)
-            : Number(localStorage.getItem('user_coins') || 0));
+            : Number(localStorage.getItem(`user_coins_${telegramId}`) || 0));
     
+    // 💡 قراءة المحفظة الخاصة بهذا الـ Telegram ID تحديداً
     const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
         ? userState.solanaWallet 
-        : (localStorage.getItem('solana_wallet') || '');
+        : (localStorage.getItem(`solana_wallet_${telegramId}`) || '');
 
     // Sync global state
     if (typeof userState !== 'undefined') {
@@ -247,29 +251,28 @@ async function fetchRealSolanaBalance(address) {
 // ⚡ Claim Action Handler
 // ==========================================
 window.claimCoinsToSolanaWallet = async function() {
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
+
     const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
         ? userState.solanaWallet 
-        : (localStorage.getItem('solana_wallet') || '');
+        : (localStorage.getItem(`solana_wallet_${telegramId}`) || '');
 
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined) 
         ? Number(userState.points) 
-        : Number(localStorage.getItem('user_coins') || 0);
+        : Number(localStorage.getItem(`user_coins_${telegramId}`) || 0);
 
     const claimBtn = document.getElementById('btn-claim-action');
 
-    // 1. Verify wallet connection
     if (!solWallet) {
         alert('⚠️ Please connect or save your Solana Wallet first!');
         return;
     }
 
-    // 2. Verify sufficient balance
     if (userCoins <= 0) {
         alert(`⚠️ You have no ${TOKEN_NAME} available to claim.`);
         return;
     }
 
-    // 3. Calculate claim amount
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
@@ -284,7 +287,6 @@ window.claimCoinsToSolanaWallet = async function() {
             claimBtn.innerText = '⏳ Connecting server & transferring...';
         }
 
-        // 4. Send claim request to server
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
             method: 'POST',
             headers: {
@@ -292,15 +294,15 @@ window.claimCoinsToSolanaWallet = async function() {
             },
             body: JSON.stringify({
                 userWalletAddress: solWallet,
-                userCoins: userCoins
+                userCoins: userCoins,
+                telegramId: telegramId
             })
         });
 
         const result = await response.json().catch(() => null);
 
         if (response.ok && result && result.success) {
-            // 5. Reset local balance & state on success
-            localStorage.setItem('user_coins', 0);
+            localStorage.setItem(`user_coins_${telegramId}`, 0);
             if (typeof userState !== 'undefined') {
                 userState.points = 0;
                 userState.coins = 0;
@@ -345,8 +347,12 @@ window.connectPhantomWallet = function() {
     }
 };
 
+// 💡 حفظ المحفظة باسم الـ Telegram ID الخاص بالحساب المفتوح فقط
 async function saveSolanaAddressToStateAndDB(solAddress) {
-    localStorage.setItem('solana_wallet', solAddress);
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
+    
+    localStorage.setItem(`solana_wallet_${telegramId}`, solAddress);
+    
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = solAddress;
     }
@@ -364,9 +370,13 @@ window.saveSolanaWalletAddress = function() {
     }
 };
 
+// 💡 فصل المحفظة الخاصة بالحساب الحالي فقط دون المساس بالحسابات الأخرى
 window.disconnectSolanaWallet = function() {
-    localStorage.removeItem('solana_wallet');
-    localStorage.removeItem('user_coins');
+    const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
+
+    localStorage.removeItem(`solana_wallet_${telegramId}`);
+    localStorage.removeItem(`user_coins_${telegramId}`);
+    
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = '';
         userState.points = 0;
@@ -378,4 +388,3 @@ window.disconnectSolanaWallet = function() {
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => alert('Address copied to clipboard!'));
 };
-                
