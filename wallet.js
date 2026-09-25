@@ -113,8 +113,8 @@ function renderWalletPage(container) {
                 .btn-glass-solana {
                     background: linear-gradient(135deg, #AB9FF2, #512DA8);
                     color: white; border: none; border-radius: 10px;
-                    padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
-                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+                    padding: 12px 14px; font-weight: bold; font-size: 0.88rem;
+                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
                     margin-bottom: 8px;
                 }
                 .solana-input-sm {
@@ -196,14 +196,7 @@ function renderWalletPage(container) {
                 ` : `
                     <button class="btn-glass-solana" onclick="connectPhantomWallet()">
                         <img src="https://phantom.app/img/phantom-logo.svg" style="width:16px; height:16px;" alt="">
-                        Auto Connect Phantom
-                    </button>
-
-                    <input type="text" id="solana-address-input" class="solana-input-sm" 
-                           placeholder="Or paste Solana address...">
-
-                    <button class="btn-action-sm" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()">
-                        💾 Save Address
+                        Connect Phantom Wallet
                     </button>
                 `}
             </div>
@@ -268,6 +261,83 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
+// ⚡ Real Auto Connect Phantom Function
+// ==========================================
+window.connectPhantomWallet = async function() {
+    // 1. الاتصال المباشر إذا كان التطبيق يعمل داخل متصفح مدعوم فيه إضافة Phantom
+    if ("solana" in window && window.solana.isPhantom) {
+        try {
+            const res = await window.solana.connect();
+            saveSolanaAddressToStateAndDB(res.publicKey.toString());
+            return;
+        } catch (err) {
+            console.error("User rejected phantom connection:", err);
+            return;
+        }
+    }
+
+    // 2. الربط التلقائي عبر Telegram Mini App باستخدام Deep Link المباشر
+    try {
+        const appUrl = encodeURIComponent(window.location.href);
+        const refUrl = encodeURIComponent(window.location.origin);
+        const phantomDeepLink = `https://phantom.app/ul/browse/${appUrl}?ref=${refUrl}`;
+
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+            window.Telegram.WebApp.openLink(phantomDeepLink);
+        } else {
+            window.location.href = phantomDeepLink;
+        }
+    } catch (err) {
+        console.error("Error opening Phantom Deep Link:", err);
+    }
+};
+
+// ==========================================
+// 🔄 استقبال الرد وتلقي عنوان المحفظة عند العودة
+// ==========================================
+function checkPhantomRedirectParams() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnedAddress = urlParams.get("phantom_encryption_public_key") || urlParams.get("public_key") || urlParams.get("address");
+
+        if (returnedAddress) {
+            saveSolanaAddressToStateAndDB(returnedAddress);
+            // تنظيف الرابط للحفاظ على مظهره
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    } catch (e) {
+        console.warn("Error parsing redirect parameters:", e);
+    }
+}
+
+// تشغيل الفحص فور تحميل الملف
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkPhantomRedirectParams);
+} else {
+    checkPhantomRedirectParams();
+}
+
+async function saveSolanaAddressToStateAndDB(solAddress) {
+    localStorage.setItem('solana_wallet', solAddress);
+    if (typeof userState !== 'undefined') {
+        userState.solanaWallet = solAddress;
+    }
+    if (typeof showPage === 'function') showPage('wallet');
+}
+
+window.disconnectSolanaWallet = function() {
+    localStorage.removeItem('solana_wallet');
+    if (typeof userState !== 'undefined') {
+        userState.solanaWallet = '';
+    }
+    if (typeof showPage === 'function') showPage('wallet');
+};
+
+window.copyToClipboard = function(text) {
+    navigator.clipboard.writeText(text).then(() => alert('Address copied to clipboard!'));
+};
+
+// ==========================================
 // ⚡ Claim Action Handler
 // ==========================================
 window.claimCoinsToSolanaWallet = async function() {
@@ -283,7 +353,7 @@ window.claimCoinsToSolanaWallet = async function() {
 
     // 1. Verify wallet connection
     if (!solWallet) {
-        alert('⚠️ Please connect or save your Solana Wallet first!');
+        alert('⚠️ Please connect your Solana Wallet first!');
         return;
     }
 
@@ -358,45 +428,3 @@ window.claimCoinsToSolanaWallet = async function() {
         }
     }
 };
-
-window.connectPhantomWallet = function() {
-    if ("solana" in window && window.solana.isPhantom) {
-        window.solana.connect().then((res) => {
-            saveSolanaAddressToStateAndDB(res.publicKey.toString());
-        }).catch((err) => console.error(err));
-    } else {
-        alert('Please copy your wallet address from the Phantom app and paste it in the field.');
-    }
-};
-
-async function saveSolanaAddressToStateAndDB(solAddress) {
-    localStorage.setItem('solana_wallet', solAddress);
-    if (typeof userState !== 'undefined') {
-        userState.solanaWallet = solAddress;
-    }
-    if (typeof showPage === 'function') showPage('wallet');
-}
-
-window.saveSolanaWalletAddress = function() {
-    const input = document.getElementById('solana-address-input');
-    if (!input) return;
-    const solAddress = input.value.trim();
-    if (solAddress.length >= 32) {
-        saveSolanaAddressToStateAndDB(solAddress);
-    } else {
-        alert('Please enter a valid Solana address');
-    }
-};
-
-window.disconnectSolanaWallet = function() {
-    localStorage.removeItem('solana_wallet');
-    if (typeof userState !== 'undefined') {
-        userState.solanaWallet = '';
-    }
-    if (typeof showPage === 'function') showPage('wallet');
-};
-
-window.copyToClipboard = function(text) {
-    navigator.clipboard.writeText(text).then(() => alert('Address copied to clipboard!'));
-};
-                        
