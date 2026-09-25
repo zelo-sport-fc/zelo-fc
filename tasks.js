@@ -1,12 +1,11 @@
 // ==========================================
-// 🛠️ ملف قسم المهام (Tasks) - النسخة الحقيقية المربوطة بـ Supabase (بتصميم أسطوري)
+// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme
 // ==========================================
 
 (function() {
-    // 1. تحديث الروابط والأسماء إلى Zelo Sport مع إضافة مهمة Pump.fun
+    // 1. Default tasks list
     window.defaultTasksData = [
         { id: "connect_x", textAr: "ربط حسابك في منصة X (مهمة خاصة)", textEn: "Connect X Account (VIP)", points: 1000, completed: false, url: "#" },
-        // 👇 المهمة الجديدة المخصصة لمنصة Pump.fun لدعم العملة
         { id: "pump_fun", textAr: "دعم وشراء عملة ZELO FC على Pump.fun", textEn: "Support & Buy ZELO FC on Pump.fun", points: 1500, completed: false, url: "https://pump.fun/coin/BBQmpKimKwAHBoJN2TyRG2CSEYRZhkxfksu1D1q9pump" },
         { id: "x", textAr: "متابعة حساب Zelo Sport على X", textEn: "Follow Zelo Sport on X", points: 500, completed: false, url: "https://x.com/Zelo_Sport" },
         { id: "tg_channel", textAr: "الانضمام لقناة تليجرام", textEn: "Join Telegram Channel", points: 400, completed: false, url: "https://t.me/ZeloSport" },
@@ -16,11 +15,11 @@
     ];
 
     // ==========================================
-    // 🔄 دوال الاتصال بقاعدة البيانات (API Calls)
+    // 🔄 API Database Functions
     // ==========================================
 
     async function apiVerifyTask(taskId, points) {
-        if (!supabaseClient) return { success: false, message: "لا يوجد اتصال بقاعدة البيانات" };
+        if (!supabaseClient) return { success: false, message: "No database connection" };
         
         try {
             const { error: taskError } = await supabaseClient
@@ -65,12 +64,12 @@
                     .update({ total_fan_points: newPoints })
                     .eq('telegram_id', userState.userId);
 
-                if (clubUpdateError) console.error("❌ خطأ في تحديث نقاط النادي:", clubUpdateError);
+                if (clubUpdateError) console.error("Error updating club points:", clubUpdateError);
             }
 
             return { success: true, alreadyDone: false };
         } catch (error) {
-            console.error("❌ خطأ في حفظ المهمة وتحديث النقاط:", error);
+            console.error("Error verifying task and updating points:", error);
             return { success: false };
         }
     }
@@ -108,7 +107,7 @@
                 .eq('telegram_id', userState.userId);
 
             if (!clubFetchError && clubData && clubData.length > 0) {
-                const { error: clubUpdateError } = await supabaseClient
+                await supabaseClient
                     .from('club_fans_rankings')
                     .update({ total_fan_points: newPoints })
                     .eq('telegram_id', userState.userId);
@@ -116,7 +115,7 @@
 
             return { success: true, pointsAdded: dailyPoints };
         } catch (error) {
-            console.error("❌ خطأ في المطالبة اليومية:", error);
+            console.error("Error claiming daily reward:", error);
             return { success: false };
         }
     }
@@ -157,12 +156,12 @@
                 userState.dailyCheckInClaimed = false;
             }
         } catch (error) {
-            console.error("❌ خطأ في مزامنة بيانات المهام:", error);
+            console.error("Error syncing task data:", error);
         }
     }
 
     // ==========================================
-    // 🎨 دوال واجهة المهام (التصميم الأسطوري الجديد)
+    // 🎨 UI Rendering - Sleek Compact Glass Theme
     // ==========================================
 
     window.renderTasksPage = async function(container) {
@@ -170,127 +169,111 @@
             userState.tasks = window.defaultTasksData.map(t => ({...t}));
         }
 
+        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+        const borderSide = isAr ? 'border-right' : 'border-left';
+
         const styles = `
             <style>
-                @keyframes floatGlow {
-                    0% { box-shadow: 0 10px 30px rgba(252, 176, 69, 0.15), inset 0 0 15px rgba(253, 29, 29, 0.1); transform: translateY(0); }
-                    50% { box-shadow: 0 15px 40px rgba(253, 29, 29, 0.3), inset 0 0 25px rgba(252, 176, 69, 0.2); transform: translateY(-3px); }
-                    100% { box-shadow: 0 10px 30px rgba(252, 176, 69, 0.15), inset 0 0 15px rgba(253, 29, 29, 0.1); transform: translateY(0); }
-                }
-
-                .legendary-daily-card {
-                    background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(22, 22, 30, 0.9));
-                    border: 2px solid rgba(252, 176, 69, 0.3);
-                    border-radius: 20px;
-                    padding: 22px;
-                    margin-bottom: 30px;
+                .zelo-daily-compact {
+                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(16, 185, 129, 0.12));
+                    border: 1px solid rgba(0, 255, 135, 0.3);
+                    border-radius: 16px;
+                    padding: 12px 16px;
+                    margin-bottom: 20px;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    position: relative;
-                    overflow: hidden;
-                    animation: floatGlow 4s infinite alternate;
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
                     backdrop-filter: blur(15px);
-                }
-
-                .legendary-daily-card::before {
-                    content: '';
-                    position: absolute;
-                    top: -50%; left: -50%; width: 200%; height: 200%;
-                    background: radial-gradient(circle at center, rgba(252, 176, 69, 0.15) 0%, transparent 60%);
-                    pointer-events: none;
+                    -webkit-backdrop-filter: blur(15px);
+                    ${borderSide}: 4px solid #00FF87;
                 }
 
                 .task-premium-card {
-                    background: rgba(26, 26, 34, 0.7);
-                    backdrop-filter: blur(10px);
+                    background: rgba(20, 20, 28, 0.65);
+                    backdrop-filter: blur(14px);
+                    -webkit-backdrop-filter: blur(14px);
                     border: 1px solid rgba(255, 255, 255, 0.05);
-                    border-radius: 18px;
-                    padding: 16px;
-                    margin-bottom: 15px;
+                    border-radius: 14px;
+                    padding: 12px 14px;
+                    margin-bottom: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    transition: transform 0.3s, box-shadow 0.3s;
-                    position: relative;
-                    overflow: hidden;
+                    transition: transform 0.2s, box-shadow 0.2s;
                 }
 
                 .task-premium-card:hover {
-                    transform: translateY(-4px) scale(1.02);
+                    transform: translateY(-2px);
+                    background: rgba(30, 30, 42, 0.8);
+                    box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+                    border-color: rgba(0, 255, 135, 0.25);
                 }
 
                 .task-icon-box {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 14px;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 1.6rem;
+                    font-size: 1.2rem;
                     flex-shrink: 0;
-                    box-shadow: inset 0 2px 10px rgba(255,255,255,0.1);
                 }
 
-                .icon-x { background: linear-gradient(135deg, #333, #000); border: 1px solid #555; color: white; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
-                .icon-tg { background: linear-gradient(135deg, #0088cc, #005580); border: 1px solid #00aaff; color: white; box-shadow: 0 0 15px rgba(0, 136, 204, 0.3); }
-                .icon-yt { background: linear-gradient(135deg, #ff0000, #990000); border: 1px solid #ff4444; color: white; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
-                /* 👇 تصميم أيقونة Pump.fun الجديدة باللون الأخضر المميز */
-                .icon-pump { background: linear-gradient(135deg, #10b981, #047857); border: 1px solid #34d399; color: white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+                .icon-x { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.2); color: white; }
+                .icon-tg { background: linear-gradient(135deg, rgba(42, 171, 238, 0.25), rgba(34, 158, 217, 0.1)); border: 1px solid rgba(42, 171, 238, 0.4); color: #2AABEE; }
+                .icon-yt { background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.1)); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; }
+                .icon-pump { background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(4, 120, 87, 0.1)); border: 1px solid rgba(0, 255, 135, 0.4); color: #00FF87; }
 
                 .task-info {
                     flex-grow: 1;
-                    padding: 0 15px;
+                    padding: 0 12px;
                 }
 
                 .task-points-badge {
                     display: inline-block;
-                    background: rgba(252, 176, 69, 0.15);
-                    color: var(--accent-gold);
-                    padding: 4px 10px;
-                    border-radius: 8px;
-                    font-size: 0.85rem;
-                    font-weight: 900;
-                    margin-top: 6px;
-                    border: 1px solid rgba(252, 176, 69, 0.3);
+                    color: #00FF87;
+                    font-size: 0.75rem;
+                    font-weight: 800;
+                    margin-top: 2px;
+                    font-family: monospace;
                 }
 
                 .btn-task-go {
-                    background: linear-gradient(90deg, #833ab4, #fd1d1d);
+                    background: linear-gradient(135deg, #2AABEE, #8B5CF6);
                     color: white;
                     border: none;
-                    padding: 10px 22px;
-                    border-radius: 20px;
+                    padding: 8px 16px;
+                    border-radius: 10px;
                     font-weight: bold;
-                    font-size: 0.95rem;
+                    font-size: 0.8rem;
                     cursor: pointer;
-                    box-shadow: 0 4px 15px rgba(253, 29, 29, 0.3);
-                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 12px rgba(42, 171, 238, 0.25);
+                    transition: all 0.2s ease;
                 }
 
                 .btn-task-go:hover {
-                    background: linear-gradient(90deg, #fd1d1d, #fcb045);
-                    box-shadow: 0 6px 20px rgba(252, 176, 69, 0.5);
-                    transform: scale(1.05);
+                    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.4);
+                    transform: scale(1.03);
                 }
 
                 .btn-task-done {
-                    background: rgba(255, 255, 255, 0.05);
-                    color: #888;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    padding: 10px 22px;
-                    border-radius: 20px;
+                    background: rgba(255, 255, 255, 0.06);
+                    color: #64748b;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    padding: 8px 16px;
+                    border-radius: 10px;
                     font-weight: bold;
-                    font-size: 0.95rem;
+                    font-size: 0.8rem;
                     cursor: not-allowed;
                 }
             </style>
         `;
 
-        container.innerHTML = styles + `<div style="text-align:center; padding:50px; color: var(--text-main);">⏳ جاري تحميل المهام...</div>`;
+        container.innerHTML = styles + `<div style="text-align:center; padding:50px; color: #00FF87; font-weight:bold;">⏳ ${isAr ? 'جاري تحميل المهام...' : 'Loading tasks...'}</div>`;
 
         await syncTasksFromDB();
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
         let tasksHtml = userState.tasks.map(task => {
             let iconClass = 'icon-tg';
@@ -302,31 +285,29 @@
             } else if (task.id === 'youtube') {
                 iconClass = 'icon-yt';
                 iconSymbol = '▶️';
-            // 👇 تعيين أيقونة Pump.fun إذا كان معرف المهمة هو pump_fun
             } else if (task.id === 'pump_fun') {
                 iconClass = 'icon-pump';
-                iconSymbol = '💊'; // رمز الحبة المميز للمنصة
+                iconSymbol = '💊';
             }
 
             const btnClass = task.completed ? 'btn-task-done' : 'btn-task-go';
             const btnText = task.completed ? (isAr ? 'مكتمل ✅' : 'Done ✅') : (isAr ? 'انطلق 🚀' : 'Go 🚀');
             const btnState = task.completed ? 'disabled' : '';
 
-            // التفريق بين أمر مهمة تويتر الخاصة وباقي المهام
             let buttonAction = `onclick="executeTask('${task.id}', '${task.url}', ${task.points})"`;
             if (task.id === 'connect_x') {
                 buttonAction = `onclick="startXLogin('${task.id}', ${task.points})"`;
             }
 
             return `
-                <div class="task-premium-card" style="border-${isAr ? 'right' : 'left'}: 3px solid ${task.completed ? '#10b981' : 'transparent'};">
+                <div class="task-premium-card" style="border-${isAr ? 'right' : 'left'}: 3px solid ${task.completed ? '#00FF87' : 'transparent'};">
                     <div class="task-icon-box ${iconClass}">
                         ${iconSymbol}
                     </div>
                     
                     <div class="task-info" style="text-align: ${isAr ? 'right' : 'left'};">
-                        <h5 style="margin: 0; color: #fff; font-size: 1.05rem; font-weight: 800; letter-spacing: 0.3px;">${isAr ? task.textAr : task.textEn}</h5>
-                        <div class="task-points-badge">+ ${task.points} ZELO</div>
+                        <h5 style="margin: 0; color: #fff; font-size: 0.9rem; font-weight: 800;">${isAr ? task.textAr : task.textEn}</h5>
+                        <div class="task-points-badge">+${task.points} ZELO</div>
                     </div>
                     
                     <button id="btn-task-${task.id}" 
@@ -340,37 +321,40 @@
         }).join('');
 
         container.innerHTML = styles + `
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="color: var(--accent-gold); margin: 0 0 5px 0; font-weight: 900; text-shadow: 0 2px 10px rgba(252, 176, 69, 0.4);">
+            <div style="text-align: center; margin-bottom: 18px;">
+                <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 4px 0; font-size: 1.3rem; font-weight: 900;">
                     ${isAr ? 'مركز المكافآت' : 'Rewards Center'}
                 </h2>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">
-                    ${isAr ? 'أكمل المهام اليومية لزيادة ثروتك من نقاط زيلو!' : 'Complete tasks to boost your ZERO wealth!'}
+                <p style="color: #94a3b8; font-size: 0.8rem; margin: 0; font-weight: bold;">
+                    ${isAr ? 'أكمل المهام اليومية لزيادة ثروتك من نقاط زيلو!' : 'Complete tasks to boost your ZELO points!'}
                 </p>
             </div>
 
-            <div class="legendary-daily-card">
-                <div style="text-align: ${isAr ? 'right' : 'left'}; z-index: 1;">
-                    <h3 style="margin: 0 0 5px 0; color: #fff; font-size: 1.3rem; font-weight: 900; display:flex; align-items:center; gap:8px;">
-                        🎁 ${isAr ? 'صندوق المكافأة اليومية' : 'Daily Reward Chest'}
-                    </h3>
-                    <p style="margin: 0; font-size: 0.9rem; color: #ccc;">
-                        ${isAr ? 'سجل دخولك يومياً لتحصل على' : 'Check in daily to earn'} <b style="color:var(--accent-gold);">+200 ZELO</b>
-                    </p>
+            <!-- Compact Daily Check-in Card -->
+            <div class="zelo-daily-compact">
+                <div style="text-align: ${isAr ? 'right' : 'left'}; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.4rem;">🎁</span>
+                    <div>
+                        <h4 style="margin: 0; color: #fff; font-size: 0.9rem; font-weight: 900;">
+                            ${isAr ? 'المكافأة اليومية' : 'Daily Reward'}
+                        </h4>
+                        <p style="margin: 0; font-size: 0.72rem; color: #00FF87; font-weight: bold;">
+                            +200 ZELO <span style="color: #94a3b8; font-weight: normal;">(${isAr ? 'كل 24 ساعة' : 'Every 24h'})</span>
+                        </p>
+                    </div>
                 </div>
                 
                 <button id="btn-daily-claim" 
                         class="${userState.dailyCheckInClaimed ? 'btn-task-done' : 'btn-task-go'}" 
-                        style="padding: 12px 25px; z-index: 1;"
                         onclick="claimDaily()" 
                         ${userState.dailyCheckInClaimed ? 'disabled' : ''}>
-                    ${userState.dailyCheckInClaimed ? (isAr ? 'استلمتها ✔️' : 'Claimed ✔️') : (isAr ? 'استلام الآن ✨' : 'Claim Now ✨')}
+                    ${userState.dailyCheckInClaimed ? (isAr ? 'تم ✅' : 'Claimed ✅') : (isAr ? 'استلام ✨' : 'Claim ✨')}
                 </button>
             </div>
 
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom: 15px;">
-                <span style="font-size:1.2rem;">📋</span>
-                <h4 style="color: #fff; margin: 0; font-size: 1.15rem;">${isAr ? 'المهام المتاحة' : 'Available Tasks'}</h4>
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom: 12px;">
+                <span style="font-size:1rem;">📋</span>
+                <h4 style="color: #fff; margin: 0; font-size: 0.95rem; font-weight: 800;">${isAr ? 'المهام المتاحة' : 'Available Tasks'}</h4>
             </div>
             
             <div class="tasks-container">${tasksHtml}</div>
@@ -398,13 +382,13 @@
                 window.open(url, '_blank');
             }
         } catch (e) {
-            console.error("خطأ في فتح الرابط:", e);
+            console.error("Error opening link:", e);
             window.open(url, '_blank');
         }
 
         const btn = document.getElementById(`btn-task-${taskId}`);
         if (btn) {
-            btn.innerHTML = isAr ? "⏳ جاري التحقق..." : "⏳ Verifying...";
+            btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
             btn.className = "btn-task-done"; 
             btn.disabled = true;
         }
@@ -419,7 +403,7 @@
                     
                     if (!response.alreadyDone) {
                         userState.points = (userState.points || 0) + points; 
-                        alert(`🎉 ${isAr ? 'تم إضافة النقاط بنجاح:' : 'Points added successfully:'} ${points} ZERO.`);
+                        alert(`🎉 ${isAr ? 'تم إضافة النقاط بنجاح:' : 'Points added successfully:'} +${points} ZELO.`);
                     }
 
                     if (typeof updateTopBar === "function") updateTopBar();
@@ -433,7 +417,7 @@
                     }
                 }
             } catch (error) {
-                console.error("خطأ في الاتصال:", error);
+                console.error("Connection error:", error);
                 task.isProcessing = false; 
                 if (btn) {
                     btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
@@ -446,75 +430,30 @@
 
     window.claimDaily = async function() {
         if (userState.dailyCheckInClaimed) return;
-
         const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+
         const btn = document.getElementById('btn-daily-claim');
         if (btn) {
-            btn.innerHTML = "⏳...";
-            btn.className = "btn-task-done";
+            btn.innerHTML = "⏳ ...";
             btn.disabled = true;
         }
 
-        try {
-            const response = await apiClaimDaily();
-
-            if (response.success) {
-                userState.dailyCheckInClaimed = true;
-                userState.points = (userState.points || 0) + (response.pointsAdded || 200);
-                alert(isAr ? 'تم استلام المكافأة اليومية بنجاح! 🎁' : 'Daily reward claimed successfully! 🎁');
-                if (typeof updateTopBar === "function") updateTopBar();
-                renderTasksPage(document.getElementById("main-content"));
-            } else {
-                alert(isAr ? "لم تمر 24 ساعة على آخر تسجيل دخول أو حدث خطأ." : "Claim not ready yet or database error.");
-                if (btn) {
-                    btn.innerHTML = isAr ? 'استلام الآن ✨' : 'Claim Now ✨';
-                    btn.className = "btn-task-go";
-                    btn.disabled = false;
-                }
-            }
-        } catch (error) {
-            console.error("خطأ في الاتصال بالخادم:", error);
-            alert(isAr ? "تعذر الاتصال بقاعدة البيانات." : "Could not connect to database.");
+        const res = await apiClaimDaily();
+        if (res.success) {
+            userState.dailyCheckInClaimed = true;
+            userState.points = (userState.points || 0) + res.pointsAdded;
+            
+            alert(`🎁 ${isAr ? 'تم استلام المكافأة اليومية:' : 'Daily reward claimed:'} +${res.pointsAdded} ZELO!`);
+            
+            if (typeof updateTopBar === "function") updateTopBar();
+            renderTasksPage(document.getElementById("main-content"));
+        } else {
+            alert(isAr ? "فشل استلام المكافأة اليومية. حاول لاحقاً." : "Failed to claim daily reward.");
             if (btn) {
-                btn.innerHTML = isAr ? 'استلام الآن ✨' : 'Claim Now ✨';
-                btn.className = "btn-task-go";
+                btn.innerHTML = isAr ? 'استلام ✨' : 'Claim ✨';
                 btn.disabled = false;
             }
         }
     };
-
-    // ==========================================
-    // 🔐 دالة تسجيل الدخول عبر منصة X (المهمة الخاصة)
-    // ==========================================
-    window.startXLogin = function(taskId, points) {
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-        
-        // قم بوضع Client ID الجديد الذي حصلت عليه من تويتر هنا بدلاً من النص
-        const CLIENT_ID = "b3V3Qm5ITUhoMlV2RFA1OE9mWWs6MTpjaQ"; 
-        
-        const REDIRECT_URI = encodeURIComponent("https://ttyfcwtlasvphkariqhw.supabase.co/functions/v1/auth-callback");
-        
-        const state = userState.userId || 'unknown';
-
-        const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=users.read%20tweet.read%20like.read%20follows.read&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
-
-        const btn = document.getElementById(`btn-task-${taskId}`);
-        if (btn) {
-            btn.innerHTML = isAr ? "⏳ جاري الربط..." : "⏳ Connecting...";
-            btn.className = "btn-task-done";
-            btn.disabled = true;
-        }
-
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-            window.Telegram.WebApp.openLink(authUrl);
-        } else {
-            window.open(authUrl, '_blank');
-        }
-
-        // إعطاء وقت أطول لعملية توثيق تويتر قبل محاولة جلب النقاط
-        setTimeout(() => {
-            executeTask(taskId, "#", points);
-        }, 10000);
-    };
-
 })();
+            
