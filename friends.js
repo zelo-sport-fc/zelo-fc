@@ -1,8 +1,8 @@
 // ==========================================
-// 👥 Friends Module - Zelo Coin Dark Glass Theme
+// 👥 Friends Module - Zelo Dark Glass Theme
 // ==========================================
 
-// Generate dynamic referral link based on user identification
+// Generate dynamic referral link
 window.generateReferralLink = function() {
     let uniqueIdentifier = (typeof userState !== 'undefined' && (userState.userId || userState.username)) ? (userState.userId || userState.username) : "user";
     let cleanIdentifier = String(uniqueIdentifier).replace(/[@\s]/g, '');
@@ -12,24 +12,22 @@ window.generateReferralLink = function() {
 
 // Fetch invited friends and their aggregated referral data from Supabase
 window.fetchFriendsFromDB = async function(userId) {
-    if (typeof supabaseClient === 'undefined') {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         console.error("Database client (supabaseClient) is not initialized.");
         return [];
     }
 
     try {
-        // 1. Fetch referrals created by current user
         const { data: referrals, error: refError } = await supabaseClient
             .from('referrals')
             .select('referred_id, total_commission') 
-            .eq('referrer_id', userId);
+            .eq('referrer_id', String(userId));
 
         if (refError) throw refError;
         if (!referrals || referrals.length === 0) return [];
 
         const friendIds = referrals.map(r => r.referred_id);
 
-        // 2. Fetch user profile information for friends
         const { data: users, error: usersError } = await supabaseClient
             .from('users')
             .select('telegram_id, username, first_name')
@@ -37,7 +35,6 @@ window.fetchFriendsFromDB = async function(userId) {
 
         if (usersError) throw usersError;
 
-        // 3. Count sub-referrals brought by each friend
         const { data: subReferrals, error: subRefError } = await supabaseClient
             .from('referrals')
             .select('referrer_id')
@@ -50,10 +47,9 @@ window.fetchFriendsFromDB = async function(userId) {
             });
         }
 
-        // 4. Map final structure
         return referrals.map(ref => {
-            const friendInfo = users ? users.find(u => u.telegram_id === ref.referred_id) : null;
-            let fallbackName = typeof t === 'function' ? t('newFriend') : "New Friend";
+            const friendInfo = users ? users.find(u => String(u.telegram_id) === String(ref.referred_id)) : null;
+            let fallbackName = (typeof t === 'function' && t('newFriend') !== 'newFriend') ? t('newFriend') : "New Friend";
             let name = fallbackName;
             
             if (friendInfo) {
@@ -74,25 +70,33 @@ window.fetchFriendsFromDB = async function(userId) {
 
 // Render Friends Interface
 window.renderFriendsPage = async function(container) {
-    // Automatically trigger referral detection when entering page
+    // Perform check immediately
     if (window.initReferralCheck) {
         window.initReferralCheck();
     }
 
     const referralLink = window.generateReferralLink();
-    let tFunc = typeof t === 'function' ? t : (key) => key;
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    const commissionTitle = tFunc('commissionTitle') || (isAr ? '🎁 نظام الأرباح والعمولة المستمرة (10%)' : '🎁 10% Continuous Commission');
-    const commissionDesc = tFunc('commissionDesc') || (isAr 
+    // Safe Translation Fetcher with hardcoded defaults to fix green box bug
+    const getTranslation = (key, defaultText) => {
+        if (typeof t === 'function') {
+            const val = t(key);
+            if (val && val !== key) return val;
+        }
+        return defaultText;
+    };
+
+    const commissionTitle = getTranslation('commissionTitle', isAr ? '🎁 نظام الأرباح والعمولة المستمرة (10%)' : '🎁 10% Continuous Commission');
+    const commissionDesc = getTranslation('commissionDesc', isAr 
         ? 'شارك رابط الإحالة الخاص بك، وستحصل تلقائياً وبشكل مستمر على عمولة بنسبة <b style="color:#00FF87;">10%</b> من رصيد النقاط التي يجمعونها أثناء لعبهم!' 
-        : 'Share your link, and earn a lifetime <b style="color:#00FF87;">10%</b> commission from all points collected!');
+        : 'Share your link and earn a lifetime <b style="color:#00FF87;">10%</b> commission from all points collected by your invited friends!');
 
     const borderSide = isAr ? 'border-right' : 'border-left';
 
     container.innerHTML = `
         <style>
-            /* ====== Zelo Coin & Solana Theme Glassmorphism ====== */
+            /* ====== Zelo Theme Colors & Styling ====== */
             .zelo-info-card {
                 background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(16, 185, 129, 0.08));
                 backdrop-filter: blur(16px);
@@ -179,12 +183,6 @@ window.renderFriendsPage = async function(container) {
                 border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);
                 transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
             }
-            .zelo-friend-row:hover {
-                background: rgba(35, 35, 50, 0.85);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-                border-color: rgba(0, 255, 135, 0.3);
-            }
 
             .empty-state-glass {
                 text-align: center; padding: 30px 15px;
@@ -195,14 +193,14 @@ window.renderFriendsPage = async function(container) {
 
         <div style="text-align: center; margin-bottom: 20px;">
             <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 5px 0; font-size: 1.3rem; font-weight: 900;">
-                🤝 ${tFunc('referralTitle') || (isAr ? 'نظام الدعوات' : 'Referral System')}
+                🤝 ${getTranslation('referralTitle', isAr ? 'نظام الدعوات' : 'Referral System')}
             </h2>
             <p style="color: #94a3b8; font-size: 0.8rem; margin: 0; font-weight: bold;">
-                ${tFunc('referralSub') || (isAr ? 'انشر رابطك وابدأ في جني الأرباح حية!' : 'Share your link and earn live rewards!')}
+                ${getTranslation('referralSub', isAr ? 'انشر رابطك وابدأ في جني الأرباح حية!' : 'Share your link and earn live rewards!')}
             </p>
         </div>
         
-        <!-- Commission Glass Info -->
+        <!-- Commission Glass Info Card -->
         <div class="zelo-info-card" style="text-align: ${isAr ? 'right' : 'left'};">
             <h4 style="margin: 0 0 6px 0; color: #fff; font-size: 0.95rem; font-weight: 900;">${commissionTitle}</h4>
             <p style="margin: 0; color: #cbd5e1; font-size: 0.75rem; line-height: 1.6;">${commissionDesc}</p>
@@ -213,25 +211,25 @@ window.renderFriendsPage = async function(container) {
             <div class="link-text-box" id="ref-link-box">${referralLink}</div>
             <div class="action-buttons-wrapper">
                 <button class="btn-sleek btn-copy-sleek" onclick="window.copyToClipboard('${referralLink}')">
-                    🔗 ${tFunc('btnCopy') || (isAr ? 'نسخ الرابط' : 'Copy Link')}
+                    🔗 ${getTranslation('btnCopy', isAr ? 'نسخ الرابط' : 'Copy Link')}
                 </button>
                 <button class="btn-sleek btn-share-vibrant" onclick="window.shareOnTelegram('${referralLink}')">
-                    🚀 ${tFunc('btnShare') || (isAr ? 'مشاركة' : 'Share')}
+                    🚀 ${getTranslation('btnShare', isAr ? 'مشاركة' : 'Share')}
                 </button>
             </div>
         </div>
 
-        <!-- Friends List -->
+        <!-- Friends List Title -->
         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
             <span style="font-size: 1rem;">👥</span>
             <h4 style="color: #fff; margin: 0; font-size: 1rem; font-weight: 800;" id="friends-count-title">
-                ${tFunc('friendsList') || (isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (⏳)
+                ${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (⏳)
             </h4>
         </div>
         
         <div id="friends-list-container" style="text-align: center; padding-bottom: 30px;">
             <div style="padding: 30px; color: #00FF87; font-size: 0.85rem; font-weight: bold;">
-                ${tFunc('fetchingFriends') || (isAr ? '⏳ جاري جلب الأبطال...' : '⏳ Fetching friends...')}
+                ${getTranslation('fetchingFriends', isAr ? '⏳ جاري جلب الأبطال...' : '⏳ Fetching friends...')}
             </div>
         </div>
     `;
@@ -243,7 +241,7 @@ window.renderFriendsPage = async function(container) {
         const currentId = (typeof userState !== 'undefined' && userState.userId) ? userState.userId : null;
         const realFriends = currentId ? await window.fetchFriendsFromDB(currentId) : [];
         
-        friendsCountTitle.innerText = `${tFunc('friendsList') || (isAr ? 'قائمة الأصدقاء' : 'Joined Friends')} (${realFriends.length})`;
+        friendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء' : 'Joined Friends')} (${realFriends.length})`;
 
         if (realFriends.length > 0) {
             friendsListContainer.style.textAlign = isAr ? 'right' : 'left';
@@ -257,7 +255,7 @@ window.renderFriendsPage = async function(container) {
                         <div>
                             <div style="color: #fff; font-weight: 800; font-size: 0.9rem;">${friend.name}</div>
                             <div style="color: #94a3b8; font-size: 0.7rem; font-weight: bold; margin-top: 2px;">
-                                ${tFunc('invites') || (isAr ? 'قام بدعوة:' : 'Invited:')} <span style="color:#00FF87;">${friend.referralsCount}</span>
+                                ${getTranslation('invites', isAr ? 'قام بدعوة:' : 'Invited:')} <span style="color:#00FF87;">${friend.referralsCount}</span>
                             </div>
                         </div>
                     </div>
@@ -266,7 +264,7 @@ window.renderFriendsPage = async function(container) {
                             +${(friend.totalCommission || 0).toLocaleString()} 🏆
                         </div>
                         <div style="color: #8B5CF6; font-size: 0.65rem; font-weight: bold; margin-top: 2px;">
-                            ${tFunc('commission') || (isAr ? 'عمولة مكتسبة' : 'Commission')}
+                            ${getTranslation('commission', isAr ? 'عمولة مكتسبة' : 'Commission')}
                         </div>
                     </div>
                 </div>
@@ -276,22 +274,22 @@ window.renderFriendsPage = async function(container) {
                 <div class="empty-state-glass">
                     <span style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.7;">🤝</span>
                     <p style="color: #aaa; margin: 0; font-size: 0.85rem; line-height: 1.5; font-weight: bold;">
-                        ${tFunc('emptyFriendsState') || (isAr ? 'لم تقم بدعوة أي أصدقاء حتى الآن.<br>انشر رابطك لتفعيل عمولتك المستمرة!' : "You haven't invited any friends yet.<br>Share your link to activate your commission!")}
+                        ${getTranslation('emptyFriendsState', isAr ? 'لم تقم بدعوة أي أصدقاء حتى الآن.<br>انشر رابطك لتفعيل عمولتك المستمرة!' : "You haven't invited any friends yet.<br>Share your link to activate your continuous commission!")}
                     </p>
                 </div>
             `;
         }
     } catch (error) {
         console.error("Error loading friends data:", error);
-        friendsCountTitle.innerText = `${tFunc('friendsList') || (isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (0)`;
-        friendsListContainer.innerHTML = `<div class="empty-state-glass"><span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">${tFunc('dbConnectionError') || (isAr ? '❌ فشل الاتصال. يرجى المحاولة لاحقاً.' : "❌ Connection failed. Please try again.")}</span></div>`;
+        friendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (0)`;
+        friendsListContainer.innerHTML = `<div class="empty-state-glass"><span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">${getTranslation('dbConnectionError', isAr ? '❌ فشل الاتصال. يرجى المحاولة لاحقاً.' : "❌ Connection failed. Please try again.")}</span></div>`;
     }
 };
 
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => {
         let isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-        let alertMsg = typeof t === 'function' ? t('alertCopied') : (isAr ? 'تم نسخ الرابط بنجاح! 🔗' : 'Link copied successfully! 🔗');
+        let alertMsg = (typeof t === 'function' && t('alertCopied') !== 'alertCopied') ? t('alertCopied') : (isAr ? 'تم نسخ الرابط بنجاح! 🔗' : 'Link copied successfully! 🔗');
         
         const linkBox = document.getElementById('ref-link-box');
         if(linkBox) {
@@ -309,7 +307,7 @@ window.shareOnTelegram = function(link) {
         ? 'توقع نتائج أهم المباريات واجمع المكافآت والعملات الرقمية معي مجاناً في Zelo Sport! 🏆' 
         : 'Predict match results and earn crypto rewards with me on Zelo Sport! 🏆';
     
-    const text = encodeURIComponent((typeof t === 'function' ? t('shareText') : defaultShareText));
+    const text = encodeURIComponent(((typeof t === 'function' && t('shareText') !== 'shareText') ? t('shareText') : defaultShareText));
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`;
     
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
@@ -320,7 +318,7 @@ window.shareOnTelegram = function(link) {
 };
 
 // ==========================================
-// 🚀 Referral Logic & Detection Algorithm
+// 🚀 Improved Referral Logic
 // ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
@@ -345,7 +343,7 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 };
 
-// Automatic Referral Parameter Detection from Telegram WebApp
+// Automatic Check Triggered immediately upon app launch
 window.initReferralCheck = async function() {
     try {
         if (!window.Telegram || !window.Telegram.WebApp) return;
@@ -353,14 +351,15 @@ window.initReferralCheck = async function() {
         const initDataUnsafe = window.Telegram.WebApp.initDataUnsafe;
         if (!initDataUnsafe || !initDataUnsafe.start_param) return;
 
-        let startParam = initDataUnsafe.start_param; // Example: "ref_1234567"
-        let currentUserId = userState.userId || (initDataUnsafe.user ? initDataUnsafe.user.id : null);
+        let startParam = initDataUnsafe.start_param; 
+        let currentUserId = (typeof userState !== 'undefined' && userState.userId) 
+            ? userState.userId 
+            : (initDataUnsafe.user ? initDataUnsafe.user.id : null);
 
         if (!currentUserId) return;
 
         let referrerId = startParam.startsWith('ref_') ? startParam.replace('ref_', '') : startParam;
 
-        // Prevent self-referral & process
         if (referrerId && String(referrerId) !== String(currentUserId)) {
             await window.apiProcessReferral(referrerId, currentUserId);
         }
@@ -369,9 +368,7 @@ window.initReferralCheck = async function() {
     }
 };
 
-// Auto-run referral check when script loads
-if (document.readyState === "complete" || document.readyState === "interactive") {
+// Execute check immediately on load
+(function() {
     window.initReferralCheck();
-} else {
-    document.addEventListener("DOMContentLoaded", window.initReferralCheck);
-                    }
+})();
