@@ -1,5 +1,5 @@
 // ==========================================
-// 🏠 الصفحة الرئيسية (home.js) - نسخة الـ VIP الأسطورية (تدعم الترجمة 100%) - شاشة واحدة ثابتة
+// 🏠 الصفحة الرئيسية (home.js) - نسخة الـ VIP الأسطورية (تدعم Solana + Pyth)
 // ==========================================
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
@@ -8,6 +8,24 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
         window.Telegram.WebApp.openLink(url);
     } else {
         window.open(url, '_blank');
+    }
+};
+
+// 🔮 دالة تحديث سعر سولانا المباشر من أوراكل Pyth
+window.updateHomeSolPrice = async function() {
+    const el = document.getElementById('home-sol-price');
+    const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
+    
+    try {
+        const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`);
+        const data = await res.json();
+        if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
+            const p = data.parsed[0].price;
+            const finalPrice = (Number(p.price) * Math.pow(10, Number(p.expo))).toFixed(2);
+            if (el) el.innerText = `$${finalPrice}`;
+        }
+    } catch (err) {
+        if (el) el.innerText = `$118.12`;
     }
 };
 
@@ -105,8 +123,12 @@ window.renderHomePage = async function(container) {
     let supportedClubsTitle = isAr ? 'أنديتك المفضلة' : 'Supported Clubs';
     let loadingAlert = isAr ? '⏳ جاري التحميل...' : '⏳ Loading...';
     let websiteBtnText = isAr ? 'الموقع الرسمي' : 'Official Site';
+    
+    // نصوص كارت سولانا بـ 2 لغات
+    let solTitle = isAr ? 'منظومة Solana' : 'Solana Ecosystem';
+    let solSub = isAr ? '⚡ جوائز فورية ورسوم مجهرية' : '⚡ Instant & Micro-Fee Rewards';
 
-    // 4. تجميع الصفحة (مع تأثيرات الـ VIP وتقسيم الشاشة الثابتة)
+    // 4. تجميع الصفحة (مع إضافة كارت سولانا المتناسق)
     container.innerHTML = `
         <style>
             /* ====== التأثيرات الحركية ====== */
@@ -125,7 +147,7 @@ window.renderHomePage = async function(container) {
                 100% { transform: translateX(200%) skewX(-25deg); }
             }
 
-            /* ====== الحاوية الرئيسية (شاشة واحدة بدون تمرير) ====== */
+            /* ====== الحاوية الرئيسية ====== */
             .home-fixed-container {
                 display: flex;
                 flex-direction: column;
@@ -137,14 +159,14 @@ window.renderHomePage = async function(container) {
                 box-sizing: border-box;
             }
 
-            /* ====== بطاقة الملف الشخصي (الأسطورية المصغرة) ====== */
+            /* ====== بطاقة الملف الشخصي ====== */
             .royal-profile-card {
                 position: relative;
                 background: linear-gradient(180deg, rgba(22, 22, 30, 0.9) 0%, rgba(13, 13, 18, 0.95) 100%);
                 border-radius: 20px;
-                padding: 30px 15px 15px 15px; /* تقليل الحشوة */
-                margin-top: 30px; /* تقليل المساحة العلوية */
-                margin-bottom: 20px; /* تقليل المساحة السفلية */
+                padding: 30px 15px 15px 15px;
+                margin-top: 25px;
+                margin-bottom: 12px;
                 border: 1px solid rgba(255, 215, 0, 0.15);
                 text-align: center;
                 animation: profileGlow 4s infinite alternate;
@@ -160,10 +182,10 @@ window.renderHomePage = async function(container) {
 
             .royal-avatar-wrapper {
                 position: absolute;
-                top: -35px; /* رفع أقل */
+                top: -35px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 75px; /* تصغير الصورة */
+                width: 75px;
                 height: 75px;
                 border-radius: 50%;
                 background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
@@ -190,12 +212,47 @@ window.renderHomePage = async function(container) {
                 background: rgba(252, 176, 69, 0.2); border-color: rgba(252, 176, 69, 0.5); box-shadow: 0 0 10px rgba(252, 176, 69, 0.3);
             }
 
-            /* ====== بطاقات الأقسام (تحديات / ترتيب مصغرة) ====== */
+            /* ====== كارت شبكة Solana & Pyth المنسق بنفس ستايل النيون ====== */
+            .solana-action-banner {
+                position: relative;
+                border-radius: 16px;
+                padding: 12px 15px;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: linear-gradient(135deg, rgba(22, 25, 34, 0.95), rgba(13, 14, 18, 0.98));
+                border: 1px solid rgba(153, 69, 255, 0.2);
+                border-${isAr ? 'right' : 'left'}: 4px solid #14F195;
+                box-shadow: 0 5px 18px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(153, 69, 255, 0.08);
+                flex-shrink: 0;
+                overflow: hidden;
+            }
+
+            .solana-action-banner::after {
+                content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(20, 241, 149, 0.15), transparent);
+                animation: shimmerEffect 4s infinite;
+            }
+
+            .solana-badge-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                background: rgba(153, 69, 255, 0.12);
+                border: 1px solid rgba(153, 69, 255, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 10px rgba(153, 69, 255, 0.2);
+            }
+
+            /* ====== بطاقات الأقسام ====== */
             .action-banner {
                 position: relative;
                 border-radius: 16px;
-                padding: 15px; /* تقليل الحشوة */
-                margin-bottom: 12px; /* تقليل التباعد */
+                padding: 12px 15px;
+                margin-bottom: 10px;
                 display: flex; align-items: center; gap: 12px;
                 cursor: pointer; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
                 border: 1px solid rgba(255,255,255,0.05);
@@ -209,28 +266,28 @@ window.renderHomePage = async function(container) {
             }
             .action-banner:active { transform: scale(0.97); }
 
-            .banner-challenges { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(15, 23, 42, 0.95)); border-left: 4px solid #3b82f6; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(59, 130, 246, 0.1); }
-            .banner-ranking { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(67, 20, 7, 0.95)); border-left: 4px solid #fd1d1d; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(253, 29, 29, 0.1); }
+            .banner-challenges { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(15, 23, 42, 0.95)); border-${isAr ? 'right' : 'left'}: 4px solid #3b82f6; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(59, 130, 246, 0.1); }
+            .banner-ranking { background: linear-gradient(135deg, rgba(28, 28, 34, 0.9), rgba(67, 20, 7, 0.95)); border-${isAr ? 'right' : 'left'}: 4px solid #fd1d1d; box-shadow: 0 5px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(253, 29, 29, 0.1); }
 
             .banner-icon-wrapper {
-                width: 45px; height: 45px; /* تصغير الأيقونة */
+                width: 42px; height: 42px;
                 border-radius: 12px; display: flex; align-items: center; justify-content: center;
-                font-size: 1.6rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05);
+                font-size: 1.5rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05);
                 box-shadow: inset 0 2px 10px rgba(255,255,255,0.1);
             }
 
             /* ====== قائمة الأندية ====== */
-            .clubs-section { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
-            .clubs-section::-webkit-scrollbar { display: none; } /* إخفاء شريط التمرير لو ظهر */
+            .clubs-section { flex-grow: 1; overflow-y: auto; margin-top: 5px; }
+            .clubs-section::-webkit-scrollbar { display: none; }
             
             .glass-club-card {
                 background: rgba(26, 26, 34, 0.6); backdrop-filter: blur(12px);
                 border: 1px solid rgba(255,255,255,0.03); border-radius: 14px;
-                padding: 12px; /* تقليل الحشوة */
+                padding: 10px 12px;
                 display: flex; align-items: center; justify-content: space-between;
-                margin-bottom: 8px; /* تقليل التباعد */
+                margin-bottom: 8px;
                 transition: transform 0.3s, background 0.3s;
-                border-right: 3px solid rgba(252, 176, 69, 0.5);
+                border-${isAr ? 'left' : 'right'}: 3px solid rgba(252, 176, 69, 0.5);
             }
             .glass-club-card:hover { transform: translateX(${isAr ? '3px' : '-3px'}); background: rgba(36, 36, 44, 0.8); border-color: var(--accent-gold); }
 
@@ -253,12 +310,29 @@ window.renderHomePage = async function(container) {
                     <span style="color: #ccc; font-size: 0.8rem; font-family: monospace;">${userState.userId}</span>
                 </div>
             </div>
+
+            <!-- ⚡ كارت منظومة SOLANA & PYTH ORACLE -->
+            <div class="solana-action-banner">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="solana-badge-icon">
+                        <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
+                    </div>
+                    <div style="text-align: ${isAr ? 'right' : 'left'};">
+                        <div style="color: #fff; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.3px;">${solTitle}</div>
+                        <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 600; margin-top: 1px;">${solSub}</div>
+                    </div>
+                </div>
+                <div style="text-align: ${isAr ? 'left' : 'right'};">
+                    <span style="color: #c084fc; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; display: block;">🔮 Pyth Oracle</span>
+                    <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 800; font-size: 0.95rem; margin-top: 2px;">$118.12</div>
+                </div>
+            </div>
           
             <!-- 🎯 لافتة التحديات -->
             <div id="challenges-card" class="action-banner banner-challenges" onclick="if(typeof window.openChallengesScreen === 'function') { window.openChallengesScreen(); } else { alert('${loadingAlert}'); }">
                 <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);">${primaryClub ? primaryClub.countryFlag : '⚽'}</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.1rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
+                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.05rem; font-weight: 900;">${titleWeeklyChallenges}</h3>
                     <p style="color: #94a3b8; font-size: 0.75rem; margin: 0; font-weight: bold;">🇪🇺 ${textEuropeCups} <span style="color:#555;">•</span> 🇪🇸 ${textSpainCups}</p>
                 </div>
                 <div style="color: #3b82f6; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
@@ -268,7 +342,7 @@ window.renderHomePage = async function(container) {
             <div id="ranking-card" class="action-banner banner-ranking" onclick="if(typeof window.openLegendaryRankingScreen === 'function') { window.openLegendaryRankingScreen(); } else { alert('${loadingAlert}'); }">
                 <div class="banner-icon-wrapper" style="text-shadow: 0 0 10px rgba(253, 29, 29, 0.6);">🔥</div>
                 <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.1rem; font-weight: 900;">${titleRanking}</h3>
+                    <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 1.05rem; font-weight: 900;">${titleRanking}</h3>
                     <p style="color: #fca5a5; font-size: 0.75rem; margin: 0; font-weight: bold;">⭐ ${textRankingDesc}</p>
                 </div>
                 <div style="color: #fd1d1d; font-size: 1.2rem; opacity: 0.8;">${isAr ? '👈' : '👉'}</div>
@@ -276,12 +350,20 @@ window.renderHomePage = async function(container) {
 
             <!-- 🛡️ قائمة الأندية -->
             <div class="clubs-section">
-                <div style="display:flex; align-items:center; gap:6px; margin-bottom: 10px;">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom: 8px;">
                     <span style="font-size: 1.1rem;">🛡️</span>
-                    <h4 style="color: #fff; margin: 0; font-size: 1rem; font-weight: 800;">${supportedClubsTitle}</h4>
+                    <h4 style="color: #fff; margin: 0; font-size: 0.95rem; font-weight: 800;">${supportedClubsTitle}</h4>
                 </div>
                 ${clubsCardsHtml}
             </div>
         </div>
     `;
+
+    // 🔮 استدعاء دالة تحديث سعر سولانا فور عرض الواجهة
+    setTimeout(() => {
+        if (typeof window.updateHomeSolPrice === 'function') {
+            window.updateHomeSolPrice();
+        }
+    }, 100);
 };
+                
