@@ -1,89 +1,20 @@
 // ==========================================
-// 👛 Zelo Sport Wallet - Complete Frontend Script (i18n Support)
+// 👛 Zelo Sport Wallet - Complete Frontend Script
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100;
 const BACKEND_URL = "https://zelo-fc.onrender.com";
 const TOKEN_NAME = "ZELOFC";
 
-// 1. نظام الترجمة المدمج (i18n Translations Dictionary)
-const translations = {
-    en: {
-        tonWallet: "Telegram / TON Wallet",
-        solanaWallet: "Solana Wallet",
-        connected: "● Connected",
-        copy: "📋 Copy",
-        disconnect: "🔌 Disconnect",
-        onChainSol: "On-Chain SOL:",
-        checking: "⏳ Checking...",
-        autoConnectSolana: "⚡ Auto Connect Solana (Phantom / Solflare)",
-        placeholderSolana: "Or paste Solana address...",
-        saveAddress: "💾 Save Address",
-        totalEarned: "Total Earned:",
-        claimTokens: "⚡ Claim {TOKEN} Tokens",
-        copied: "Address copied to clipboard!",
-        errNoSolanaWallet: "⚠️ Please connect or save your Solana Wallet first!",
-        errNoCoins: "⚠️ You have no {TOKEN} available to claim.",
-        confirmClaim: "Confirm deducting {COINS} points to receive {AMOUNT} {TOKEN} tokens?",
-        claiming: "⏳ Connecting server & transferring...",
-        claimSuccess: "✅ Transfer successful!\n\nTx Hash:\n{HASH}",
-        claimFailed: "❌ Transfer failed:\n{ERROR}",
-        serverError: "❌ Server connection error:\n{ERROR}",
-        solanaConnectErr: "Wallet connection failed: ",
-        solanaNotDetected: "Wallet provider not detected automatically. Please copy and paste your Solana address.",
-        invalidSolAddress: "Please enter a valid Solana address"
-    },
-    ar: {
-        tonWallet: "محفظة تلجرام / TON",
-        solanaWallet: "محفظة سولانا",
-        connected: "● متصل",
-        copy: "📋 نسخ",
-        disconnect: "🔌 قطع الاتصال",
-        onChainSol: "رصيد SOL الشبكي:",
-        checking: "⏳ جاري التحقق...",
-        autoConnectSolana: "⚡ ربط تلقائي بمحفظة سولانا (Phantom / Solflare)",
-        placeholderSolana: "أو ألصق عنوان سولانا...",
-        saveAddress: "💾 حفظ العنوان",
-        totalEarned: "إجمالي المكتسب:",
-        claimTokens: "⚡ المطالبة بتوكنات {TOKEN}",
-        copied: "تم نسخ العنوان إلى الحافظة!",
-        errNoSolanaWallet: "⚠️ الرجاء ربط أو حفظ محفظة Solana أولاً!",
-        errNoCoins: "⚠️ ليس لديك رصيد متاح من {TOKEN} للمطالبة.",
-        confirmClaim: "هل تؤكد خصم {COINS} نقطة للحصول على {AMOUNT} توكن {TOKEN}؟",
-        claiming: "⏳ جاري الاتصال بالسيرفر وإرسال المعاملة...",
-        claimSuccess: "✅ تمت المعاملة بنجاح!\n\nرقم المعاملة:\n{HASH}",
-        claimFailed: "❌ فشلت المعاملة:\n{ERROR}",
-        serverError: "❌ خطأ في الاتصال بالسيرفر:\n{ERROR}",
-        solanaConnectErr: "فشل الاتصال بالمحفظة: ",
-        solanaNotDetected: "لم يتم العثور على إضافة المحفظة تلقائيًا. الرجاء نسخ عنوان محفظة Solana وإلصاقه يدوياً.",
-        invalidSolAddress: "الرجاء إدخال عنوان محفظة Solana صحيح"
-    }
-};
-
-// دالة جلب النص المترجم بحسب لغة التطبيق الحالية
-function t(key, params = {}) {
-    const currentLang = (typeof userState !== 'undefined' && userState.lang) 
-        ? userState.lang 
-        : (localStorage.getItem('app_lang') || 'ar'); // اللغة الافتراضية
-    
-    let text = (translations[currentLang] && translations[currentLang][key]) 
-        ? translations[currentLang][key] 
-        : (translations['en'][key] || key);
-
-    Object.keys(params).forEach(p => {
-        text = text.replace(`{${p}}`, params[p]);
-    });
-
-    return text;
-}
-
-// 2. Load External Dependencies
+// 1. تحميل المكتبات الخارجية المطلوبة (TON Connect & Solana Web3)
 (function loadDependencies() {
+    // Solana Web3
     if (!window.solanaWeb3) {
         const s1 = document.createElement('script');
         s1.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
         document.head.appendChild(s1);
     }
+    // TON Connect UI (لربط محفظة التلجرام الحقيقية)
     if (!window.TonConnectUI) {
         const s2 = document.createElement('script');
         s2.src = 'https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
@@ -94,14 +25,16 @@ function t(key, params = {}) {
     }
 })();
 
+// تهيئة TON Connect
 let tonConnectUI = null;
 function initTonConnect() {
     if (window.TON_CONNECT_UI && !tonConnectUI) {
         tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: `${BACKEND_URL}/tonconnect-manifest.json`,
+            manifestUrl: `${BACKEND_URL}/tonconnect-manifest.json`, // يفضل وجود ملف manifest على سيرفرك
             buttonRootId: 'ton-connect-btn-container'
         });
 
+        // الاستماع لتغير حالة الاتصال بمحفظة TON
         tonConnectUI.onStatusChange(wallet => {
             if (wallet) {
                 const address = wallet.account.address;
@@ -221,7 +154,7 @@ function renderWalletPage(container) {
     container.innerHTML = `
         ${walletStyles}
         
-        <!-- 1. TON WALLET CARD -->
+        <!-- 1. TON WALLET CARD (محفظة تلجرام) -->
         <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -229,10 +162,10 @@ function renderWalletPage(container) {
                         <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        ${t('tonWallet')}
+                        Telegram / TON Wallet
                     </span>
                 </div>
-                ${tonWallet ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">${t('connected')}</span>` : ''}
+                ${tonWallet ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
             </div>
 
             ${tonWallet ? `
@@ -240,15 +173,16 @@ function renderWalletPage(container) {
                     ${tonWallet.slice(0, 8)}...${tonWallet.slice(-8)}
                 </div>
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">${t('copy')}</button>
-                    <button class="btn-danger-sm" onclick="disconnectTonWallet()">${t('disconnect')}</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 Copy</button>
+                    <button class="btn-danger-sm" onclick="disconnectTonWallet()">🔌 Disconnect</button>
                 </div>
             ` : `
+                <!-- زر ربط محفظة TON الرسمي من تلجرام -->
                 <div id="ton-connect-btn-container" style="display: flex; justify-content: center; margin-top: 8px;"></div>
             `}
         </div>
 
-        <!-- 2. SOLANA WALLET CARD -->
+        <!-- 2. SOLANA WALLET CARD (محفظة سولانا) -->
         <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -256,10 +190,10 @@ function renderWalletPage(container) {
                         <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:18px;height:18px;" alt="Solana">
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        ${t('solanaWallet')}
+                        Solana Wallet
                     </span>
                 </div>
-                ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">${t('connected')}</span>` : ''}
+                ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
             </div>
 
             ${solanaWallet ? `
@@ -268,22 +202,22 @@ function renderWalletPage(container) {
                 </div>
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
-                    <span style="color:#8e8e93; font-size:0.8rem;">${t('onChainSol')}</span>
-                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">${t('checking')}</span>
+                    <span style="color:#8e8e93; font-size:0.8rem;">On-Chain SOL:</span>
+                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">⏳ Checking...</span>
                 </div>
 
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">${t('copy')}</button>
-                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">${t('disconnect')}</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 Copy</button>
+                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 Disconnect</button>
                 </div>
             ` : `
                 <button class="btn-glass-solana" onclick="connectSolanaProvider()">
-                    ${t('autoConnectSolana')}
+                    ⚡ Auto Connect Solana (Phantom / Solflare)
                 </button>
 
-                <input type="text" id="solana-address-input" class="solana-input-sm" placeholder="${t('placeholderSolana')}">
+                <input type="text" id="solana-address-input" class="solana-input-sm" placeholder="Or paste Solana address...">
                 <button class="btn-action-sm" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()">
-                    ${t('saveAddress')}
+                    💾 Save Address
                 </button>
             `}
         </div>
@@ -296,24 +230,25 @@ function renderWalletPage(container) {
                         <span style="font-size: 1.1rem;">🪙</span>
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        ${TOKEN_NAME}
+                        ${TOKEN_NAME} Balance
                     </span>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
-                <span style="color: #aaa; font-size: 0.85rem;">${t('totalEarned')}</span>
+                <span style="color: #aaa; font-size: 0.85rem;">Total Earned:</span>
                 <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
                     ${userCoins.toLocaleString()} ${TOKEN_NAME}
                 </span>
             </div>
 
             <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
-                ${t('claimTokens', { TOKEN: TOKEN_NAME })}
+                ⚡ Claim ${TOKEN_NAME} Tokens
             </button>
         </div>
     `;
 
+    // إتاحة فرصة لتهيئة زر TON Connect إذا تم تحميل المكتبة
     setTimeout(() => { if (tonConnectUI && !tonWallet) initTonConnect(); }, 100);
 
     if (solanaWallet) {
@@ -347,11 +282,12 @@ async function connectSolanaProvider() {
             const pubKey = resp.publicKey.toString();
             saveSolanaAddressToStateAndDB(pubKey);
         } else {
-            alert(t('solanaNotDetected'));
+            // إذا كان المستخدم يفتح التطبيق داخل تلجرام بدون إضافة متصفح
+            alert('لم يتم العثور على تطبيق المحفظة تلقائيًا. الرجاء نسخ عنوان محفظة Solana وإلصاقه بالمربع المخصص.');
         }
     } catch (err) {
         console.error("Solana Connect Error:", err);
-        alert(t('solanaConnectErr') + err.message);
+        alert('فشل الاتصال بالمحفظة: ' + err.message);
     }
 }
 
@@ -387,7 +323,7 @@ window.saveSolanaWalletAddress = function() {
     if (solAddress.length >= 32) {
         saveSolanaAddressToStateAndDB(solAddress);
     } else {
-        alert(t('invalidSolAddress'));
+        alert('الرجاء إدخال عنوان محفظة Solana صحيح');
     }
 };
 
@@ -414,22 +350,22 @@ window.claimCoinsToSolanaWallet = async function() {
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
-        alert(t('errNoSolanaWallet'));
+        alert('⚠️ الرجاء ربط محفظة Solana أولاً لاستلام التوكنات!');
         return;
     }
 
     if (userCoins <= 0) {
-        alert(t('errNoCoins', { TOKEN: TOKEN_NAME }));
+        alert(`⚠️ ليس لديك رصيد كافٍ من ${TOKEN_NAME} للمطالبة.`);
         return;
     }
 
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
-    if (!confirm(t('confirmClaim', { COINS: userCoins.toLocaleString(), AMOUNT: tokenAmountToReceive, TOKEN: TOKEN_NAME }))) return;
+    if (!confirm(`تأكيد استبدال ${userCoins.toLocaleString()} نقطة بـ ${tokenAmountToReceive} توكن ${TOKEN_NAME}؟`)) return;
 
     try {
         if (claimBtn) {
             claimBtn.disabled = true;
-            claimBtn.innerText = t('claiming');
+            claimBtn.innerText = '⏳ جاري الاتصال بالسيرفر وإرسال المعاملة...';
         }
 
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
@@ -450,23 +386,23 @@ window.claimCoinsToSolanaWallet = async function() {
                 userState.coins = 0;
             }
             if (typeof showPage === 'function') showPage('wallet');
-            alert(t('claimSuccess', { HASH: result.txHash }));
+            alert(`✅ تمت العملية بنجاح!\n\nرقم المعاملة (Tx Hash):\n${result.txHash}`);
         } else {
             const errorDetails = result?.error || result?.message || `HTTP ${response.status}`;
-            alert(t('claimFailed', { ERROR: errorDetails }));
+            alert(`❌ فشل التحويل:\n${errorDetails}`);
         }
     } catch (error) {
         console.error("Claim Error:", error);
-        alert(t('serverError', { ERROR: error.message }));
+        alert(`❌ خطأ في الاتصال بالسيرفر:\n${error.message}`);
     } finally {
         if (claimBtn) {
             claimBtn.disabled = false;
-            claimBtn.innerText = t('claimTokens', { TOKEN: TOKEN_NAME });
+            claimBtn.innerText = `Claim ${TOKEN_NAME} Tokens`;
         }
     }
 };
 
 window.copyToClipboard = function(text) {
-    navigator.clipboard.writeText(text).then(() => alert(t('copied')));
+    navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان بنجاح!'));
 };
-        
+            
