@@ -6,17 +6,47 @@ const COINS_PER_ZELO_TOKEN = 100; // Conversion rate: 100 coins = 1 ZELOFC Token
 const BACKEND_URL = "https://zelo-fc.onrender.com"; // Your Render backend URL
 const TOKEN_NAME = "ZELOFC"; // Token symbol
 
-// Load Solana Web3 official library
-if (!window.solanaWeb3) {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
-    document.head.appendChild(script);
+// Load Solana Web3 & TonConnect UI Libraries Dynamically
+(function loadExternalLibraries() {
+    if (!window.solanaWeb3) {
+        const scriptSol = document.createElement('script');
+        scriptSol.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
+        document.head.appendChild(scriptSol);
+    }
+    if (!window.TonConnectUI) {
+        const scriptTon = document.createElement('script');
+        scriptTon.src = 'https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
+        scriptTon.onload = initTonConnect;
+        document.head.appendChild(scriptTon);
+    } else {
+        initTonConnect();
+    }
+})();
+
+// Initialize TON Connect UI
+let tonConnectUI = null;
+function initTonConnect() {
+    if (window.TonConnectUI && !tonConnectUI) {
+        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://zelo-fc.onrender.com/tonconnect-manifest.json',
+            buttonRootId: null // Custom triggering
+        });
+
+        // Listen to Wallet Connection Changes
+        tonConnectUI.onStatusChange(async (wallet) => {
+            if (wallet) {
+                const tonAddress = wallet.account.address;
+                console.log("💎 TON Wallet connected:", tonAddress);
+                await saveWalletToDB('ton', tonAddress);
+            }
+        });
+    }
 }
 
 async function renderWalletPage(container) {
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
 
-    // 1. جلب بيانات المستخدم من الخادم وضمان مزامنة قاعدة البيانات
+    // 1. Fetch user data from backend (Supabase synchronization)
     let dbSolanaWallet = '';
     let dbTonWallet = '';
     let dbCoins = 0;
@@ -39,13 +69,13 @@ async function renderWalletPage(container) {
         ? Number(userState.points)
         : (dbCoins || Number(localStorage.getItem(`user_coins_${telegramId}`) || 0));
     
-    const solanaWallet = dbSolanaWallet || (typeof userState !== 'undefined' && userState.solanaWallet) 
-        ? (dbSolanaWallet || userState.solanaWallet) 
-        : (localStorage.getItem(`solana_wallet_${telegramId}`) || '');
+    const solanaWallet = dbSolanaWallet || (typeof userState !== 'undefined' && userState.solanaWallet 
+        ? userState.solanaWallet 
+        : localStorage.getItem(`solana_wallet_${telegramId}`) || '');
 
-    const tonWallet = dbTonWallet || (typeof userState !== 'undefined' && userState.walletAddress)
-        ? (dbTonWallet || userState.walletAddress)
-        : (localStorage.getItem(`ton_wallet_${telegramId}`) || '');
+    const tonWallet = dbTonWallet || (typeof userState !== 'undefined' && userState.walletAddress 
+        ? userState.walletAddress 
+        : localStorage.getItem(`ton_wallet_${telegramId}`) || '');
 
     // Sync global state
     if (typeof userState !== 'undefined') {
@@ -151,7 +181,7 @@ async function renderWalletPage(container) {
                         <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        TON Wallet
+                        Telegram / TON Wallet
                     </span>
                 </div>
                 ${tonWallet ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
@@ -167,7 +197,7 @@ async function renderWalletPage(container) {
                 </div>
             ` : `
                 <button class="btn-glass-ton" onclick="connectTonWallet()">
-                    <span>💎</span> Connect TON Wallet
+                    <span>✈️</span> Connect Telegram Wallet
                 </button>
             `}
         </div>
@@ -273,7 +303,7 @@ async function fetchRealSolanaBalance(address) {
 async function saveWalletToDB(walletType, walletAddress) {
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
 
-    // 1. حفظ محلي
+    // 1. Local Storage fallback
     if (walletType === 'solana') {
         localStorage.setItem(`solana_wallet_${telegramId || 'guest'}`, walletAddress);
         if (typeof userState !== 'undefined') userState.solanaWallet = walletAddress;
@@ -281,11 +311,11 @@ async function saveWalletToDB(walletType, walletAddress) {
         localStorage.setItem(`ton_wallet_${telegramId || 'guest'}`, walletAddress);
         if (typeof userState !== 'undefined') {
             userState.walletAddress = walletAddress;
-            userState.walletConnected = true;
+            userState.walletConnected = !!walletAddress;
         }
     }
 
-    // 2. تحديث قاعدة البيانات على Render / Supabase
+    // 2. Sync directly with Backend (Supabase)
     if (telegramId) {
         try {
             await fetch(`${BACKEND_URL}/api/save-wallet`, {
@@ -297,6 +327,7 @@ async function saveWalletToDB(walletType, walletAddress) {
                     walletAddress: walletAddress
                 })
             });
+            console.log(`✅ ${walletType} wallet synced with Supabase successfully.`);
         } catch (err) {
             console.error("❌ Failed to sync wallet with backend:", err);
         }
@@ -306,20 +337,17 @@ async function saveWalletToDB(walletType, walletAddress) {
 }
 
 // ==========================================
-// 🔌 TON Wallet Handlers
+// ✈️ TON / Telegram Wallet Native Handlers
 // ==========================================
 window.connectTonWallet = async function() {
-    // يمكنك ربط TonConnect UI أو أخذ العنوان المباشر
-    if (window.tonConnectUI) {
+    if (tonConnectUI) {
         try {
-            const connectedWallet = await window.tonConnectUI.connectWallet();
-            const tonAddress = connectedWallet.account.address;
-            await saveWalletToDB('ton', tonAddress);
+            await tonConnectUI.openModal();
         } catch (e) {
             console.error("TON Connect Error:", e);
         }
     } else {
-        const promptAddress = prompt("Enter your TON Wallet Address:");
+        const promptAddress = prompt("Enter your TON / Telegram Wallet Address:");
         if (promptAddress && promptAddress.trim().length > 10) {
             await saveWalletToDB('ton', promptAddress.trim());
         }
@@ -328,8 +356,11 @@ window.connectTonWallet = async function() {
 
 window.disconnectTonWallet = async function() {
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-    localStorage.removeItem(`ton_wallet_${telegramId || 'guest'}`);
+    if (tonConnectUI && tonConnectUI.connected) {
+        await tonConnectUI.disconnect();
+    }
     
+    localStorage.removeItem(`ton_wallet_${telegramId || 'guest'}`);
     if (typeof userState !== 'undefined') {
         userState.walletAddress = '';
         userState.walletConnected = false;
@@ -347,7 +378,7 @@ window.connectPhantomWallet = function() {
             saveWalletToDB('solana', res.publicKey.toString());
         }).catch((err) => console.error(err));
     } else {
-        alert('Please copy your wallet address from the Phantom app and paste it in the field.');
+        alert('Please copy your wallet address from your Phantom app and paste it in the field.');
     }
 };
 
@@ -402,7 +433,7 @@ window.claimCoinsToSolanaWallet = async function() {
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
-        `Confirm deducting ${userCoins.toLocaleString()} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
+        `Confirm deducting ${userCoins.toLocaleString()} points to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
     );
 
     if (!confirmClaim) return;
@@ -449,20 +480,4 @@ window.claimCoinsToSolanaWallet = async function() {
                 errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
             }
 
-            alert(`❌ Transfer failed:\n${errorDetails}`);
-        }
-
-    } catch (error) {
-        console.error("Claim Error:", error);
-        alert(`❌ Server connection error:\n${error.message}`);
-    } finally {
-        if (claimBtn) {
-            claimBtn.disabled = false;
-            claimBtn.innerText = `Claim ${TOKEN_NAME} Tokens`;
-        }
-    }
-};
-
-window.copyToClipboard = function(text) {
-    navigator.clipboard.writeText(text).then(() => alert('Address copied to clipboard!'));
-};
+ 
