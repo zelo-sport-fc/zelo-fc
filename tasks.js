@@ -1,5 +1,5 @@
 // ==========================================
-// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme (Official SVG Icons)
+// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme (Fixed & Official SVG Icons)
 // ==========================================
 
 (function() {
@@ -280,12 +280,12 @@
 
         await syncTasksFromDB();
 
-        // 🌟 شعارات المنصات الأصلية بـ SVG عالية الدقة
+        // 🌟 شعارات المنصات الرسمية (SVG) المصححة
         const svgIcons = {
             tg: `<svg class="task-icon-svg" style="color:#24A1DE;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.18-1.82 6.97-3.02 8.37-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.17.14.12.18.28.2.45-.02.07-.02.16-.04.25z"/></svg>`,
             x: `<svg class="task-icon-svg" style="color:#fff;" viewBox="0 0 24 24"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
             yt: `<svg class="task-icon-svg" style="color:#FF0000;" viewBox="0 0 24 24"><path fill="currentColor" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
-            pump: `<svg class="task-icon-svg" style="color:#00FF87;" viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 10.5C3.67 10.5 3 11.17 3 12s.67 1.5 1.5 1.5h15c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5h-15zM10.5 4.5C10.5 3.67 11.17 3 12 3s1.5.67 1.5 1.5v15c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-15z"/></svg>`
+            pump: `<svg class="task-icon-svg" style="color:#00FF87;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5h-2v-2h2zm0-4h-2V7h2z"/></svg>`
         };
 
         let tasksHtml = userState.tasks.map(task => {
@@ -425,4 +425,8 @@
                     alert(isAr ? "حدث خطأ أثناء حفظ المهمة، يرجى المحاولة لاحقاً." : "An error occurred, please try again.");
                     if (btn) {
                         btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                        btn.classN
+                        btn.className = "btn-task-go";
+                        btn.disabled = false;
+                    }
+                }
+          
