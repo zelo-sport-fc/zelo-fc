@@ -112,16 +112,14 @@ function renderWalletPage(container) {
                 }
                 .btn-glass-solana {
                     background: linear-gradient(135deg, #AB9FF2, #512DA8);
-                    color: white; border: none; border-radius: 10px;
-                    padding: 12px 14px; font-weight: bold; font-size: 0.88rem;
-                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-                    margin-bottom: 8px;
+                    color: white; border: none; border-radius: 12px;
+                    padding: 14px 16px; font-weight: bold; font-size: 0.95rem;
+                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+                    box-shadow: 0 4px 15px rgba(171, 159, 242, 0.25);
+                    transition: transform 0.2s;
                 }
-                .solana-input-sm {
-                    width: 100%; padding: 8px 10px; background: rgba(0, 0, 0, 0.5);
-                    border: 1px solid rgba(171, 159, 242, 0.3); border-radius: 8px;
-                    color: #fff; font-family: monospace; font-size: 0.8rem;
-                    box-sizing: border-box; margin-bottom: 8px; text-align: center;
+                .btn-glass-solana:active {
+                    transform: scale(0.98);
                 }
                 .btn-action-sm {
                     background: rgba(255, 255, 255, 0.05); color: #fff;
@@ -195,7 +193,7 @@ function renderWalletPage(container) {
                     </div>
                 ` : `
                     <button class="btn-glass-solana" onclick="connectPhantomWallet()">
-                        <img src="https://phantom.app/img/phantom-logo.svg" style="width:16px; height:16px;" alt="">
+                        <img src="https://phantom.app/img/phantom-logo.svg" style="width:18px; height:18px;" alt="Phantom">
                         Connect Phantom Wallet
                     </button>
                 `}
@@ -241,7 +239,7 @@ function renderWalletPage(container) {
 }
 
 // ==========================================
-// 🔮 Wallet & Network Functions
+// 🔮 Solana Network & Balance Fetcher
 // ==========================================
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
@@ -261,10 +259,10 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
-// ⚡ Real Auto Connect Phantom Function
+// ⚡ Real Universal Auto Connect Phantom
 // ==========================================
 window.connectPhantomWallet = async function() {
-    // 1. الاتصال المباشر إذا كان التطبيق يعمل داخل متصفح مدعوم فيه إضافة Phantom
+    // 1. إذا كان التطبيق يعمل داخل متصفح تدعمه إضافة Phantom مباشرة
     if ("solana" in window && window.solana.isPhantom) {
         try {
             const res = await window.solana.connect();
@@ -276,33 +274,37 @@ window.connectPhantomWallet = async function() {
         }
     }
 
-    // 2. الربط التلقائي عبر Telegram Mini App باستخدام Deep Link المباشر
+    // 2. الربط الحقيقي عبر Universal Deep Links لتطبيقات الهواتف وTelegram Mini Apps
     try {
-        const appUrl = encodeURIComponent(window.location.href);
+        const cleanCurrentUrl = window.location.href.split('?')[0];
+        const appUrl = encodeURIComponent(cleanCurrentUrl);
         const refUrl = encodeURIComponent(window.location.origin);
+        
+        // رابط بروتوكول Phantom للملاحة المباشرة للربط On-Chain
         const phantomDeepLink = `https://phantom.app/ul/browse/${appUrl}?ref=${refUrl}`;
 
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+        if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
             window.Telegram.WebApp.openLink(phantomDeepLink);
         } else {
             window.location.href = phantomDeepLink;
         }
     } catch (err) {
-        console.error("Error opening Phantom Deep Link:", err);
+        console.error("Error opening Phantom Universal Link:", err);
     }
 };
 
 // ==========================================
-// 🔄 استقبال الرد وتلقي عنوان المحفظة عند العودة
+// 🔄 استقبال الرد وتلقي البيانات On-Chain عند العودة
 // ==========================================
 function checkPhantomRedirectParams() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const returnedAddress = urlParams.get("phantom_encryption_public_key") || urlParams.get("public_key") || urlParams.get("address");
+        const returnedAddress = urlParams.get("phantom_encryption_public_key") || 
+                                urlParams.get("public_key") || 
+                                urlParams.get("address");
 
         if (returnedAddress) {
             saveSolanaAddressToStateAndDB(returnedAddress);
-            // تنظيف الرابط للحفاظ على مظهره
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     } catch (e) {
@@ -310,7 +312,7 @@ function checkPhantomRedirectParams() {
     }
 }
 
-// تشغيل الفحص فور تحميل الملف
+// تشغيل التحقق تلقائياً عند تحميل واجهة التطبيق
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', checkPhantomRedirectParams);
 } else {
