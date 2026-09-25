@@ -15,8 +15,19 @@ if (!window.solanaWeb3) {
 
 function renderWalletPage(container) {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 5080;
-    const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
+    
+    // 💡 القراءة المباشرة من LocalStorage لضمان عدم ضياع البيانات عند التحديث (Refresh)
+    const storedCoins = localStorage.getItem('user_coins');
+    const userCoins = (storedCoins !== null) ? Number(storedCoins) : ((typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 5080);
+    
+    const storedSolanaWallet = localStorage.getItem('solana_wallet');
+    const solanaWallet = storedSolanaWallet ? storedSolanaWallet : ((typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '');
+
+    // مزامنة المتغير العام إذا كان معرفاً
+    if (typeof userState !== 'undefined') {
+        userState.coins = userCoins;
+        userState.solanaWallet = solanaWallet;
+    }
 
     const walletStyles = `
         <style>
@@ -210,7 +221,7 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- 3. 🪙 CARD مجمع النقاط المكتسبة وزر CLAIM للخصم والتحويل -->
+        <!-- 3. CARD مجمع النقاط المكتسبة وزر CLAIM -->
         <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -285,12 +296,16 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
-// ⚡ دالة الخصم والتحويل عند الضغط على Claim (مرتبطة بسيرفر Render)
+// ⚡ دالة الخصم والتحويل عند الضغط على Claim
 // ==========================================
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    const userCoins = (typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 0;
-    const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) ? userState.solanaWallet : '';
+    
+    // قراءة القيم بشكل صحيح ومباشر من الذاكرة المحلية
+    const solWallet = localStorage.getItem('solana_wallet') || (typeof userState !== 'undefined' ? userState.solanaWallet : '');
+    const storedCoins = localStorage.getItem('user_coins');
+    const userCoins = (storedCoins !== null) ? Number(storedCoins) : ((typeof userState !== 'undefined' && userState.coins !== undefined) ? userState.coins : 5080);
+
     const claimBtn = document.getElementById('btn-claim-action');
 
     // 1. التأكد من ربط المحفظة
@@ -337,10 +352,10 @@ window.claimCoinsToSolanaWallet = async function() {
         const result = await response.json();
 
         if (result.success) {
-            // 5. خصم النقاط وتصغيرها في التطبيق فور نجاح العملية On-Chain
+            // 5. خصم النقاط وتحديث الذاكرة
+            localStorage.setItem('user_coins', 0);
             if (typeof userState !== 'undefined') {
                 userState.coins = 0;
-                localStorage.setItem('user_coins', 0);
             }
 
             if (typeof showPage === 'function') {
@@ -378,9 +393,9 @@ window.connectPhantomWallet = function() {
 };
 
 async function saveSolanaAddressToStateAndDB(solAddress) {
+    localStorage.setItem('solana_wallet', solAddress);
     if (typeof userState !== 'undefined') {
         userState.solanaWallet = solAddress;
-        localStorage.setItem('solana_wallet', solAddress);
     }
     if (typeof showPage === 'function') showPage('wallet');
 }
@@ -397,12 +412,12 @@ window.saveSolanaWalletAddress = function() {
 };
 
 window.disconnectSolanaWallet = function() {
-    if (typeof userState !== 'undefined') userState.solanaWallet = null;
     localStorage.removeItem('solana_wallet');
+    if (typeof userState !== 'undefined') userState.solanaWallet = null;
     if (typeof showPage === 'function') showPage('wallet');
 };
 
 window.copyToClipboard = function(text) {
     navigator.clipboard.writeText(text).then(() => alert('تم نسخ العنوان!'));
 };
-    
+        
