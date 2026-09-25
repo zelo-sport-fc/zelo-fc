@@ -18,7 +18,17 @@ function safeT(key, fallback) {
     return fallback;
 }
 
-function renderWalletPage(container) {
+// Global Copy Helper
+window.copyToClipboard = function(text) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        alert(safeT('copied_to_clipboard', 'Copied to clipboard!'));
+    }).catch(err => {
+        console.error('Copy error:', err);
+    });
+};
+
+window.renderWalletPage = function(container) {
     if (!container) return;
 
     try {
@@ -228,7 +238,7 @@ function renderWalletPage(container) {
         console.error("Render Wallet Error:", err);
         container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error loading wallet page. Please refresh.</div>`;
     }
-}
+};
 
 // Global functions definitions
 let tonConnectUI = null;
@@ -447,11 +457,4 @@ window.claimCoinsToSolanaWallet = async function() {
         } else {
             let errorDetails = safeT('unknown_error', "Unknown error");
             if (result && result.error) {
-                errorDetails = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
-            } else if (result && result.message) {
-                errorDetails = result.message;
-            } else {
-                errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
-            }
-
-            alert(`${safeT('cla
+                errorDetails = typeof result.error === 'object' ? JSON.stringify
