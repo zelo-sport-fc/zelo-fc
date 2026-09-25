@@ -1,14 +1,13 @@
 // ==========================================
-// 📱 login.js - النسخة الأسطورية الزجاجية المتوهجة (Glassmorphism UI/UX) 🚀
+// 📱 login.js - Glassmorphism VIP Edition (Solana Rewards Integrated) 🚀
 // ==========================================
 
 window.tempSelectedClubs = window.tempSelectedClubs || [];
 
-// ====================== أنماط CSS الاحترافية ======================
+// ====================== Injectable CSS Styles ======================
 function getInjectableStyles() {
     return `
         <style>
-            /* تأثير الدخول الناعم للشاشة */
             .animate-screen {
                 animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
@@ -17,7 +16,6 @@ function getInjectableStyles() {
                 100% { opacity: 1; transform: translateY(0); }
             }
 
-            /* شريط تمرير احترافي ومخفي جزئياً */
             .smooth-scroll {
                 overflow-y: auto;
                 scroll-behavior: smooth;
@@ -30,81 +28,90 @@ function getInjectableStyles() {
                 border-radius: 10px;
             }
 
-            /* تأثير البطاقات الزجاجية والتفاعل عند الضغط */
             .glass-card-elegant {
-                background: rgba(28, 28, 34, 0.6);
+                background: rgba(20, 20, 28, 0.65);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
                 border: 1px solid rgba(255, 255, 255, 0.05);
-                border-radius: 20px;
+                border-radius: 18px;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
                 transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
             }
             .interactive-card:hover {
                 transform: translateY(-3px);
                 box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
-                border-color: rgba(252, 176, 69, 0.3);
+                border-color: rgba(0, 255, 135, 0.3);
             }
             .interactive-card:active {
                 transform: scale(0.97);
-                background: rgba(36, 36, 44, 0.8);
+                background: rgba(30, 30, 42, 0.8);
             }
 
-            /* نبض زر التأكيد */
+            .solana-badge-card {
+                background: linear-gradient(135deg, rgba(153, 69, 255, 0.15), rgba(20, 241, 149, 0.12));
+                border: 1px solid rgba(20, 241, 149, 0.3);
+                border-radius: 16px;
+                padding: 10px 14px;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 4px 15px rgba(153, 69, 255, 0.15);
+            }
+
             .btn-pulse {
                 animation: pulseGlowBtn 2s infinite;
                 transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s;
-                background: linear-gradient(135deg, #10b981, #059669);
+                background: linear-gradient(135deg, #2AABEE, #00FF87);
             }
             .btn-pulse:active {
                 transform: translateX(-50%) scale(0.95) !important;
-                background: linear-gradient(135deg, #059669, #047857);
+                background: linear-gradient(135deg, #00FF87, #059669);
             }
             @keyframes pulseGlowBtn {
-                0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
-                70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                0% { box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.6); }
+                70% { box-shadow: 0 0 0 15px rgba(0, 255, 135, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(0, 255, 135, 0); }
             }
 
-            /* تأثيرات أندية مختارة */
             .club-selected {
-                background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)) !important;
-                border: 2px solid #10b981 !important;
-                box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.1);
+                background: linear-gradient(135deg, rgba(0, 255, 135, 0.15), rgba(0, 255, 135, 0.05)) !important;
+                border: 2px solid #00FF87 !important;
+                box-shadow: inset 0 0 15px rgba(0, 255, 135, 0.1);
             }
             
-            /* أزرار اللغة */
             .lang-btn {
                 background: rgba(255,255,255,0.05);
                 border: 1px solid rgba(255,255,255,0.1);
-                padding: 12px 28px; border-radius: 30px; cursor: pointer;
-                color: white; font-weight: bold; font-size: 0.95rem;
+                padding: 10px 24px; border-radius: 30px; cursor: pointer;
+                color: white; font-weight: bold; font-size: 0.88rem;
                 transition: all 0.3s ease;
                 backdrop-filter: blur(10px);
             }
             .lang-btn-active {
-                background: linear-gradient(135deg, var(--accent-gold, #fcb045), #f59e0b);
+                background: linear-gradient(135deg, #2AABEE, #00FF87);
                 border-color: transparent;
-                box-shadow: 0 4px 15px rgba(252, 176, 69, 0.4);
-                color: #121215;
+                box-shadow: 0 4px 15px rgba(0, 255, 135, 0.3);
+                color: #000;
             }
         </style>
     `;
 }
 
-// ====================== اللغة الافتراضية ======================
+// ====================== Get Default Language ======================
 function getDefaultLanguage() {
     if (window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code) {
         return window.Telegram.WebApp.initDataUnsafe.user.language_code.startsWith('ar') ? 'ar' : 'en';
     }
-    return 'ar';
+    return 'en';
 }
 
-// ====================== زر اختيار اللغة ======================
+// ====================== Language Selector UI ======================
 function getLanguageSelector() {
     const isAr = userState.lang === 'ar';
     return `
-        <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
             <div class="lang-btn ${isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">
                 🇸🇦 العربية
             </div>
@@ -115,7 +122,7 @@ function getLanguageSelector() {
     `;
 }
 
-// ====================== تغيير اللغة ======================
+// ====================== Set Language ======================
 window.setLanguage = async function(lang) {
     userState.lang = lang;
 
@@ -135,21 +142,23 @@ window.setLanguage = async function(lang) {
     renderLoginScreen();
 };
 
-// ====================== زر التأكيد ======================
+// ====================== Confirm Floating Button ======================
 function getFloatingButton() {
     if (window.tempSelectedClubs.length === 0) return '';
-    const isAr = userState.lang === 'ar';
+    const tFunc = typeof t === 'function' ? t : (k) => k;
+    const btnLabel = tFunc('confirmAndContinue') || 'Confirm & Continue';
+
     return `
         <div id="confirm-btn" class="btn-pulse" onclick="confirmLogin()" 
-             style="position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
-                    color: white; padding: 16px 35px; border-radius: 40px; font-weight: 900; font-size: 1.15rem; 
-                    cursor: pointer; z-index: 9999; width: 85%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
-            ${isAr ? `تأكيد واستمـرار (${window.tempSelectedClubs.length}/2) ✅` : `Confirm & Continue (${window.tempSelectedClubs.length}/2) ✅`}
+             style="position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); 
+                    color: #000; padding: 15px 30px; border-radius: 40px; font-weight: 900; font-size: 1.05rem; 
+                    cursor: pointer; z-index: 9999; width: 85%; max-width: 380px; text-align: center; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
+            ${btnLabel} (${window.tempSelectedClubs.length}/2) ✅
         </div>
     `;
 }
 
-// ====================== الشاشة الرئيسية للتسجيل ======================
+// ====================== Main Login Screen ======================
 window.renderLoginScreen = function() {
     const topBar = document.getElementById('top-bar');
     const bottomNav = document.getElementById('bottom-nav');
@@ -160,6 +169,7 @@ window.renderLoginScreen = function() {
 
     const mainContent = document.getElementById("main-content");
     const isAr = userState.lang === 'ar';
+    const tFunc = typeof t === 'function' ? t : (k) => k;
 
     let countriesHtml = "";
 
@@ -173,47 +183,64 @@ window.renderLoginScreen = function() {
             countryName = getCountryName(flag) || countryName;
         }
 
-        // حساب عدد الأندية المختارة من هذه الدولة
         const selectedInThisCountry = clubsInCountry.filter(c => window.tempSelectedClubs.includes(String(c.id))).length;
         const selectionBadge = selectedInThisCountry > 0 
-            ? `<span style="background: rgba(16, 185, 129, 0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">✓ ${selectedInThisCountry}</span>`
+            ? `<span style="background: rgba(0, 255, 135, 0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: #00FF87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: bold;">✓ ${selectedInThisCountry}</span>`
             : '';
 
         countriesHtml += `
             <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
-                 style="padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 14px;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <span style="font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
-                    <h4 style="margin: 0; color: #fff; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.5px;">${countryName}</h4>
+                 style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.8rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
+                    <h4 style="margin: 0; color: #fff; font-size: 1rem; font-weight: 800;">${countryName}</h4>
                     ${selectionBadge}
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="background: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; color: var(--accent-gold, #fcb045); border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
                         ${clubsInCountry.length} ⚽
                     </span>
-                    <span style="color: #666; font-size: 1.2rem;">${isAr ? '👈' : '👉'}</span>
+                    <span style="color: #666; font-size: 1rem;">${isAr ? '👈' : '👉'}</span>
                 </div>
             </div>
         `;
     }
 
+    const titleText = tFunc('chooseYourClubs') || 'Choose Your Clubs';
+    const subTitleText = tFunc('clubSelectionLimit') || '1 Local + 1 Global Club (Max 2)';
+    const solanaTitle = tFunc('solanaRewardsTitle') || 'SOL & Crypto Rewards';
+    const solanaDesc = tFunc('solanaRewardsSub') || 'Compete & support to earn $SOL';
+
     mainContent.innerHTML = `
         ${getInjectableStyles()}
-        <div class="animate-screen" style="padding: 25px 15px; text-align: center; max-width: 500px; margin: 0 auto; padding-bottom: 120px; position: relative;">
+        <div class="animate-screen" style="padding: 20px 12px; text-align: center; max-width: 500px; margin: 0 auto; padding-bottom: 110px; position: relative;">
             
             ${getLanguageSelector()}
 
-            <div style="margin-top: 15px; margin-bottom: 25px;">
-                <div style="font-size: 4rem; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));">🌍</div>
-                <h2 style="color: #fff; margin-bottom: 8px; font-weight: 900; font-size: 1.7rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                    ${isAr ? 'اختر أنديتك المفضلة' : 'Choose Your Clubs'}
+            <!-- ⚡ Solana Rewards Badge Card ⚡ -->
+            <div class="solana-badge-card">
+                <div style="display: flex; align-items: center; gap: 10px; text-align: ${isAr ? 'right' : 'left'};">
+                    <span style="font-size: 1.5rem;">⚡</span>
+                    <div>
+                        <div style="color: #14F195; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.5px;">${solanaTitle}</div>
+                        <div style="color: #94a3b8; font-size: 0.72rem; font-weight: bold;">${solanaDesc}</div>
+                    </div>
+                </div>
+                <span style="background: rgba(153, 69, 255, 0.2); color: #c084fc; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(153, 69, 255, 0.4);">
+                    SOLANA
+                </span>
+            </div>
+
+            <div style="margin-top: 10px; margin-bottom: 20px;">
+                <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 6px 0; font-size: 1.4rem; font-weight: 900;">
+                    ${titleText}
                 </h2>
-                <p style="color: var(--accent-gold, #fcb045); font-size: 1rem; margin-bottom: 0; font-weight: bold;">
-                    ${isAr ? 'نادي محلي + نادي عالمي (حد أقصى 2)' : '1 Local + 1 Global Club (Max 2)'}
+                <p style="color: #94a3b8; font-size: 0.85rem; margin: 0; font-weight: bold;">
+                    ${subTitleText}
                 </p>
             </div>
 
-            <div class="smooth-scroll" style="display: flex; flex-direction: column; height: 50vh; text-align: ${isAr ? 'right' : 'left'};">
+            <div class="smooth-scroll" style="display: flex; flex-direction: column; height: 52vh; text-align: ${isAr ? 'right' : 'left'};">
                 ${countriesHtml}
             </div>
         </div>
@@ -221,13 +248,14 @@ window.renderLoginScreen = function() {
     `;
 };
 
-// ====================== عرض الأندية داخل الدولة ======================
+// ====================== Show Clubs For Selected Country ======================
 window.showClubsForCountry = function(countryKey) {
     const clubs = allWorldCupCountriesClubs[countryKey];
     if (!clubs) return;
 
     const mainContent = document.getElementById("main-content");
     const isAr = userState.lang === 'ar';
+    const tFunc = typeof t === 'function' ? t : (k) => k;
 
     let clubsHtml = clubs.map(club => {
         const stringClubId = String(club.id);
@@ -241,15 +269,15 @@ window.showClubsForCountry = function(countryKey) {
 
         return `
             <div class="glass-card-elegant interactive-card ${selectedClass}" onclick="toggleClubSelection('${stringClubId}', '${countryKey}')" 
-                 style="padding: 16px 20px; border-radius: 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 18px;">
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.05);">
-                        <img src="${club.logo}" onerror="this.style.display='none'" style="width: 45px; height: 45px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));">
+                 style="padding: 12px 16px; border-radius: 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                        <img src="${club.logo}" onerror="this.style.display='none'" style="width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
                     </div>
-                    <span style="color: #fff; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.5px;">${clubName}</span>
+                    <span style="color: #fff; font-size: 0.95rem; font-weight: 800;">${clubName}</span>
                 </div>
-                <div style="font-size: 1.5rem; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);" class="${isSelected ? 'scale-up' : ''}">
-                    ${isSelected ? '<span style="filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));">✅</span>' : '<span style="opacity: 0.3;">⭕</span>'}
+                <div style="font-size: 1.2rem;">
+                    ${isSelected ? '<span style="filter: drop-shadow(0 0 6px rgba(0, 255, 135, 0.8));">✅</span>' : '<span style="opacity: 0.2;">⭕</span>'}
                 </div>
             </div>
         `;
@@ -261,19 +289,21 @@ window.showClubsForCountry = function(countryKey) {
         countryName = getCountryName(flag) || countryName;
     }
 
+    const backText = tFunc('btnBack') || 'Back to list';
+    const tapHint = tFunc('tapClubHint') || 'Tap a club to select it';
+
     mainContent.innerHTML = `
         ${getInjectableStyles()}
-        <div class="animate-screen" style="padding: 25px 15px; max-width: 500px; margin: 0 auto; padding-bottom: 120px;">
+        <div class="animate-screen" style="padding: 20px 12px; max-width: 500px; margin: 0 auto; padding-bottom: 110px;">
             <div onclick="renderLoginScreen()" 
-                 style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); color: #fff; padding: 10px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 25px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); transition: all 0.3s;">
-                <span style="font-size: 1.2rem;">${isAr ? '🔙' : '🔙'}</span>
-                ${isAr ? 'الرجوع للقائمة' : 'Back to list'}
+                 style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin-bottom: 18px; font-weight: bold; font-size: 0.82rem; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                <span>🔙</span> ${backText}
             </div>
             
-            <div style="text-align: center; margin-bottom: 25px; background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0)); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05);">
-                <span style="font-size: 3.5rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));">${flag}</span>
-                <h2 style="color: #fff; margin: 10px 0 0 0; font-weight: 900; font-size: 1.6rem; letter-spacing: 1px;">${countryName}</h2>
-                <p style="color: #888; font-size: 0.9rem; margin: 5px 0 0 0; font-weight: bold;">${isAr ? 'اضغط على النادي لاختياره' : 'Tap a club to select it'}</p>
+            <div style="text-align: center; margin-bottom: 18px; background: rgba(20, 20, 28, 0.65); padding: 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-size: 2.5rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));">${flag}</span>
+                <h3 style="color: #fff; margin: 6px 0 0 0; font-weight: 900; font-size: 1.3rem;">${countryName}</h3>
+                <p style="color: #00FF87; font-size: 0.78rem; margin: 4px 0 0 0; font-weight: bold;">${tapHint}</p>
             </div>
             
             <div class="smooth-scroll" style="display: flex; flex-direction: column; height: 50vh; text-align: ${isAr ? 'right' : 'left'};">
@@ -284,10 +314,11 @@ window.showClubsForCountry = function(countryKey) {
     `;
 };
 
-// ====================== اختيار / إلغاء اختيار النادي ======================
+// ====================== Toggle Club Selection ======================
 window.toggleClubSelection = function(clubId, countryKey) {
     const stringClubId = String(clubId);
     const index = window.tempSelectedClubs.findIndex(id => String(id) === stringClubId);
+    const tFunc = typeof t === 'function' ? t : (k) => k;
     
     if (index > -1) {
         window.tempSelectedClubs.splice(index, 1);
@@ -295,7 +326,8 @@ window.toggleClubSelection = function(clubId, countryKey) {
         if (window.tempSelectedClubs.length < 2) {
             window.tempSelectedClubs.push(stringClubId);
         } else {
-            alert(userState.lang === 'ar' ? 'يمكنك اختيار ناديين كحد أقصى (محلي وعالمي) ⚠️' : 'You can select a maximum of 2 clubs ⚠️');
+            const limitMsg = tFunc('maxClubsAlert') || 'You can select a maximum of 2 clubs (Local & Global) ⚠️';
+            alert(limitMsg);
             return; 
         }
     }
@@ -303,10 +335,13 @@ window.toggleClubSelection = function(clubId, countryKey) {
     showClubsForCountry(countryKey);
 };
 
-// ====================== زر تأكيد الدخول المحدث والآمن ======================
+// ====================== Confirm Login Function ======================
 window.confirmLogin = async function() {
+    const tFunc = typeof t === 'function' ? t : (k) => k;
+
     if (window.tempSelectedClubs.length === 0) {
-        alert(userState.lang === 'ar' ? 'الرجاء اختيار نادي واحد على الأقل للمتابعة.' : 'Please select at least one club to continue.');
+        const selectAlert = tFunc('selectAtLeastOne') || 'Please select at least one club to continue.';
+        alert(selectAlert);
         return;
     }
 
@@ -325,7 +360,7 @@ window.confirmLogin = async function() {
             }, { onConflict: 'telegram_id' });
 
             if (userErr) {
-                alert("❌ فشل حفظ البيانات في جدول users:\n" + userErr.message);
+                alert("❌ Database Error (users):\n" + userErr.message);
                 throw userErr;
             }
 
@@ -353,27 +388,19 @@ window.confirmLogin = async function() {
                 .upsert(rankingsData, { onConflict: 'telegram_id,club_id' });
             
             if (rankErr) {
-                alert("❌ فشل ربط حسابك بجدول club_fans_rankings:\n" + rankErr.message);
+                alert("❌ Database Error (rankings):\n" + rankErr.message);
                 throw rankErr;
             }
-            
-            console.log("✅ تم التسجيل بنجاح!");
 
-            // 🚀 ==================== بداية كود الإحالة المضاف ==================== 🚀
+            // Referral processing
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
-                console.log("🔄 جاري معالجة نظام الإحالة للمُحيل:", userState.pendingReferrer);
-                
-                // استدعاء دالة الإحالة لتسجيل النقاط والمكافآت
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
-                
-                // تنظيف المتغير فوراً لمنع تكرار العملية مستقبلاً
                 userState.pendingReferrer = null; 
             }
-            // 🚀 ==================== نهاية كود الإحالة المضاف ==================== 🚀
 
         } catch (error) {
-            console.error("⚠️ تم إيقاف التوجيه بسبب خطأ:", error);
-            if (btn) btn.innerHTML = userState.lang === 'ar' ? 'إعادة المحاولة 🔄' : 'Retry 🔄';
+            console.error("⚠️ Login process stopped due to error:", error);
+            if (btn) btn.innerHTML = tFunc('retry') || 'Retry 🔄';
             return; 
         }
     }
@@ -393,3 +420,4 @@ window.confirmLogin = async function() {
         showPage('home');
     }
 };
+            
