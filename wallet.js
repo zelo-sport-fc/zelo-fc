@@ -1,5 +1,5 @@
 // ==========================================
-// 👛 Zelo Sport Wallet - Safe & Robust Integration
+// 👛 Zelo Sport Wallet - Ultra Safe Version
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100;
@@ -28,6 +28,7 @@ window.copyToClipboard = function(text) {
     });
 };
 
+// Main Render Function Attached Directly to Window
 window.renderWalletPage = function(container) {
     if (!container) return;
 
@@ -236,11 +237,18 @@ window.renderWalletPage = function(container) {
         }
     } catch (err) {
         console.error("Render Wallet Error:", err);
-        container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error loading wallet page. Please refresh.</div>`;
+        container.innerHTML = `
+            <div style="color:#ff4d4d; text-align:center; padding:30px; background:rgba(255,0,0,0.1); border-radius:16px; border:1px solid rgba(255,0,0,0.2);">
+                <div style="font-size:2rem; margin-bottom:10px;">⚠️</div>
+                <div style="font-weight:bold; margin-bottom:5px;">Unable to display wallet</div>
+                <div style="font-size:0.8rem; color:#aaa; margin-bottom:15px;">${err.message}</div>
+                <button onclick="location.reload()" style="background:#fcb045; border:none; padding:10px 20px; border-radius:10px; font-weight:bold; cursor:pointer;">🔄 Reload App</button>
+            </div>
+        `;
     }
 };
 
-// Global functions definitions
+// Global Handlers
 let tonConnectUI = null;
 
 function initTonConnectInstance() {
@@ -443,18 +451,4 @@ window.claimCoinsToSolanaWallet = async function() {
         const result = await response.json().catch(() => null);
 
         if (response.ok && result && result.success) {
-            localStorage.setItem('user_coins', 0);
-            if (typeof userState !== 'undefined') {
-                userState.points = 0;
-                userState.coins = 0;
-            }
-
-            if (typeof showPage === 'function') {
-                showPage('wallet');
-            }
-
-            alert(`${safeT('claim_success', '✅ Claim successful!')}\n\nTx Hash: ${result.txHash}`);
-        } else {
-            let errorDetails = safeT('unknown_error', "Unknown error");
-            if (result && result.error) {
-                errorDetails = typeof result.error === 'object' ? JSON.stringify
+            localStorage.setIt
