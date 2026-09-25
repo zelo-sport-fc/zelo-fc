@@ -1,238 +1,236 @@
 // ==========================================
-// 👛 Zelo Sport Wallet - Solana & TON Web3 Integration 💎
+// 👛 Zelo Sport Wallet - Safe & Robust Integration
 // ==========================================
 
-const COINS_PER_ZELO_TOKEN = 100; // Conversion rate: 100 coins = 1 ZELOFC Token
-const BACKEND_URL = "https://zelo-fc.onrender.com"; // Your Render backend URL
-const TOKEN_NAME = "ZELOFC"; // Token symbol
+const COINS_PER_ZELO_TOKEN = 100;
+const BACKEND_URL = "https://zelo-fc.onrender.com";
+const TOKEN_NAME = "ZELOFC";
 
-// Ensure Solana and TON Web3 SDKs are accessible
-function ensureWeb3LibrariesLoaded() {
-    if (!window.solanaWeb3 && typeof solanaWeb3 === 'undefined') {
-        const scriptSol = document.createElement('script');
-        scriptSol.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js';
-        document.head.appendChild(scriptSol);
+// Safe Translation Helper
+function safeT(key, fallback) {
+    try {
+        if (typeof window.t === 'function') {
+            return window.t(key) || fallback;
+        }
+    } catch (e) {
+        console.warn("Translation function error:", e);
     }
-    
-    if (typeof TON_CONNECT_UI === 'undefined') {
-        const scriptTon = document.createElement('script');
-        scriptTon.src = 'https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
-        document.head.appendChild(scriptTon);
-    }
+    return fallback;
 }
-ensureWeb3LibrariesLoaded();
 
 function renderWalletPage(container) {
-    // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
-    const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
-        ? Number(userState.points)
-        : ((typeof userState !== 'undefined' && userState.coins !== undefined)
-            ? Number(userState.coins)
-            : Number(localStorage.getItem('user_coins') || 0));
-    
-    const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
-        ? userState.solanaWallet 
-        : (localStorage.getItem('solana_wallet') || '');
+    if (!container) return;
 
-    const tonWallet = (typeof userState !== 'undefined' && userState.walletAddress)
-        ? userState.walletAddress
-        : (localStorage.getItem('ton_wallet') || '');
+    try {
+        // Safe access to User State
+        const safeUserState = (typeof userState !== 'undefined' && userState) ? userState : {};
 
-    const isTonConnected = (typeof userState !== 'undefined' && userState.walletConnected) || Boolean(tonWallet);
+        // Calculate Coins Safely
+        let userCoins = 0;
+        if (typeof safeUserState.points !== 'undefined' && !isNaN(Number(safeUserState.points))) {
+            userCoins = Number(safeUserState.points);
+        } else if (typeof safeUserState.coins !== 'undefined' && !isNaN(Number(safeUserState.coins))) {
+            userCoins = Number(safeUserState.coins);
+        } else {
+            userCoins = Number(localStorage.getItem('user_coins') || 0);
+        }
 
-    // Sync global state
-    if (typeof userState !== 'undefined') {
-        userState.points = userCoins;
-        userState.coins = userCoins;
-        userState.solanaWallet = solanaWallet;
-        userState.walletAddress = tonWallet;
-        userState.walletConnected = isTonConnected;
-    }
+        const solanaWallet = safeUserState.solanaWallet || localStorage.getItem('solana_wallet') || '';
+        const tonWallet = safeUserState.walletAddress || localStorage.getItem('ton_wallet') || '';
+        const isTonConnected = Boolean(safeUserState.walletConnected || tonWallet);
 
-    const walletStyles = `
-        <style>
-            .wallet-glass-card {
-                background: linear-gradient(135deg, rgba(28, 28, 34, 0.8), rgba(18, 18, 22, 0.9));
-                backdrop-filter: blur(15px);
-                -webkit-backdrop-filter: blur(15px);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 18px;
-                padding: 16px;
-                text-align: center;
-                box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-                margin-bottom: 14px;
-            }
-            .wallet-header-flex {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 10px;
-            }
-            .wallet-logo-title {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .wallet-logo-sm {
-                width: 30px; height: 30px;
-                border-radius: 50%;
-                background: rgba(255,255,255,0.05);
-                display: flex; align-items: center; justify-content: center;
-                border: 1px solid rgba(255,255,255,0.1);
-            }
-            .address-box-sm {
-                background: rgba(0, 0, 0, 0.4);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                padding: 8px 12px;
-                border-radius: 10px;
-                font-family: monospace;
-                font-size: 0.82rem;
-                margin-bottom: 10px;
-                word-break: break-all;
-            }
-            .btn-glass-ton {
-                background: linear-gradient(135deg, #0088cc, #005580);
-                color: white; border: none; border-radius: 10px;
-                padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
-                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-            }
-            .btn-glass-solana {
-                background: linear-gradient(135deg, #AB9FF2, #512DA8);
-                color: white; border: none; border-radius: 10px;
-                padding: 12px 14px; font-weight: bold; font-size: 0.95rem;
-                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-                box-shadow: 0 4px 15px rgba(171, 159, 242, 0.3);
-            }
-            .btn-action-sm {
-                background: rgba(255, 255, 255, 0.05); color: #fff;
-                border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
-                padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
-            }
-            .btn-danger-sm {
-                background: rgba(253, 29, 29, 0.12); color: #ff4d4d;
-                border: 1px solid rgba(253, 29, 29, 0.3); border-radius: 8px;
-                padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
-            }
-            .btn-claim-main {
-                background: linear-gradient(135deg, #14F195, #00B4D8);
-                color: #000; border: none; border-radius: 12px;
-                padding: 12px 16px; font-size: 0.95rem; font-weight: 900; cursor: pointer;
-                width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-                box-shadow: 0 4px 15px rgba(20, 241, 149, 0.3);
-                transition: transform 0.2s;
-            }
-            .btn-claim-main:active {
-                transform: scale(0.98);
-            }
-        </style>
-    `;
+        // Sync back to state safely
+        if (typeof userState !== 'undefined') {
+            userState.points = userCoins;
+            userState.coins = userCoins;
+            userState.solanaWallet = solanaWallet;
+            userState.walletAddress = tonWallet;
+            userState.walletConnected = isTonConnected;
+        }
 
-    // i18n Translation Helper Wrapper
-    const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
+        const walletStyles = `
+            <style>
+                .wallet-glass-card {
+                    background: linear-gradient(135deg, rgba(28, 28, 34, 0.8), rgba(18, 18, 22, 0.9));
+                    backdrop-filter: blur(15px);
+                    -webkit-backdrop-filter: blur(15px);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 18px;
+                    padding: 16px;
+                    text-align: center;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+                    margin-bottom: 14px;
+                }
+                .wallet-header-flex {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 10px;
+                }
+                .wallet-logo-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .wallet-logo-sm {
+                    width: 30px; height: 30px;
+                    border-radius: 50%;
+                    background: rgba(255,255,255,0.05);
+                    display: flex; align-items: center; justify-content: center;
+                    border: 1px solid rgba(255,255,255,0.1);
+                }
+                .address-box-sm {
+                    background: rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    padding: 8px 12px;
+                    border-radius: 10px;
+                    font-family: monospace;
+                    font-size: 0.82rem;
+                    margin-bottom: 10px;
+                    word-break: break-all;
+                }
+                .btn-glass-ton {
+                    background: linear-gradient(135deg, #0088cc, #005580);
+                    color: white; border: none; border-radius: 10px;
+                    padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
+                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+                }
+                .btn-glass-solana {
+                    background: linear-gradient(135deg, #AB9FF2, #512DA8);
+                    color: white; border: none; border-radius: 10px;
+                    padding: 12px 14px; font-weight: bold; font-size: 0.95rem;
+                    cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+                    box-shadow: 0 4px 15px rgba(171, 159, 242, 0.3);
+                }
+                .btn-action-sm {
+                    background: rgba(255, 255, 255, 0.05); color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
+                    padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
+                }
+                .btn-danger-sm {
+                    background: rgba(253, 29, 29, 0.12); color: #ff4d4d;
+                    border: 1px solid rgba(253, 29, 29, 0.3); border-radius: 8px;
+                    padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
+                }
+                .btn-claim-main {
+                    background: linear-gradient(135deg, #14F195, #00B4D8);
+                    color: #000; border: none; border-radius: 12px;
+                    padding: 12px 16px; font-size: 0.95rem; font-weight: 900; cursor: pointer;
+                    width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+                    box-shadow: 0 4px 15px rgba(20, 241, 149, 0.3);
+                    transition: transform 0.2s;
+                }
+                .btn-claim-main:active {
+                    transform: scale(0.98);
+                }
+            </style>
+        `;
 
-    container.innerHTML = `
-        ${walletStyles}
-        
-        <!-- 1. TON WALLET CARD -->
-        <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
-            <div class="wallet-header-flex">
-                <div class="wallet-logo-title">
-                    <div class="wallet-logo-sm">
-                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
+        container.innerHTML = `
+            ${walletStyles}
+            
+            <!-- 1. TON WALLET CARD -->
+            <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
+                <div class="wallet-header-flex">
+                    <div class="wallet-logo-title">
+                        <div class="wallet-logo-sm">
+                            <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
+                        </div>
+                        <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
+                            TON Wallet
+                        </span>
                     </div>
-                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        TON Wallet
-                    </span>
+                    ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● ${safeT('connected', 'Connected')}</span>` : ''}
                 </div>
-                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● ${t('connected', 'Connected')}</span>` : ''}
+
+                ${isTonConnected ? `
+                    <div class="address-box-sm" style="color:#0088cc;">
+                        ${tonWallet.slice(0, 8)}...${tonWallet.slice(-8)}
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 ${safeT('copy', 'Copy')}</button>
+                        <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 ${safeT('disconnect', 'Disconnect')}</button>
+                    </div>
+                ` : `
+                    <button class="btn-glass-ton" onclick="triggerConnect()">
+                        <span>💎</span> ${safeT('connect_ton_wallet', 'Connect TON Wallet')}
+                    </button>
+                `}
             </div>
 
-            ${isTonConnected ? `
-                <div class="address-box-sm" style="color:#0088cc;">
-                    ${tonWallet.slice(0, 8)}...${tonWallet.slice(-8)}
+            <!-- 2. SOLANA WALLET CARD -->
+            <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
+                <div class="wallet-header-flex">
+                    <div class="wallet-logo-title">
+                        <div class="wallet-logo-sm" style="border-color: rgba(171, 159, 242, 0.4);">
+                            <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:18px;height:18px;" alt="Solana">
+                        </div>
+                        <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
+                            Solana Wallet (Phantom)
+                        </span>
+                    </div>
+                    ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">● ${safeT('verified', 'Verified Real Connection')}</span>` : ''}
                 </div>
-                <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 ${t('copy', 'Copy')}</button>
-                    <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 ${t('disconnect', 'Disconnect')}</button>
+
+                ${solanaWallet ? `
+                    <div class="address-box-sm" style="color:#AB9FF2;">
+                        ${solanaWallet.slice(0, 8)}...${solanaWallet.slice(-8)}
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
+                        <span style="color:#8e8e93; font-size:0.8rem;">${safeT('onchain_sol', 'On-Chain SOL:')}</span>
+                        <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">⏳ ${safeT('checking', 'Checking...')}</span>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 ${safeT('copy', 'Copy')}</button>
+                        <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 ${safeT('disconnect', 'Disconnect')}</button>
+                    </div>
+                ` : `
+                    <button class="btn-glass-solana" onclick="connectPhantomWallet()">
+                        🟣 ${safeT('connect_solana_wallet', 'Connect Solana Wallet (Real Web3)')}
+                    </button>
+                `}
+            </div>
+
+            <!-- 3. TOKEN BALANCE & CLAIM CARD -->
+            <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
+                <div class="wallet-header-flex">
+                    <div class="wallet-logo-title">
+                        <div class="wallet-logo-sm" style="border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.1);">
+                            <span style="font-size: 1.1rem;">🪙</span>
+                        </div>
+                        <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
+                            ${TOKEN_NAME} ${safeT('balance', 'Balance')}
+                        </span>
+                    </div>
                 </div>
-            ` : `
-                <button class="btn-glass-ton" onclick="triggerConnect()">
-                    <span>💎</span> ${t('connect_ton_wallet', 'Connect TON Wallet')}
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
+                    <span style="color: #aaa; font-size: 0.85rem;">${safeT('total_earned', 'Total Earned:')}</span>
+                    <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
+                        ${userCoins.toLocaleString()} ${TOKEN_NAME}
+                    </span>
+                </div>
+
+                <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
+                    ⚡ ${safeT('claim_tokens', 'Claim')} ${TOKEN_NAME} ${safeT('tokens', 'Tokens')}
                 </button>
-            `}
-        </div>
-
-        <!-- 2. REAL SOLANA WALLET CARD -->
-        <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
-            <div class="wallet-header-flex">
-                <div class="wallet-logo-title">
-                    <div class="wallet-logo-sm" style="border-color: rgba(171, 159, 242, 0.4);">
-                        <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:18px;height:18px;" alt="Solana">
-                    </div>
-                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        Solana Wallet (Phantom)
-                    </span>
-                </div>
-                ${solanaWallet ? `<span style="color:#14F195; font-size:0.75rem; font-weight:bold;">● ${t('verified', 'Verified Real Connection')}</span>` : ''}
             </div>
+            
+            <div style="height: 20px;"></div>
+        `;
 
-            ${solanaWallet ? `
-                <div class="address-box-sm" style="color:#AB9FF2;">
-                    ${solanaWallet.slice(0, 8)}...${solanaWallet.slice(-8)}
-                </div>
-                
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
-                    <span style="color:#8e8e93; font-size:0.8rem;">${t('onchain_sol', 'On-Chain SOL:')}</span>
-                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">⏳ ${t('checking', 'Checking...')}</span>
-                </div>
-
-                <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">📋 ${t('copy', 'Copy')}</button>
-                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">🔌 ${t('disconnect', 'Disconnect')}</button>
-                </div>
-            ` : `
-                <button class="btn-glass-solana" onclick="connectPhantomWallet()">
-                    🟣 ${t('connect_solana_wallet', 'Connect Solana Wallet (Real Web3)')}
-                </button>
-            `}
-        </div>
-
-        <!-- 3. TOKEN BALANCE & CLAIM CARD -->
-        <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
-            <div class="wallet-header-flex">
-                <div class="wallet-logo-title">
-                    <div class="wallet-logo-sm" style="border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.1);">
-                        <span style="font-size: 1.1rem;">🪙</span>
-                    </div>
-                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
-                        ${TOKEN_NAME} ${t('balance', 'Balance')}
-                    </span>
-                </div>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
-                <span style="color: #aaa; font-size: 0.85rem;">${t('total_earned', 'Total Earned:')}</span>
-                <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
-                    ${userCoins.toLocaleString()} ${TOKEN_NAME}
-                </span>
-            </div>
-
-            <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
-                ⚡ ${t('claim_tokens', 'Claim')} ${TOKEN_NAME} ${t('tokens', 'Tokens')}
-            </button>
-        </div>
-        
-        <div style="height: 20px;"></div>
-    `;
-
-    if (solanaWallet) {
-        fetchRealSolanaBalance(solanaWallet);
+        if (solanaWallet) {
+            fetchRealSolanaBalance(solanaWallet);
+        }
+    } catch (err) {
+        console.error("Render Wallet Error:", err);
+        container.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error loading wallet page. Please refresh.</div>`;
     }
 }
 
-// ==========================================
-// 💎 TON Connect Handler Integration
-// ==========================================
+// Global functions definitions
 let tonConnectUI = null;
 
 function initTonConnectInstance() {
@@ -278,8 +276,7 @@ window.triggerConnect = async function() {
             console.error("TON Connect Error:", err);
         }
     } else {
-        const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
-        alert(t('ton_loading', 'TON Connect SDK is loading, please try again in a moment.'));
+        alert(safeT('ton_loading', 'TON Connect SDK is loading, please try again in a moment.'));
     }
 };
 
@@ -296,9 +293,6 @@ window.triggerDisconnect = async function() {
     }
 };
 
-// ==========================================
-// 🔮 Solana Network Functions
-// ==========================================
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
@@ -317,29 +311,23 @@ async function fetchRealSolanaBalance(address) {
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// ==========================================
-// 🟣 Real Solana Connection Handler
-// ==========================================
 window.connectPhantomWallet = async function() {
-    const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
     try {
         const isSolanaAvailable = "solana" in window;
         
         if (isSolanaAvailable) {
             const response = await window.solana.connect();
             const walletAddress = response.publicKey.toString();
-
-            console.log("✅ Solana Real Wallet Connected:", walletAddress);
             await saveSolanaAddressToStateAndDB(walletAddress);
         } else {
             const currentUrl = encodeURIComponent(window.location.href);
             const phantomDeepLink = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
             window.open(phantomDeepLink, '_blank');
-            alert(t('install_phantom', 'Please install Phantom Wallet or open this app inside Phantom Browser!'));
+            alert(safeT('install_phantom', 'Please install Phantom Wallet or open this app inside Phantom Browser!'));
         }
     } catch (err) {
         console.error("Solana Connection Error:", err);
-        alert(t('solana_rejected', 'Solana wallet connection request was rejected or cancelled.'));
+        alert(safeT('solana_rejected', 'Solana wallet connection request was rejected or cancelled.'));
     }
 };
 
@@ -402,36 +390,27 @@ window.disconnectSolanaWallet = async function() {
     }
 };
 
-// ==========================================
-// ⚡ Claim Action Handler
-// ==========================================
 window.claimCoinsToSolanaWallet = async function() {
-    const t = (key, fallback) => (typeof window.t === 'function' ? window.t(key) : fallback);
-    
-    const solWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
-        ? userState.solanaWallet 
-        : (localStorage.getItem('solana_wallet') || '');
-
-    const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined) 
-        ? Number(userState.points) 
-        : Number(localStorage.getItem('user_coins') || 0);
+    const safeUserState = (typeof userState !== 'undefined' && userState) ? userState : {};
+    const solWallet = safeUserState.solanaWallet || localStorage.getItem('solana_wallet') || '';
+    const userCoins = safeUserState.points || Number(localStorage.getItem('user_coins') || 0);
 
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
-        alert(t('connect_solana_first', '⚠️ Please connect your verified Solana wallet first!'));
+        alert(safeT('connect_solana_first', '⚠️ Please connect your verified Solana wallet first!'));
         return;
     }
 
     if (userCoins <= 0) {
-        alert(t('not_enough_balance', `⚠️ You do not have enough ${TOKEN_NAME} balance to claim.`));
+        alert(safeT('not_enough_balance', `⚠️ You do not have enough ${TOKEN_NAME} balance to claim.`));
         return;
     }
 
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
-        t('confirm_claim_msg', `Confirm deducting ${userCoins.toLocaleString()} points to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens on your wallet?`)
+        safeT('confirm_claim_msg', `Confirm deducting ${userCoins.toLocaleString()} points to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens on your wallet?`)
     );
 
     if (!confirmClaim) return;
@@ -439,14 +418,12 @@ window.claimCoinsToSolanaWallet = async function() {
     try {
         if (claimBtn) {
             claimBtn.disabled = true;
-            claimBtn.innerText = t('connecting_backend', '⏳ Connecting to backend & sending tokens...');
+            claimBtn.innerText = safeT('connecting_backend', '⏳ Connecting to backend & sending tokens...');
         }
 
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userWalletAddress: solWallet,
                 userCoins: userCoins
@@ -466,6 +443,15 @@ window.claimCoinsToSolanaWallet = async function() {
                 showPage('wallet');
             }
 
-            alert(`${t('claim_success', '✅ Claim successful!')}\n\nTx Hash: ${result.txHash}`);
+            alert(`${safeT('claim_success', '✅ Claim successful!')}\n\nTx Hash: ${result.txHash}`);
         } else {
-            le
+            let errorDetails = safeT('unknown_error', "Unknown error");
+            if (result && result.error) {
+                errorDetails = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
+            } else if (result && result.message) {
+                errorDetails = result.message;
+            } else {
+                errorDetails = `HTTP ${response.status}: ${response.statusText || 'Server Error'}`;
+            }
+
+            alert(`${safeT('cla
