@@ -8,7 +8,7 @@ window.tempSelectedClubs = window.tempSelectedClubs || [];
 function getInjectableStyles() {
     return `
         <style>
-            /* Lock main viewport to prevent page-level scroll */
+            /* Lock main viewport completely to prevent external page scrolling */
             html, body {
                 overflow: hidden !important;
                 height: 100% !important;
@@ -166,7 +166,7 @@ function getInjectableStyles() {
     `;
 }
 
-// Helper to Safely Get Translation with Dynamic Language Check (AR/EN Support)
+// Safe translation function with fallback logic
 function safeT(key, fallbackAr, fallbackEn) {
     const isAr = window.userState?.lang === 'ar';
     if (typeof t === 'function') {
@@ -186,7 +186,7 @@ function getDefaultLanguage() {
 
 // ====================== Language Selector UI ======================
 function getLanguageSelector() {
-    const isAr = userState.lang === 'ar';
+    const isAr = window.userState?.lang === 'ar';
     return `
         <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 10px;">
             <div class="lang-btn ${isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">
@@ -201,16 +201,17 @@ function getLanguageSelector() {
 
 // ====================== Set Language ======================
 window.setLanguage = async function(lang) {
-    userState.lang = lang;
+    if (!window.userState) window.userState = {};
+    window.userState.lang = lang;
 
     if (typeof applyLanguageSettings === 'function') {
         applyLanguageSettings();
     }
 
-    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && window.userState.userId) {
         try {
             await supabaseClient.from('users').upsert({
-                telegram_id: userState.userId,
+                telegram_id: window.userState.userId,
                 lang: lang
             }, { onConflict: 'telegram_id' });
         } catch (e) {}
@@ -240,11 +241,13 @@ window.renderLoginScreen = function() {
     if (topBar) topBar.style.display = 'none';
     if (bottomNav) bottomNav.style.display = 'none';
 
-    if (!userState.lang) userState.lang = getDefaultLanguage();
+    if (!window.userState) window.userState = {};
+    if (!window.userState.lang) window.userState.lang = getDefaultLanguage();
 
     const mainContent = document.getElementById("main-content");
-    const isAr = userState.lang === 'ar';
+    if (!mainContent) return;
 
+    const isAr = window.userState.lang === 'ar';
     let countriesHtml = "";
 
     if (typeof allWorldCupCountriesClubs !== 'undefined') {
@@ -285,7 +288,7 @@ window.renderLoginScreen = function() {
     const titleText = safeT('chooseYourClubs', 'اختر أنديتك', 'Choose Your Clubs');
     const subTitleText = safeT('clubSelectionLimit', 'نادي محلي + نادي عالمي (الحد الأقصى 2)', '1 Local + 1 Global Club (Max 2)');
     
-    // النصوص الخاصة بعملة $ZELOFC والمكافآت - مترجمة للغة العربية والإنجليزية
+    // النصوص المترجمة لبطاقة المكافآت ZELOFC
     const zelofcTitle = safeT('zelofcRewardsTitle', 'اربح عملة ZELOFC$ و SOL', 'Earn $ZELOFC & SOL');
     const zelofcSub = safeT('zelofcRewardsSub', 'تنافس ودعم ناديك لتكسب جوائز بـ ZELOFC$', 'Compete & win official$ZELOFC token rewards');
 
@@ -297,7 +300,7 @@ window.renderLoginScreen = function() {
             <div>
                 ${getLanguageSelector()}
 
-                <!-- ⚡ ZELOFC Token & Solana Banner (Dynamic Bilingual) ⚡ -->
+                <!-- ⚡ ZELOFC Token & Solana Banner ⚡ -->
                 <div class="solana-badge-card">
                     <div style="display: flex; align-items: center; gap: 10px; text-align: ${isAr ? 'right' : 'left'};">
                         <span style="font-size: 1.5rem; filter: drop-shadow(0 0 5px rgba(20, 241, 149, 0.6));">🪙</span>
@@ -319,7 +322,7 @@ window.renderLoginScreen = function() {
                 </div>
             </div>
 
-            <!-- Only Inner Area Scrolls (قائمة الدول تمرر داخلياً) -->
+            <!-- Scrollable Inner Container -->
             <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
                 ${countriesHtml}
             </div>
@@ -330,13 +333,18 @@ window.renderLoginScreen = function() {
     `;
 };
 
+// Aliases to fix any "Missing Login Screen" function call errors
+window.showLoginScreen = window.renderLoginScreen;
+
 // ====================== Show Clubs For Selected Country ======================
 window.showClubsForCountry = function(countryKey) {
     if (typeof allWorldCupCountriesClubs === 'undefined' || !allWorldCupCountriesClubs[countryKey]) return;
     const clubs = allWorldCupCountriesClubs[countryKey];
 
     const mainContent = document.getElementById("main-content");
-    const isAr = userState.lang === 'ar';
+    if (!mainContent) return;
+
+    const isAr = window.userState?.lang === 'ar';
 
     let clubsHtml = clubs.map(club => {
         const stringClubId = String(club.id);
@@ -392,7 +400,7 @@ window.showClubsForCountry = function(countryKey) {
                 </div>
             </div>
 
-            <!-- Only Inner Area Scrolls (قائمة الأندية تمرر داخلياً) -->
+            <!-- Scrollable Inner Container -->
             <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
                 ${clubsHtml}
             </div>
@@ -431,18 +439,19 @@ window.confirmLogin = async function() {
         return;
     }
 
-    userState.selectedClubs = [...window.tempSelectedClubs];
+    if (!window.userState) window.userState = {};
+    window.userState.selectedClubs = [...window.tempSelectedClubs];
     
     const btn = document.getElementById('confirm-btn');
     if (btn) btn.innerHTML = '⏳...';
 
-    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && window.userState.userId) {
         try {
             const { error: userErr } = await supabaseClient.from('users').upsert({
-                telegram_id: userState.userId,
-                username: userState.username,
-                selected_clubs: userState.selectedClubs,
-                lang: userState.lang
+                telegram_id: window.userState.userId,
+                username: window.userState.username,
+                selected_clubs: window.userState.selectedClubs,
+                lang: window.userState.lang
             }, { onConflict: 'telegram_id' });
 
             if (userErr) {
@@ -454,20 +463,12 @@ window.confirmLogin = async function() {
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId)
+                .eq('telegram_id', window.userState.userId)
                 .maybeSingle();
             
             if (userData && userData.points) {
                 startingPoints = userData.points;
             }
 
-            const rankingsData = userState.selectedClubs.map(clubId => ({
-                telegram_id: userState.userId,
-                club_id: String(clubId),
-                total_fan_points: startingPoints,
-                points_activity: 0,
-                referrals_count: 0
-            }));
-
-            const { error: rankErr } = await supabaseClient
-                .from('club_fans_rankings'
+            const rankingsData = window.userState.selectedClubs.map(clubId => ({
+   
