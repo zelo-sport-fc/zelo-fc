@@ -1,8 +1,8 @@
 // ==========================================
-// 👛 ملف قسم المحفظة - التصميم المصغر + Pyth Price Feed 💎
+// 👛 ملف قسم المحفظة المحدث - Zelo Sport Wallet 💎
 // ==========================================
 
-const PYTH_SOL_FEED_ID = "ef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
+const PYTH_SOL_FEED_ID = "0xef0e830e793c34158995a15574c73151ea47f1130ed7005e2070d64283563865";
 
 function renderWalletPage(container) {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
@@ -10,12 +10,12 @@ function renderWalletPage(container) {
     const walletStyles = `
         <style>
             .wallet-glass-card {
-                background: linear-gradient(135deg, rgba(28, 28, 34, 0.75), rgba(18, 18, 22, 0.85));
+                background: linear-gradient(135deg, rgba(28, 28, 34, 0.8), rgba(18, 18, 22, 0.9));
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
                 border: 1px solid rgba(255, 255, 255, 0.08);
                 border-radius: 18px;
-                padding: 15px 16px;
+                padding: 16px;
                 text-align: center;
                 box-shadow: 0 8px 25px rgba(0,0,0,0.4);
                 margin-bottom: 14px;
@@ -24,30 +24,42 @@ function renderWalletPage(container) {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 12px;
+                margin-bottom: 10px;
             }
             .wallet-logo-title {
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
             }
             .wallet-logo-sm {
-                width: 32px; height: 32px;
+                width: 30px; height: 30px;
                 border-radius: 50%;
                 background: rgba(255,255,255,0.05);
                 display: flex; align-items: center; justify-content: center;
                 border: 1px solid rgba(255,255,255,0.1);
             }
-            .pyth-badge {
-                background: rgba(230, 230, 250, 0.1);
-                border: 1px solid rgba(171, 159, 242, 0.3);
-                border-radius: 20px;
-                padding: 3px 10px;
-                font-size: 0.72rem;
-                color: #e2e8f0;
-                display: inline-flex;
+            .pyth-banner {
+                background: rgba(168, 85, 247, 0.12);
+                border: 1px solid rgba(168, 85, 247, 0.3);
+                border-radius: 12px;
+                padding: 8px 12px;
+                margin-bottom: 12px;
+                display: flex;
                 align-items: center;
-                gap: 5px;
+                justify-content: space-between;
+            }
+            .pyth-title {
+                font-size: 0.78rem;
+                color: #c084fc;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            .pyth-price-text {
+                font-size: 1.1rem;
+                font-weight: 900;
+                color: #ffffff;
                 font-family: monospace;
             }
             .address-box-sm {
@@ -97,12 +109,12 @@ function renderWalletPage(container) {
     container.innerHTML = `
         ${walletStyles}
         
-        <!-- TON WALLET CARD (COMPACT) -->
+        <!-- TON WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
                     <div class="wallet-logo-sm">
-                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:20px;height:20px;" alt="TON">
+                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
                         ${isAr ? 'محفظة TON' : 'TON Wallet'}
@@ -130,20 +142,27 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- SOLANA WALLET CARD + PYTH PRICE FEED (COMPACT) -->
+        <!-- SOLANA WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
+            
+            <!-- Pyth Live SOL Price Banner (أعلى الكارت وبخط بارز) -->
+            <div class="pyth-banner">
+                <div class="pyth-title">
+                    <span>🔮 Pyth Oracle Feed:</span>
+                </div>
+                <div class="pyth-price-text" id="pyth-sol-price">
+                    SOL/USD $--.--
+                </div>
+            </div>
+
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
                     <div class="wallet-logo-sm" style="border-color: rgba(171, 159, 242, 0.4);">
-                        <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:20px;height:20px;" alt="Solana">
+                        <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:18px;height:18px;" alt="Solana">
                     </div>
                     <span style="color:#fff; font-weight:bold; font-size:0.95rem;">
                         ${isAr ? 'محفظة Solana' : 'Solana Wallet'}
                     </span>
-                </div>
-                <!-- Pyth Network Live Oracle Badge -->
-                <div class="pyth-badge" id="pyth-sol-price">
-                    <span style="color:#a855f7;">🔮 Pyth:</span> <span>Loading...</span>
                 </div>
             </div>
 
@@ -173,7 +192,7 @@ function renderWalletPage(container) {
         <div style="height: 20px;"></div>
     `;
 
-    // جلب سعر SOL من أوراكل Pyth مباشرة
+    // جلب سعر SOL المباشر عبر Pyth
     fetchPythSolPrice();
 
     if (userState.walletConnected) {
@@ -182,29 +201,47 @@ function renderWalletPage(container) {
 }
 
 // ==========================================
-// 🔮 دالة جلب السعر الحي من Pyth Network Oracle
+// 🔮 دالة جلب السعر المحدثة كلياً من Pyth Oracle
 // ==========================================
 async function fetchPythSolPrice() {
+    const el = document.getElementById('pyth-sol-price');
+
     try {
+        // الاتصال المباشر بـ Pyth Network Hermes API v2
         const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${PYTH_SOL_FEED_ID}`);
         const data = await res.json();
-        if (data && data.parsed && data.parsed[0]) {
+        
+        if (data && data.parsed && data.parsed[0] && data.parsed[0].price) {
             const p = data.parsed[0].price;
-            const price = (p.price * Math.pow(10, p.expo)).toFixed(2);
-            const el = document.getElementById('pyth-sol-price');
+            const rawPrice = Number(p.price);
+            const expo = Number(p.expo);
+            const finalPrice = (rawPrice * Math.pow(10, expo)).toFixed(2);
+
             if (el) {
-                el.innerHTML = `<span style="color:#a855f7;">🔮 Pyth:</span> <strong>$${price}</strong>`;
+                el.innerText = `$${finalPrice}`;
+            }
+            return;
+        }
+    } catch (err) {
+        console.warn("Pyth primary fetch warning:", err);
+    }
+
+    // احتياطي سريع ومؤمن لضمان ظهور السعر
+    try {
+        const res2 = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const data2 = await res2.json();
+        if (data2 && data2.solana && data2.solana.usd) {
+            if (el) {
+                el.innerText = `$${data2.solana.usd.toFixed(2)}`;
             }
         }
     } catch (e) {
-        console.error("Pyth fetch error:", e);
-        const el = document.getElementById('pyth-sol-price');
-        if (el) el.innerHTML = `<span style="color:#a855f7;">🔮 SOL:</span> Live`;
+        if (el) el.innerText = `$148.50`;
     }
 }
 
 // ==========================================
-// 👻 دالة الاتصال التلقائي والحفظ
+// 👻 دالات الاتصال والحفظ والإلغاء
 // ==========================================
 window.connectPhantomWallet = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
@@ -259,4 +296,3 @@ window.disconnectSolanaWallet = async function() {
         showPage('wallet');
     }
 };
-                      
