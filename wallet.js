@@ -2,9 +2,20 @@
 // 👛 Zelo Sport Wallet - Frontend Script 💎
 // ==========================================
 
-const COINS_PER_ZELO_TOKEN = 100; // Conversion rate: 100 coins = 1 ZELOFC Token
-const BACKEND_URL = "https://zelo-fc.onrender.com"; // Your Render backend URL
-const TOKEN_NAME = "ZELOFC"; // Token symbol
+const COINS_PER_ZELO_TOKEN = 100;
+const BACKEND_URL = "https://zelo-fc.onrender.com";
+const TOKEN_NAME = "ZELOFC";
+
+// 1. تحميل مكتبة TON Connect UI ديناميكياً
+if (!window.TON_CONNECT_UI && !document.getElementById('ton-connect-script')) {
+    const script = document.createElement('script');
+    script.id = 'ton-connect-script';
+    script.src = 'https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
+    script.onload = () => { initTonConnectUI(); };
+    document.head.appendChild(script);
+} else {
+    initTonConnectUI();
+}
 
 // Load Solana Web3 official library safely
 if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
@@ -14,10 +25,42 @@ if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     document.head.appendChild(script);
 }
 
+// تهيئة كائن TON Connect UI
+function initTonConnectUI() {
+    if (window.TON_CONNECT_UI && !window.tonConnectUI) {
+        try {
+            window.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                manifestUrl: `${BACKEND_URL}/tonconnect-manifest.json`,
+                buttonRootId: null // تخصيص الأزرار يدوياً عبر الواجهة الخاصة بنا
+            });
+
+            // الاستماع لتغير حالة الاتصال بالمحفظة تلقائياً
+            window.tonConnectUI.onStatusChange((wallet) => {
+                if (wallet) {
+                    const rawAddress = wallet.account.address;
+                    if (typeof userState !== 'undefined') {
+                        userState.walletAddress = rawAddress;
+                        userState.walletConnected = true;
+                    }
+                    localStorage.setItem('ton_wallet_address', rawAddress);
+                } else {
+                    if (typeof userState !== 'undefined') {
+                        userState.walletAddress = '';
+                        userState.walletConnected = false;
+                    }
+                    localStorage.removeItem('ton_wallet_address');
+                }
+                if (typeof showPage === 'function') showPage('wallet');
+            });
+        } catch (e) {
+            console.error("TON Connect UI Init Error:", e);
+        }
+    }
+}
+
 function renderWalletPage(container) {
     if (!container) return;
 
-    // Sync strictly with userState.points (or fallback to userState.coins / localStorage)
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
         : ((typeof userState !== 'undefined' && userState.coins !== undefined)
@@ -28,11 +71,18 @@ function renderWalletPage(container) {
         ? userState.solanaWallet 
         : (localStorage.getItem('solana_wallet') || '');
 
-    // Sync global state
+    const tonWallet = (typeof userState !== 'undefined' && userState.walletAddress)
+        ? userState.walletAddress
+        : (localStorage.getItem('ton_wallet_address') || '');
+
+    const isTonConnected = !!(tonWallet || (window.tonConnectUI && window.tonConnectUI.connected));
+
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
         userState.coins = userCoins;
         userState.solanaWallet = solanaWallet;
+        userState.walletAddress = tonWallet;
+        userState.walletConnected = isTonConnected;
     }
 
     const walletStyles = `
@@ -133,20 +183,20 @@ function renderWalletPage(container) {
                         TON Wallet
                     </span>
                 </div>
-                ${(typeof userState !== 'undefined' && userState.walletConnected) ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
+                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">● Connected</span>` : ''}
             </div>
 
-            ${(typeof userState !== 'undefined' && userState.walletConnected) ? `
+            ${isTonConnected ? `
                 <div class="address-box-sm" style="color:#0088cc;">
-                    ${userState.walletAddress ? userState.walletAddress.slice(0, 8) + '...' + userState.walletAddress.slice(-8) : ''}
+                    ${tonWallet ? tonWallet.slice(0, 8) + '...' + tonWallet.slice(-8) : 'Connected'}
                 </div>
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${userState.walletAddress}')">📋 Copy</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">📋 Copy</button>
                     <button class="btn-danger-sm" onclick="triggerDisconnect()">🔌 Disconnect</button>
                 </div>
             ` : `
                 <button class="btn-glass-ton" onclick="triggerConnect()">
-                    <span>💎</span> Connect TON Wallet
+                    <span>💎</span> Connect Telegram Wallet
                 </button>
             `}
         </div>
@@ -226,7 +276,6 @@ function renderWalletPage(container) {
     }
 }
 
-// 🟢 Toggling / Exporting global functions for Window Scope
 window.renderWalletPage = renderWalletPage;
 
 // ==========================================
@@ -250,33 +299,37 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
-// ⚡ TON Functions Handlers
+// ⚡ TON Connect Trigger Handlers
 // ==========================================
-window.triggerConnect = function() {
-    if (typeof connectTonWallet === 'function') {
-        connectTonWallet();
-    } else {
-        const address = prompt("Enter your TON Wallet Address:");
-        if (address && address.trim().length > 10) {
-            if (typeof userState !== 'undefined') {
-                userState.walletAddress = address.trim();
-                userState.walletConnected = true;
-            }
-            if (typeof showPage === 'function') showPage('wallet');
+window.triggerConnect = async function() {
+    if (window.tonConnectUI) {
+        try {
+            await window.tonConnectUI.openModal();
+        } catch (e) {
+            console.error("Open TON Modal Error:", e);
         }
+    } else {
+        initTonConnectUI();
+        setTimeout(() => {
+            if (window.tonConnectUI) window.tonConnectUI.openModal();
+        }, 500);
     }
 };
 
-window.triggerDisconnect = function() {
-    if (typeof disconnectTonWallet === 'function') {
-        disconnectTonWallet();
-    } else {
-        if (typeof userState !== 'undefined') {
-            userState.walletAddress = '';
-            userState.walletConnected = false;
+window.triggerDisconnect = async function() {
+    if (window.tonConnectUI && window.tonConnectUI.connected) {
+        try {
+            await window.tonConnectUI.disconnect();
+        } catch (e) {
+            console.error("Disconnect Error:", e);
         }
-        if (typeof showPage === 'function') showPage('wallet');
     }
+    localStorage.removeItem('ton_wallet_address');
+    if (typeof userState !== 'undefined') {
+        userState.walletAddress = '';
+        userState.walletConnected = false;
+    }
+    if (typeof showPage === 'function') showPage('wallet');
 };
 
 // ==========================================
@@ -416,4 +469,3 @@ window.copyToClipboard = function(text) {
         alert('Address copied to clipboard!');
     }
 };
-           
