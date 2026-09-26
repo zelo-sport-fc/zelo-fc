@@ -1,4 +1,4 @@
-window.solPriceHistory = window.solPriceHistory || [];
+Window.solPriceHistory = window.solPriceHistory || [];
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
@@ -123,6 +123,23 @@ window.renderHomePage = function(container) {
             userId: '1654537339' 
         };
         const isAr = state.lang === 'ar';
+
+        // ==========================================
+        // 🌐 نصوص الترجمة التلقائية بناءً على اللغة
+        // ==========================================
+        const txtOfficialSite = isAr ? 'الموقع الرسمي' : 'Official Site';
+        const txtMarketFeed = isAr ? 'بث السوق المباشر' : 'Real-Time Market Feed';
+        const txtLiveMarket = isAr ? 'السوق المباشر' : 'LIVE MARKET';
+        const txtLiveSolPrice = isAr ? 'سعر $SOL المباشر' : 'Live $SOL Price';
+        const txtBidAskSpread = isAr ? 'فارق البيع/الشراء' : 'Bid/Ask Spread';
+        const txtWeeklyChallenges = isAr ? 'تحديات الأسبوع' : 'Weekly Challenges';
+        const txtCupsSub = isAr ? '🇪🇺 الكؤوس الأوروبية • 🇪🇸 الكؤوس الإسبانية' : '🇪🇺 European Cups • 🇪🇸 Spanish Cups';
+        const txtChallengesRanking = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
+        const txtRankingSub = isAr ? 'اكتشف أفضل اللاعبين وترتيبك ⭐️' : '⭐ Discover top players and your rank';
+        const txtSupportedClubs = isAr ? 'الأندية المدعومة' : 'Supported Clubs';
+        const txtActive = isAr ? 'نشط 1' : '1 Active';
+        const txtFans = isAr ? '3 مشجعين' : '3 Fans';
+        const arrowIcon = isAr ? '👉' : '👈';
 
         const username = state.username || '@Zelo_fc';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
@@ -290,7 +307,7 @@ window.renderHomePage = function(container) {
                         </div>
                     </div>
                     <h2 style="margin: 15px 0 2px 0; color: #fff; font-size: 1.15rem; font-weight: 900;">${username}</h2>
-                    <button class="gold-official-btn" onclick="window.openOfficialWebsite()">Official Site</button>
+                    <button class="gold-official-btn" onclick="window.openOfficialWebsite()">${txtOfficialSite}</button>
                 </div>
 
                 <div class="solana-chronicle-card">
@@ -301,18 +318,18 @@ window.renderHomePage = function(container) {
                             </div>
                             <div>
                                 <div style="color: #fff; font-weight: 900; font-size: 0.95rem;">Solana</div>
-                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">Real-Time Market Feed</div>
+                                <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">${txtMarketFeed}</div>
                             </div>
                         </div>
                         <div style="text-align: right;">
                             <div class="sol-oracle-badge">
-                                <span style="width: 5px; height: 5px; background: #14F195; border-radius: 50%;"></span> LIVE MARKET
+                                <span style="width: 5px; height: 5px; background: #14F195; border-radius: 50%;"></span> ${txtLiveMarket}
                             </div>
                             <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">Loading...</div>
                         </div>
                     </div>
 
-                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px;">Live $SOL Price</div>
+                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px; text-align: ${isAr ? 'right' : 'left'};">${txtLiveSolPrice}</div>
 
                     <div class="sol-chart-area">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -335,15 +352,15 @@ window.renderHomePage = function(container) {
 
                     <div class="sol-bottom-grid">
                         <div class="sol-grid-item">
-                            <span>Live Price</span>
+                            <span>${txtLiveSolPrice}</span>
                             <span id="home-sol-live-price">--.--</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Bid/Ask Spread</span>
+                            <span>${txtBidAskSpread}</span>
                             <span id="home-sol-pyth-conf">0.0000</span>
                         </div>
                         <div class="sol-grid-item">
-                            <span>Market Feed</span>
+                            <span>${txtMarketFeed}</span>
                             <span id="home-sol-oracle-val">--.--</span>
                         </div>
                     </div>
@@ -354,28 +371,28 @@ window.renderHomePage = function(container) {
                         <span style="font-size:1.2rem;">🇬🇧</span>
                     </div>
                     <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">Weekly Challenges</h3>
-                        <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">🇪🇺 European Cups • 🇪🇸 Spanish Cups</p>
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
+                        <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtCupsSub}</p>
                     </div>
-                    <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
+                    <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
                 <div id="ranking-card" class="action-banner" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper">🔥</div>
                     <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
-                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">Challenges Ranking</h3>
-                        <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">⭐ Discover top players and your rank</p>
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtChallengesRanking}</h3>
+                        <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtRankingSub}</p>
                     </div>
-                    <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">👈</div>
+                    <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
                 <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
-                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">Supported Clubs</h4>
+                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
                         </div>
-                        <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">1 Active</span>
+                        <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${txtActive}</span>
                     </div>
 
                     <div class="glass-club-card">
@@ -383,36 +400,6 @@ window.renderHomePage = function(container) {
                             <div class="club-logo-wrapper">
                                 <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
                             </div>
-                            <div>
+                            <div style="text-align: ${isAr ? 'right' : 'left'};">
                                 <h3 style="margin: 0; color: #fff; font-size: 0.92rem; font-weight: 900;">Manchester United 🇬🇧</h3>
-                                <p style="margin: 2px 0 0 0; color: #60a5fa; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; gap: 4px;">
-                                    👥 3 Fans
-                                </p>
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div class="club-points-badge">
-                                <span style="font-size: 0.8rem;">🏆</span> 6,080
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // جلب البيانات فوراً ثم إجراء تحديث دائم كل 2.5 ثانية
-        window.updateHomeSolPrice();
-        window.solPriceInterval = setInterval(() => {
-            window.updateHomeSolPrice();
-        }, 2500);
-
-    } catch (err) {
-        console.error("Render error:", err);
-    }
-};
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { window.renderHomePage(); });
-} else {
-    setTimeout(function() { window.renderHomePage(); }, 50);
-            }
+               
