@@ -14,6 +14,14 @@ if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     document.head.appendChild(script);
 }
 
+// دالة مساعدة للحصول على معرف التلجرام الصحيح
+function getTelegramId() {
+    if (typeof userState !== 'undefined' && userState.telegramId) {
+        return userState.telegramId;
+    }
+    return localStorage.getItem('telegram_id') || 'guest';
+}
+
 // 2. دالة بناء الواجهة
 function renderWalletPage(container) {
     if (!container) return;
@@ -36,7 +44,7 @@ function renderWalletPage(container) {
     const txtTotalEarned = isAr ? 'إجمالي المكتسب:' : 'Total Earned:';
     const txtClaimBtn = isAr ? `مطالبة برصيد رمزي ${TOKEN_NAME} ⚡` : `Claim ${TOKEN_NAME} Tokens ⚡`;
 
-    // قراءة البيانات من حالة المستخدم أولاً ثم LocalStorage للحد من التلاعب
+    // قراءة البيانات من حالة المستخدم أولاً ثم LocalStorage
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
         : Number(localStorage.getItem('user_coins') || 0);
@@ -45,8 +53,8 @@ function renderWalletPage(container) {
         ? userState.solanaWallet 
         : (localStorage.getItem('solana_wallet') || '');
 
-    const tonWallet = (typeof userState !== 'undefined' && userState.walletAddress)
-        ? userState.walletAddress
+    const tonWallet = (typeof userState !== 'undefined' && userState.tonWallet)
+        ? userState.tonWallet
         : (localStorage.getItem('ton_wallet_address') || '');
 
     const isTonConnected = !!(tonWallet || (window.tonConnectUI && window.tonConnectUI.connected));
@@ -55,7 +63,7 @@ function renderWalletPage(container) {
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
         userState.solanaWallet = solanaWallet;
-        userState.walletAddress = tonWallet;
+        userState.tonWallet = tonWallet;
         userState.walletConnected = isTonConnected;
     }
 
@@ -211,8 +219,8 @@ async function fetchRealSolanaBalance(address) {
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// 4. دالة حفظ المحفظة وإرسالها إلى قاعدة البيانات بالسيرفر
-async function saveSolanaAddressToStateAndDB(solAddress) {
+// 4. دالة حفظ المحفظة وإرسالها إلى قاعدة البيانات بالسيرفر (/api/save-wallet)
+async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     const saveBtn = document.getElementById('btn-save-sol-addr');
 
@@ -222,34 +230,42 @@ async function saveSolanaAddressToStateAndDB(solAddress) {
             saveBtn.innerText = isAr ? '⏳ جاري الحفظ...' : '⏳ Saving...';
         }
 
-        // إرسال العنوان لتخزينه في قاعدة بيانات السيرفر
-        const userId = (typeof userState !== 'undefined' && userState.id) ? userState.id : localStorage.getItem('user_id');
-        
-        const response = await fetch(`${BACKEND_URL}/api/user/update-wallet`, {
+        const telegramId = getTelegramId();
+
+        const response = await fetch(`${BACKEND_URL}/api/save-wallet`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: userId,
-                solanaWallet: solAddress
+                telegramId: telegramId,
+                walletType: walletType,
+                walletAddress: solAddress
             })
         });
 
         const resData = await response.json().catch(() => ({}));
 
         if (response.ok && resData.success) {
-            // تحديث البيانات محلياً فقط عند نجاح الحفظ بالسيرفر
-            localStorage.setItem('solana_wallet', solAddress);
-            if (typeof userState !== 'undefined') {
-                userState.solanaWallet = solAddress;
+            if (walletType === 'solana') {
+                localStorage.setItem('solana_wallet', solAddress);
+                if (typeof userState !== 'undefined') {
+                    userState.solanaWallet = solAddress;
+                }
+            } else {
+                localStorage.setItem('ton_wallet_address', solAddress);
+                if (typeof userState !== 'undefined') {
+                    userState.tonWallet = solAddress;
+                }
             }
+
             if (typeof showPage === 'function') showPage('wallet');
-            alert(isAr ? '✅ تم حفظ المحفظة بنجاح في حسابك!' : '✅ Wallet saved successfully!');
+            alert(isAr ? '✅ تم حفظ المحفظة بنجاح!' : '✅ Wallet saved successfully!');
         } else {
-            throw new Error(resData.message || (isAr ? 'فشل حفظ العنوان في السيرفر' : 'Failed to save address to server'));
+            throw new Error(resData.error || resData.message || (isAr ? 'فشل حفظ العنوان في السيرفر' : 'Failed to save address to server'));
         }
     } catch (err) {
         console.error("Save Wallet Error:", err);
         alert(`❌ ${err.message}`);
+    } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerText = isAr ? '💾 حفظ العنوان' : '💾 Save Address';
@@ -262,7 +278,7 @@ window.connectPhantomWallet = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if ("solana" in window && window.solana.isPhantom) {
         window.solana.connect().then((res) => {
-            saveSolanaAddressToStateAndDB(res.publicKey.toString());
+            saveSolanaAddressToStateAndDB(res.publicKey.toString(), 'solana');
         }).catch((err) => console.error(err));
     } else {
         alert(isAr ? 'يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الحقل المخصص.' : 'Please copy your wallet address from the Phantom app and paste it in the field.');
@@ -276,17 +292,17 @@ window.saveSolanaWalletAddress = function() {
     if (!input) return;
     const solAddress = input.value.trim();
     
-    // التحقق من صحة عنوان Solana (بين 32 و 44 حرف بأسلوب Base58)
+    // التحقق من صحة عنوان Solana (Base58)
     const solanaRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
     
     if (solanaRegex.test(solAddress)) {
-        saveSolanaAddressToStateAndDB(solAddress);
+        saveSolanaAddressToStateAndDB(solAddress, 'solana');
     } else {
         alert(isAr ? '⚠️ يرجى إدخال عنوان محفظة Solana صحيح (Base58).' : '⚠️ Please enter a valid Solana wallet address.');
     }
 };
 
-// 7. دالة المطالبة بخصم النقاط وتحويل الرموز (مع آليات أمان مرتفعة)
+// 7. دالة المطالبة بخصم النقاط وتحويل الرموز (/api/claim)
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
@@ -298,8 +314,7 @@ window.claimCoinsToSolanaWallet = async function() {
         ? Number(userState.points) 
         : Number(localStorage.getItem('user_coins') || 0);
 
-    const userId = (typeof userState !== 'undefined' && userState.id) ? userState.id : localStorage.getItem('user_id');
-
+    const telegramId = getTelegramId();
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
@@ -328,12 +343,11 @@ window.claimCoinsToSolanaWallet = async function() {
             claimBtn.innerText = isAr ? '⏳ جاري المعالجة والتحويل...' : '⏳ Processing transfer...';
         }
 
-        // إرسال طلب السحب للـ Backend متضمناً معرف المستخدم للتأكد من رصيده الحقيقي في قاعدة البيانات
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                userId: userId,
+                telegramId: telegramId,
                 userWalletAddress: solWallet
             })
         });
@@ -341,13 +355,11 @@ window.claimCoinsToSolanaWallet = async function() {
         const result = await response.json().catch(() => null);
 
         if (response.ok && result && result.success) {
-            // تحديث الواجهة والتخزين المحلي بعد تأكيد السيرفر
             const remainingCoins = result.newBalance !== undefined ? result.newBalance : 0;
             
             localStorage.setItem('user_coins', remainingCoins);
             if (typeof userState !== 'undefined') {
                 userState.points = remainingCoins;
-                userState.coins = remainingCoins;
             }
 
             if (typeof showPage === 'function') showPage('wallet');
@@ -395,3 +407,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
+        
