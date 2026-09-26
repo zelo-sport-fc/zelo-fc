@@ -30,7 +30,8 @@ function initTonConnectUI() {
     if (window.TON_CONNECT_UI && !window.tonConnectUI) {
         try {
             window.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: `${BACKEND_URL}/tonconnect-manifest.json`,
+                manifestUrl: 'https://starlingcoin.github.io/starling-app/tonconnect-manifest.json',
+                twaReturnUrl: 'https://t.me/zelosportbot/app',
                 buttonRootId: null // تخصيص الأزرار يدوياً عبر الواجهة الخاصة بنا
             });
 
@@ -469,3 +470,4 @@ window.copyToClipboard = function(text) {
         alert('Address copied to clipboard!');
     }
 };
+        
