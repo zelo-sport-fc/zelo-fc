@@ -14,12 +14,31 @@ if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     document.head.appendChild(script);
 }
 
-// دالة مساعدة للحصول على معرف التلجرام الصحيح
+// دالة مساعدة معززة للحصول على معرف التلجرام الصحيح
 function getTelegramId() {
-    if (typeof userState !== 'undefined' && userState.telegramId) {
-        return userState.telegramId;
+    // 1. القراءة المباشرة من كائن Telegram WebApp الرسمي
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        if (tgUser.id) {
+            const tgIdStr = String(tgUser.id);
+            localStorage.setItem('telegram_id', tgIdStr);
+            if (typeof userState !== 'undefined') userState.telegramId = tgIdStr;
+            return tgIdStr;
+        }
     }
-    return localStorage.getItem('telegram_id') || 'guest';
+
+    // 2. القراءة من userState إذا كانت معرفة سابقاً
+    if (typeof userState !== 'undefined' && userState.telegramId && userState.telegramId !== 'guest') {
+        return String(userState.telegramId);
+    }
+
+    // 3. القراءة من LocalStorage كحل احتياطي
+    const localId = localStorage.getItem('telegram_id');
+    if (localId && localId !== 'guest') {
+        return localId;
+    }
+
+    return 'guest';
 }
 
 // 2. دالة بناء الواجهة
@@ -407,4 +426,3 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-        
