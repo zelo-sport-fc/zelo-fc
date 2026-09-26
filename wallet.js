@@ -30,8 +30,8 @@ function initTonConnectUI() {
     if (window.TON_CONNECT_UI && !window.tonConnectUI) {
         try {
             window.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                // إضافة الميزانية (?v=1.1) لتجاوز التخزين المؤقت في تلغرام وضمان جلب البيان بنجاح
-                manifestUrl: 'https://starlingcoin.github.io/starling-app/tonconnect-manifest.json?v=1.1',
+                // تم تحديث الإصدار إلى v=9.0 لإلغاء التخزين المؤقت وحل مشكلة Manifest Error
+                manifestUrl: 'https://starlingcoin.github.io/starling-app/tonconnect-manifest.json?v=9.0',
                 twaReturnUrl: 'https://t.me/zelosportbot/app',
                 buttonRootId: null // تخصيص الأزرار يدوياً عبر الواجهة الخاصة بنا
             });
