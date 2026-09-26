@@ -10,7 +10,7 @@ const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUr
 }) : null;
 
 let userState = {
-    username: "Player", // 🔹 تعديل: اسم افتراضي محايد أثناء التحميل
+    username: "Player", 
     userParam: "", 
     userId: "",
     photoUrl: null,
@@ -230,7 +230,6 @@ async function updateTopBar() {
     const pointsEl = document.getElementById("points");
     const clubEl = document.getElementById("club");
     
-    // 🔹 تعديل: التحقق بشكل آمن من جدول الترتيب دون المساس بالرصيد المالي المباشر إلا إذا كان فارغاً
     if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState.userId) {
         try {
             const { data } = await supabaseClient
@@ -252,7 +251,13 @@ async function updateTopBar() {
     
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
-        pointsEl.innerText = `🪙 ${displayPoints.toLocaleString()} ZELOFC`;
+        // 🟢 التعديل هنا: تحديد كود اللغة بناءً على خيار لغة المستخدم داخل التطبيق
+        const localeLang = (userState.lang === 'ar') ? 'ar-EG' : 'en-US';
+        
+        // إذا كنت ترغب في إظهار الأرقام الإنجليزية (400) دائماً لجميع اللغات، يمكنك استخدام 'en-US' مباشرة:
+        // pointsEl.innerText = `🪙 ${displayPoints.toLocaleString('en-US')} ZELOFC`;
+        
+        pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ZELOFC`;
     }
     
     if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
@@ -336,4 +341,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-               }
+        }
