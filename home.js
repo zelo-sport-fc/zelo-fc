@@ -405,4 +405,25 @@ window.renderHomePage = function(container) {
                                 <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
                             </div>
                             <div style="text-align: ${isAr ? 'right' : 'left'};">
+                                                            <h3 style="margin: 0; color: #fff; font-size: 0.92rem; font-weight: 900;">Manchester United 🇬🇧</h3>
+                                <span style="color: #9ca3af; font-size: 0.72rem; font-weight: 600;">${txtFans}</span>
+                            </div>
+                        </div>
+                        <div class="club-points-badge">
+                            100 PTS
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // تشغيل تحديث سعر Solana أول مرة ثم كل 5 ثوانٍ
+        window.updateHomeSolPrice();
+        window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
+
+    } catch (e) {
+        console.error("Render HomePage Error:", e);
+    }
+};
+
           
