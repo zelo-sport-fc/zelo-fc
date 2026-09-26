@@ -1,5 +1,5 @@
 // ==========================================
-// 👛 Zelo Sport Wallet - Frontend Script (Optimized & Fixed) 💎
+// 👛 Zelo Sport Wallet - Frontend Script (Fixed & Fully Functional) 💎
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100; // Conversion rate: 100 coins = 1 ZELOFC Token
@@ -28,6 +28,8 @@ if (!window.TON_CONNECT_UI && !document.getElementById('ton-connect-script')) {
 let tonConnectUIInstance = null;
 
 async function renderWalletPage(container) {
+    if (!container) return;
+
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'guest';
 
     // ⚡ 1. Read Cached Local Data First (Instant Display)
@@ -278,7 +280,7 @@ async function fetchRealSolanaBalance(address) {
 }
 
 // ==========================================
-// 💾 Save Wallet to LocalStorage & Supabase
+// 💾 Save Wallet to LocalStorage & Backend
 // ==========================================
 async function saveWalletToDB(walletType, walletAddress) {
     const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
@@ -316,7 +318,7 @@ async function saveWalletToDB(walletType, walletAddress) {
 }
 
 // ==========================================
-// 🔌 TON Wallet Handlers (Auto-Load & Fix)
+// 🔌 TON Wallet Handlers
 // ==========================================
 window.connectTonWallet = async function() {
     try {
@@ -449,5 +451,4 @@ window.claimCoinsToSolanaWallet = async function() {
         }
 
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
-            method: 'POST',
- 
+            
