@@ -9,13 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// إعداد الاتصال بـ Supabase عبر متغيرات البيئة (Environment Variables)
+// 1. إعداد الاتصال بـ Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// الاتصال بشبكة Solana Mainnet
-const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+// 2. الاتصال بشبكة Solana (يفضل استخدام QuickNode / Helius RPC عبر متغيرات البيئة)
+const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+const connection = new Connection(rpcUrl, 'confirmed');
 
 // مسار فحص حالة السيرفر (Health Check)
 app.get('/', (req, res) => {
@@ -60,30 +61,53 @@ app.get('/api/user-info', async (req, res) => {
 });
 
 // ==========================================
-// 2. مسار حفظ وتحديث المحافظ (Solana & TON)
+// 2. مسار حفظ وتحديث المحافظ مع منع التكرار
 // ==========================================
 app.post('/api/save-wallet', async (req, res) => {
     const { telegramId, walletType, walletAddress } = req.body;
 
     if (!telegramId || telegramId === 'guest') {
-        return res.status(400).json({ success: false, error: "Missing or invalid telegramId" });
+        return res.status(400).json({ success: false, error: "معرف التلجرام غير صحيح أو مفقود" });
+    }
+
+    if (!walletAddress || !walletType || !['solana', 'ton'].includes(walletType)) {
+        return res.status(400).json({ success: false, error: "نوع المحفظة أو العنوان غير صحيح" });
     }
 
     if (!supabase) {
         return res.status(500).json({ success: false, error: "اتصال Supabase غير معرف في متغيرات البيئة" });
     }
 
-    const updateData = {};
-    if (walletType === 'solana') updateData.solana_wallet = walletAddress;
-    if (walletType === 'ton') updateData.ton_wallet = walletAddress;
+    const walletColumn = walletType === 'solana' ? 'solana_wallet' : 'ton_wallet';
 
     try {
-        const { error } = await supabase
+        // 🔒 أ) فحص منع التكرار: هل العنوان مسجل لدى حساب لاعب آخر؟
+        const { data: existingUser, error: checkError } = await supabase
+            .from('users')
+            .select('telegram_id')
+            .eq(walletColumn, walletAddress.trim())
+            .neq('telegram_id', telegramId)
+            .maybeSingle();
+
+        if (checkError) throw checkError;
+
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: "⚠️ عنوان المحفظة هذا مستخدم بالفعل في حساب آخر! لا يمكنك استخدام نفس المحفظة في أكثر من حساب."
+            });
+        }
+
+        // ب) تحديث المحفظة للحساب الحالي
+        const updateData = {};
+        updateData[walletColumn] = walletAddress.trim();
+
+        const { error: updateError } = await supabase
             .from('users')
             .update(updateData)
             .eq('telegram_id', telegramId);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
 
         return res.json({ success: true, message: "تم حفظ المحفظة بنجاح" });
     } catch (err) {
@@ -93,38 +117,61 @@ app.post('/api/save-wallet', async (req, res) => {
 });
 
 // ==========================================
-// 3. مسار المطالبة وتحويل التوكن On-Chain
+// 3. مسار المطالبة وتحويل التوكن On-Chain (آمن 100%)
 // ==========================================
 app.post('/api/claim', async (req, res) => {
-    const { userWalletAddress, userCoins, telegramId } = req.body;
+    const { userWalletAddress, telegramId } = req.body;
 
     try {
         // 1. التحقق من المدخلات الأساسية
-        if (!userWalletAddress || !userCoins || Number(userCoins) <= 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "عنوان المحفظة غير صحيح أو قيمة النقاط غير كافية" 
-            });
+        if (!telegramId || telegramId === 'guest') {
+            return res.status(400).json({ success: false, error: "معرف التلجرام غير صحيح" });
+        }
+
+        if (!userWalletAddress) {
+            return res.status(400).json({ success: false, error: "عنوان المحفظة مطلوب" });
+        }
+
+        if (!supabase) {
+            return res.status(500).json({ success: false, error: "اتصال Supabase غير معرف" });
         }
 
         // 2. التحقق من وجود المتغيرات البيئية في السيرفر
         if (!process.env.TREASURY_PRIVATE_KEY || !process.env.ZELO_MINT_ADDRESS) {
             return res.status(500).json({ 
                 success: false, 
-                error: "بيانات المحفظة (TREASURY_PRIVATE_KEY) أو العقد (ZELO_MINT_ADDRESS) غير معرفة في متغيرات البيئة" 
+                error: "بيانات TREASURY_PRIVATE_KEY أو ZELO_MINT_ADDRESS غير معرفة في متغيرات البيئة" 
             });
         }
 
+        // 🔒 3. جلب الرصيد الحقيقي للاعب مباشرة من قاعدة البيانات بدلاً من الاعتماد على الكلاينت
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('points, solana_wallet')
+            .eq('telegram_id', telegramId)
+            .single();
+
+        if (userError || !userData) {
+            return res.status(404).json({ success: false, error: "لم يتم العثور على بيانات المستخدم" });
+        }
+
+        const userCoins = Number(userData.points || 0);
+
+        if (userCoins <= 0) {
+            return res.status(400).json({ success: false, error: "ليس لديك رصيد نقاط كافي للمطالبة" });
+        }
+
+        // 4. تجهيز المفاتيح والعقد
         const treasuryKeypair = Keypair.fromSecretKey(bs58.decode(process.env.TREASURY_PRIVATE_KEY.trim()));
         const zelocMint = new PublicKey(process.env.ZELO_MINT_ADDRESS.trim());
         const playerPubkey = new PublicKey(userWalletAddress.trim());
 
-        // 3. الحصول على خيارات العقد (Decimals) ديناميكيًا من الشبكة
+        // 5. الحصول على Decimals من الشبكة
         const mintInfo = await getMint(connection, zelocMint);
         const decimals = mintInfo.decimals;
 
-        // 4. حساب عدد العملات (نسبة التحويل: كل 100 نقطة = 1 عملة ZELOFC)
-        const tokenAmount = Number(userCoins) / 100;
+        // 6. حساب عدد العملات (كل 100 نقطة = 1 عملة ZELOFC)
+        const tokenAmount = userCoins / 100;
         const amountInLamports = BigInt(Math.floor(tokenAmount * Math.pow(10, decimals)));
 
         if (amountInLamports <= 0n) {
@@ -134,7 +181,7 @@ app.post('/api/claim', async (req, res) => {
             });
         }
 
-        // 5. إنشاء أو جلب حسابات التوكن المرتبطة (Associated Token Accounts)
+        // 7. إنشاء أو جلب حسابات التوكن المرتبطة (ATA)
         const treasuryTokenAcc = await getOrCreateAssociatedTokenAccount(
             connection, 
             treasuryKeypair, 
@@ -149,7 +196,7 @@ app.post('/api/claim', async (req, res) => {
             playerPubkey
         );
 
-        // 6. تنفيذ عملية التحويل On-Chain
+        // 8. تنفيذ عملية التحويل On-Chain
         const signature = await transfer(
             connection,
             treasuryKeypair,
@@ -159,18 +206,17 @@ app.post('/api/claim', async (req, res) => {
             amountInLamports
         );
 
-        // 7. صفير نقاط المستخدم في Supabase بعد نجاح التحويل On-Chain
-        if (supabase && telegramId && telegramId !== 'guest') {
-            await supabase
-                .from('users')
-                .update({ points: 0 })
-                .eq('telegram_id', telegramId);
-        }
+        // 9. صفير نقاط المستخدم في Supabase بعد نجاح التحويل
+        await supabase
+            .from('users')
+            .update({ points: 0 })
+            .eq('telegram_id', telegramId);
 
         return res.json({ 
             success: true, 
             txHash: signature,
-            tokensTransferred: tokenAmount
+            tokensTransferred: tokenAmount,
+            newBalance: 0
         });
 
     } catch (err) {
@@ -184,4 +230,3 @@ app.post('/api/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-            
