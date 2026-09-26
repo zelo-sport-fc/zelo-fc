@@ -201,7 +201,7 @@ function renderWalletPage(container) {
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
                 <span style="color: #aaa; font-size: 0.85rem;">${txtTotalEarned}</span>
                 <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
-                    ${userCoins.toLocaleString()} ${TOKEN_NAME}
+                    ${userCoins.toLocaleString('en-US')} ${TOKEN_NAME}
                 </span>
             </div>
 
@@ -350,8 +350,8 @@ window.claimCoinsToSolanaWallet = async function() {
 
     const confirmClaim = confirm(
         isAr 
-        ? `تأكيد خصم ${userCoins.toLocaleString()} نقطة لاستلام ${tokenAmountToReceive} من رمز ${TOKEN_NAME}؟`
-        : `Confirm deducting ${userCoins.toLocaleString()} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
+        ? `تأكيد خصم ${userCoins.toLocaleString('en-US')} نقطة لاستلام ${tokenAmountToReceive} من رمز ${TOKEN_NAME}؟`
+        : `Confirm deducting ${userCoins.toLocaleString('en-US')} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
     );
 
     if (!confirmClaim) return;
