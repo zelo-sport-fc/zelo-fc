@@ -1,4 +1,8 @@
-Window.solPriceHistory = window.solPriceHistory || [];
+// ==========================================
+// 🏠 Zelo Sport - Home Page Module (home.js)
+// ==========================================
+
+window.solPriceHistory = window.solPriceHistory || [];
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
@@ -401,5 +405,4 @@ window.renderHomePage = function(container) {
                                 <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
                             </div>
                             <div style="text-align: ${isAr ? 'right' : 'left'};">
-                                <h3 style="margin: 0; color: #fff; font-size: 0.92rem; font-weight: 900;">Manchester United 🇬🇧</h3>
-               
+          
