@@ -1,12 +1,11 @@
 // ==========================================
-// 🟣 Zelo Sport - Solana & Wallet UI Module (wallet-solana.js)
+// 🟣 Zelo Sport - Solana Module & Wallet Renderer (wallet-solana.js)
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100;
 const BACKEND_URL = "https://zelo-fc.onrender.com";
 const TOKEN_NAME = "ZELOFC";
 
-// تحميل مكتبة Solana Web3 الرسمية
 if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     const script = document.createElement('script');
     script.id = 'solana-web3-script';
@@ -14,13 +13,11 @@ if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     document.head.appendChild(script);
 }
 
-// رسم واجهة المحفظة الرئيسية
 function renderWalletPage(container) {
     if (!container) return;
 
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    // نصوص الترجمة العربية/الإنكليزية
     const txtTonWallet = isAr ? 'محفظة TON' : 'TON Wallet';
     const txtSolanaWallet = isAr ? 'محفظة Solana' : 'Solana Wallet';
     const txtConnected = isAr ? '● متصل' : '● Connected';
@@ -60,53 +57,8 @@ function renderWalletPage(container) {
         userState.walletConnected = isTonConnected;
     }
 
-    const walletStyles = `
+    const solanaSpecificStyles = `
         <style>
-            .wallet-glass-card {
-                background: linear-gradient(135deg, rgba(28, 28, 34, 0.8), rgba(18, 18, 22, 0.9));
-                backdrop-filter: blur(15px);
-                -webkit-backdrop-filter: blur(15px);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 18px;
-                padding: 16px;
-                text-align: center;
-                box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-                margin-bottom: 14px;
-            }
-            .wallet-header-flex {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 10px;
-            }
-            .wallet-logo-title {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .wallet-logo-sm {
-                width: 30px; height: 30px;
-                border-radius: 50%;
-                background: rgba(255,255,255,0.05);
-                display: flex; align-items: center; justify-content: center;
-                border: 1px solid rgba(255,255,255,0.1);
-            }
-            .address-box-sm {
-                background: rgba(0, 0, 0, 0.4);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                padding: 8px 12px;
-                border-radius: 10px;
-                font-family: monospace;
-                font-size: 0.82rem;
-                margin-bottom: 10px;
-                word-break: break-all;
-            }
-            .btn-glass-ton {
-                background: linear-gradient(135deg, #0088cc, #005580);
-                color: white; border: none; border-radius: 10px;
-                padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
-                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-            }
             .btn-glass-solana {
                 background: linear-gradient(135deg, #AB9FF2, #512DA8);
                 color: white; border: none; border-radius: 10px;
@@ -119,16 +71,6 @@ function renderWalletPage(container) {
                 border: 1px solid rgba(171, 159, 242, 0.3); border-radius: 8px;
                 color: #fff; font-family: monospace; font-size: 0.8rem;
                 box-sizing: border-box; margin-bottom: 8px; text-align: center;
-            }
-            .btn-action-sm {
-                background: rgba(255, 255, 255, 0.05); color: #fff;
-                border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
-                padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
-            }
-            .btn-danger-sm {
-                background: rgba(253, 29, 29, 0.12); color: #ff4d4d;
-                border: 1px solid rgba(253, 29, 29, 0.3); border-radius: 8px;
-                padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer;
             }
             .btn-claim-main {
                 background: linear-gradient(135deg, #14F195, #00B4D8);
@@ -143,7 +85,7 @@ function renderWalletPage(container) {
     `;
 
     container.innerHTML = `
-        ${walletStyles}
+        ${solanaSpecificStyles}
         
         <!-- 1. TON WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
@@ -244,7 +186,6 @@ function renderWalletPage(container) {
 
 window.renderWalletPage = renderWalletPage;
 
-// جلب رصيد SOL على الشبكة
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
@@ -262,7 +203,6 @@ async function fetchRealSolanaBalance(address) {
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// دالة المطالبة بالرموز (Claim)
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
@@ -400,4 +340,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-      
+    
