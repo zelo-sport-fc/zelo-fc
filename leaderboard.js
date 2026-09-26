@@ -77,7 +77,7 @@ window.renderLeaderboardPage = async function(container) {
                         <span style="color: #fff; font-weight: 800; font-size: 0.95rem;">${clubName}</span>
                         <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px;">
                             <span style="color: #00FF87; font-size: 0.72rem; font-weight: bold; background: rgba(0, 255, 135, 0.08); padding: 1px 6px; border-radius: 4px;">
-                                👥 ${(club.members || 0).toLocaleString()} ${membersWord}
+                                👥 ${(club.members || 0).toLocaleString('en-US')} ${membersWord}
                             </span>
                         </div>
                     </div>
@@ -85,7 +85,7 @@ window.renderLeaderboardPage = async function(container) {
                 
                 <div style="text-align: ${isAr ? 'left' : 'right'};">
                     <div class="points-badge">
-                        ${(club.points || 0).toLocaleString()} <span style="font-size: 0.8rem;">🏆</span>
+                        ${(club.points || 0).toLocaleString('en-US')} <span style="font-size: 0.8rem;">🏆</span>
                     </div>
                     <div style="color: #64748b; font-size: 0.7rem; font-weight: bold; margin-top: 3px; display: flex; align-items: center; justify-content: flex-end; gap: 3px;">
                         ${clickText} <span style="font-size: 0.75rem; color: #00FF87;">${isAr ? '👈' : '👉'}</span>
@@ -211,8 +211,8 @@ window.openSpecificClubFans = async function(clubId) {
                             ${youTag}
                         </div>
                         <div class="fan-stats">
-                            <div class="stat-pts">${(fan.total_fan_points || 0).toLocaleString()} 🏆</div>
-                            <div class="stat-ref">${fan.referrals_count || 0} 👥</div>
+                            <div class="stat-pts">${(fan.total_fan_points || 0).toLocaleString('en-US')} 🏆</div>
+                            <div class="stat-ref">${(fan.referrals_count || 0).toLocaleString('en-US')} 👥</div>
                         </div>
                     </div>
                     `;
@@ -299,3 +299,4 @@ window.openSpecificClubFans = async function(clubId) {
         console.error("Club details fetch error:", error);
     }
 };
+    
