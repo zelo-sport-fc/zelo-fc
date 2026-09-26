@@ -457,3 +457,71 @@
         const btn = document.getElementById(`btn-task-${taskId}`);
         if (btn) {
             btn.innerHTML = isAr ? "⏳ تحقق..." : 
+                                btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
+                btn.className = "btn-task-done"; 
+                btn.disabled = true;
+            }
+
+            setTimeout(async () => {
+                try {
+                    const response = await apiVerifyTask(taskId, points);
+                    task.isProcessing = false; 
+
+                    if (response.success) {
+                        task.completed = true;
+                        
+                        if (!response.alreadyDone) {
+                            userState.points = (userState.points || 0) + points; 
+                            alert(`🎉 ${isAr ? 'تم إضافة النقاط بنجاح:' : 'Points added successfully:'} +${points} ZELO.`);
+                        }
+
+                        if (typeof updateTopBar === "function") updateTopBar();
+                        renderTasksPage(document.getElementById("main-content")); 
+                    } else {
+                                            alert(isAr ? "حدث خطأ أثناء حفظ المهمة، يرجى المحاولة لاحقاً." : "An error occurred, please try again.");
+                    if (btn) {
+                        btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
+                        btn.className = "btn-task-go";
+                        btn.disabled = false;
+                    }
+                }
+            } catch (error) {
+                console.error("Connection error:", error);
+                task.isProcessing = false; 
+                if (btn) {
+                    btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
+                    btn.className = "btn-task-go";
+                    btn.disabled = false;
+                }
+            }
+        }, 4000); 
+    };
+
+    window.claimDaily = async function() {
+        if (userState.dailyCheckInClaimed) return;
+        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+
+        const btn = document.getElementById('btn-daily-claim');
+        if (btn) {
+            btn.innerHTML = "⏳ ...";
+            btn.disabled = true;
+        }
+
+        const res = await apiClaimDaily();
+        if (res.success) {
+            userState.dailyCheckInClaimed = true;
+            userState.points = (userState.points || 0) + res.pointsAdded;
+            
+            alert(`🎁 ${isAr ? 'تم استلام المكافأة اليومية:' : 'Daily reward claimed:'} +${res.pointsAdded} ZELO!`);
+            
+            if (typeof updateTopBar === "function") updateTopBar();
+            renderTasksPage(document.getElementById("main-content"));
+        } else {
+            alert(isAr ? "فشل استلام المكافأة اليومية. حاول لاحقاً." : "Failed to claim daily reward.");
+            if (btn) {
+                btn.innerHTML = isAr ? 'استلام ✨' : 'Claim ✨';
+                btn.disabled = false;
+            }
+        }
+    };
+})();
