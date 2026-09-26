@@ -251,6 +251,24 @@ async function renderWalletPage(container) {
     }
 }
 
+// Global Export for App Routing
+window.renderWalletPage = renderWalletPage;
+
+// Helper to Copy Text
+window.copyToClipboard = function(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
+    } else {
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        alert('Copied to clipboard!');
+    }
+};
+
 // ==========================================
 // 🔮 Fast Solana RPC Balance Fetcher
 // ==========================================
@@ -432,23 +450,4 @@ window.claimCoinsToSolanaWallet = async function() {
     }
 
     if (userCoins <= 0) {
-        alert(`⚠️ You have no ${TOKEN_NAME} available to claim.`);
-        return;
-    }
-
-    const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
-
-    const confirmClaim = confirm(
-        `Confirm deducting ${userCoins.toLocaleString()} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
-    );
-
-    if (!confirmClaim) return;
-
-    try {
-        if (claimBtn) {
-            claimBtn.disabled = true;
-            claimBtn.innerText = '⏳ Connecting server & transferring...';
-        }
-
-        const response = await fetch(`${BACKEND_URL}/api/claim`, {
-            
+        ale
