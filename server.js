@@ -14,7 +14,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// 2. الاتصال بشبكة Solana (يفضل استخدام QuickNode / Helius RPC عبر متغيرات البيئة)
+// 2. الاتصال بشبكة Solana
 const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 const connection = new Connection(rpcUrl, 'confirmed');
 
@@ -79,13 +79,14 @@ app.post('/api/save-wallet', async (req, res) => {
     }
 
     const walletColumn = walletType === 'solana' ? 'solana_wallet' : 'ton_wallet';
+    const cleanAddress = walletAddress.trim();
 
     try {
         // 🔒 أ) فحص منع التكرار: هل العنوان مسجل لدى حساب لاعب آخر؟
         const { data: existingUser, error: checkError } = await supabase
             .from('users')
             .select('telegram_id')
-            .eq(walletColumn, walletAddress.trim())
+            .eq(walletColumn, cleanAddress)
             .neq('telegram_id', telegramId)
             .maybeSingle();
 
@@ -100,7 +101,7 @@ app.post('/api/save-wallet', async (req, res) => {
 
         // ب) تحديث المحفظة للحساب الحالي
         const updateData = {};
-        updateData[walletColumn] = walletAddress.trim();
+        updateData[walletColumn] = cleanAddress;
 
         const { error: updateError } = await supabase
             .from('users')
@@ -128,10 +129,6 @@ app.post('/api/claim', async (req, res) => {
             return res.status(400).json({ success: false, error: "معرف التلجرام غير صحيح" });
         }
 
-        if (!userWalletAddress) {
-            return res.status(400).json({ success: false, error: "عنوان المحفظة مطلوب" });
-        }
-
         if (!supabase) {
             return res.status(500).json({ success: false, error: "اتصال Supabase غير معرف" });
         }
@@ -144,7 +141,7 @@ app.post('/api/claim', async (req, res) => {
             });
         }
 
-        // 🔒 3. جلب الرصيد الحقيقي للاعب مباشرة من قاعدة البيانات بدلاً من الاعتماد على الكلاينت
+        // 🔒 3. جلب بيانات المستخدم الحقيقية من قاعدة البيانات
         const { data: userData, error: userError } = await supabase
             .from('users')
             .select('points, solana_wallet')
@@ -153,6 +150,13 @@ app.post('/api/claim', async (req, res) => {
 
         if (userError || !userData) {
             return res.status(404).json({ success: false, error: "لم يتم العثور على بيانات المستخدم" });
+        }
+
+        // تحديد عنوان المحفظة النهائي
+        const targetWallet = (userWalletAddress || userData.solana_wallet || '').trim();
+
+        if (!targetWallet) {
+            return res.status(400).json({ success: false, error: "يرجى إدخال أو حفظ عنوان محفظة Solana أولاً" });
         }
 
         const userCoins = Number(userData.points || 0);
@@ -164,7 +168,7 @@ app.post('/api/claim', async (req, res) => {
         // 4. تجهيز المفاتيح والعقد
         const treasuryKeypair = Keypair.fromSecretKey(bs58.decode(process.env.TREASURY_PRIVATE_KEY.trim()));
         const zelocMint = new PublicKey(process.env.ZELO_MINT_ADDRESS.trim());
-        const playerPubkey = new PublicKey(userWalletAddress.trim());
+        const playerPubkey = new PublicKey(targetWallet);
 
         // 5. الحصول على Decimals من الشبكة
         const mintInfo = await getMint(connection, zelocMint);
