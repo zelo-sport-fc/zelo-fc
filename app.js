@@ -10,7 +10,7 @@ const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUr
 }) : null;
 
 let userState = {
-    username: "Zelo Sport",
+    username: "Player", // 🔹 تعديل: اسم افتراضي محايد أثناء التحميل
     userParam: "", 
     userId: "",
     photoUrl: null,
@@ -230,6 +230,7 @@ async function updateTopBar() {
     const pointsEl = document.getElementById("points");
     const clubEl = document.getElementById("club");
     
+    // 🔹 تعديل: التحقق بشكل آمن من جدول الترتيب دون المساس بالرصيد المالي المباشر إلا إذا كان فارغاً
     if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState.userId) {
         try {
             const { data } = await supabaseClient
@@ -239,8 +240,10 @@ async function updateTopBar() {
                 .maybeSingle();
                 
             if (data && data.total_fan_points !== undefined && data.total_fan_points !== null) {
-                userState.points = data.total_fan_points;
-                userState.coins = data.total_fan_points;
+                if (!userState.points) {
+                    userState.points = data.total_fan_points;
+                    userState.coins = data.total_fan_points;
+                }
             }
         } catch(error) {
             console.error("❌ Error fetching points from ranking table:", error);
@@ -296,7 +299,6 @@ function showPage(pageId) {
             if(typeof renderLeaderboardPage === "function") renderLeaderboardPage(contentDiv); 
             break;
         case 'wallet': 
-            // التعديل هنا لضمان استدعاء الدالة بشكل آمن ومنع التعليق
             if (typeof renderWalletPage === "function") {
                 renderWalletPage(contentDiv);
             } else {
@@ -334,4 +336,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                }
+               }
