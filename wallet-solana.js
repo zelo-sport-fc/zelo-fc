@@ -3,6 +3,7 @@
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100;
+const MIN_CLAIM_LIMIT = 20000; // 🎯 الحد الأدنى للسحب/المطالبة (يمكنك تعديل الرقم)
 const BACKEND_URL = "https://zelo-fc.onrender.com";
 const TOKEN_NAME = "ZELOFC";
 
@@ -16,7 +17,6 @@ if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
 
 // دالة مساعدة معززة للحصول على معرف التلجرام الصحيح
 function getTelegramId() {
-    // 1. القراءة المباشرة من كائن Telegram WebApp الرسمي
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
         if (tgUser.id) {
@@ -27,12 +27,10 @@ function getTelegramId() {
         }
     }
 
-    // 2. القراءة من userState إذا كانت معرفة سابقاً
     if (typeof userState !== 'undefined' && userState.telegramId && userState.telegramId !== 'guest') {
         return String(userState.telegramId);
     }
 
-    // 3. القراءة من LocalStorage كحل احتياطي
     const localId = localStorage.getItem('telegram_id');
     if (localId && localId !== 'guest') {
         return localId;
@@ -46,6 +44,15 @@ function renderWalletPage(container) {
     if (!container) return;
 
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+
+    // قراءة البيانات من حالة المستخدم أولاً ثم LocalStorage
+    const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
+        ? Number(userState.points)
+        : Number(localStorage.getItem('user_coins') || 0);
+
+    // 🎯 التحقق من شرط الحد الأدنى للسحب
+    const canClaim = userCoins >= MIN_CLAIM_LIMIT;
+    const neededCoins = MIN_CLAIM_LIMIT - userCoins;
 
     // النصوص المترجمة
     const txtTonWallet = isAr ? 'محفظة TON' : 'TON Wallet';
@@ -61,13 +68,17 @@ function renderWalletPage(container) {
     const txtSaveAddress = isAr ? '💾 حفظ العنوان' : '💾 Save Address';
     const txtBalanceTitle = isAr ? `رصيد ${TOKEN_NAME}` : `${TOKEN_NAME} Balance`;
     const txtTotalEarned = isAr ? 'إجمالي المكتسب:' : 'Total Earned:';
-    const txtClaimBtn = isAr ? `مطالبة برصيد رمزي ${TOKEN_NAME} ⚡` : `Claim ${TOKEN_NAME} Tokens ⚡`;
 
-    // قراءة البيانات من حالة المستخدم أولاً ثم LocalStorage
-    const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
-        ? Number(userState.points)
-        : Number(localStorage.getItem('user_coins') || 0);
-    
+    // 🎯 نص الزر المترجم حسب الرصيد والحد الأدنى
+    let txtClaimBtn = '';
+    if (canClaim) {
+        txtClaimBtn = isAr ? `مطالبة برصيد رمزي ${TOKEN_NAME} ⚡` : `Claim ${TOKEN_NAME} Tokens ⚡`;
+    } else {
+        txtClaimBtn = isAr 
+            ? `الحد الأدنى ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} (تحتاج ${neededCoins.toLocaleString('en-US')} إضافية) 🔒`
+            : `Min Claim: ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} (Need ${neededCoins.toLocaleString('en-US')} more) 🔒`;
+    }
+
     const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
         ? userState.solanaWallet 
         : (localStorage.getItem('solana_wallet') || '');
@@ -112,7 +123,7 @@ function renderWalletPage(container) {
                 transition: all 0.2s;
             }
             .btn-claim-main:disabled {
-                background: #555; color: #aaa; cursor: not-allowed; box-shadow: none;
+                background: #33333e; color: #888; cursor: not-allowed; box-shadow: none; border: 1px solid rgba(255,255,255,0.1);
             }
             .btn-claim-main:active:not(:disabled) { transform: scale(0.98); }
         </style>
@@ -205,7 +216,8 @@ function renderWalletPage(container) {
                 </span>
             </div>
 
-            <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()">
+            <!-- 🎯 تطبيق شرط التفعيل لزر المطالبة -->
+            <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()" ${!canClaim ? 'disabled' : ''}>
                 ${txtClaimBtn}
             </button>
         </div>
@@ -311,7 +323,6 @@ window.saveSolanaWalletAddress = function() {
     if (!input) return;
     const solAddress = input.value.trim();
     
-    // التحقق من صحة عنوان Solana (Base58)
     const solanaRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
     
     if (solanaRegex.test(solAddress)) {
@@ -333,16 +344,19 @@ window.claimCoinsToSolanaWallet = async function() {
         ? Number(userState.points) 
         : Number(localStorage.getItem('user_coins') || 0);
 
+    // 🎯 حماية حاسمة: منع التنفيذ إذا كان الرصيد أقل من الحد الأدنى
+    if (userCoins < MIN_CLAIM_LIMIT) {
+        alert(isAr 
+            ? `⚠️ الحد الأدنى للسحب هو ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} نقطة. رصيدك الحالي لا يكفي.` 
+            : `⚠️ Minimum claim limit is ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} points. Your current balance is not enough.`);
+        return;
+    }
+
     const telegramId = getTelegramId();
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
         alert(isAr ? '⚠️ يرجى ربط أو حفظ محفظة Solana أولاً!' : '⚠️ Please connect or save your Solana Wallet first!');
-        return;
-    }
-
-    if (userCoins <= 0) {
-        alert(isAr ? `⚠️ لا يوجد لديك رصيد من ${TOKEN_NAME} للمطالبة به.` : `⚠️ You have no ${TOKEN_NAME} available to claim.`);
         return;
     }
 
@@ -426,3 +440,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
+                
