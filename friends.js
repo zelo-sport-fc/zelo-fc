@@ -18,16 +18,21 @@ window.fetchFriendsFromDB = async function(userId) {
     }
 
     try {
+        const numericUserId = parseInt(userId, 10);
+        if (isNaN(numericUserId)) return [];
+
+        // 1. جلب قائمة الإحالات لهذا المستخدم
         const { data: referrals, error: refError } = await supabaseClient
             .from('referrals')
             .select('referred_id, total_commission') 
-            .eq('referrer_id', String(userId));
+            .eq('referrer_id', numericUserId);
 
         if (refError) throw refError;
         if (!referrals || referrals.length === 0) return [];
 
-        const friendIds = referrals.map(r => String(r.referred_id));
+        const friendIds = referrals.map(r => parseInt(r.referred_id, 10)).filter(id => !isNaN(id));
 
+        // 2. جلب معلومات الأصدقاء من جدول users
         const { data: users, error: usersError } = await supabaseClient
             .from('users')
             .select('telegram_id, username, first_name')
@@ -35,6 +40,7 @@ window.fetchFriendsFromDB = async function(userId) {
 
         if (usersError) throw usersError;
 
+        // 3. جلب عدد الإحالات التي قام بها كل صديق (Sub-referrals)
         const { data: subReferrals, error: subRefError } = await supabaseClient
             .from('referrals')
             .select('referrer_id')
@@ -324,14 +330,25 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
         return { success: false, message: "No database connection" };
     }
 
-    if (String(referrerId) === String(newUserId)) {
+    const numReferrerId = parseInt(referrerId, 10);
+    const numNewUserId = parseInt(newUserId, 10);
+
+    if (isNaN(numReferrerId) || isNaN(numNewUserId)) {
+        return { success: false, message: "Invalid ID format" };
+    }
+
+    if (numReferrerId === numNewUserId) {
         return { success: false, message: "Self referral not allowed" };
     }
 
     try {
         const { data, error: refError } = await supabaseClient
             .from('referrals')
-            .insert([{ referrer_id: String(referrerId), referred_id: String(newUserId), total_commission: 0 }]);
+            .insert([{ 
+                referrer_id: numReferrerId, 
+                referred_id: numNewUserId, 
+                total_commission: 0 
+            }]);
 
         if (refError) {
             if (refError.code === '23505') return { success: true, alreadyProcessed: true }; 
@@ -402,4 +419,4 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
-        
+                                       
