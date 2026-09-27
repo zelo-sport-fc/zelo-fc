@@ -1,5 +1,5 @@
 // ==========================================
-// 👥 Friends Module - Zelo Dark Glass Theme
+// 👥 Friends Module & Referral System - Zelo Dark Glass Theme
 // ==========================================
 
 // Generate dynamic referral link
@@ -26,7 +26,7 @@ window.fetchFriendsFromDB = async function(userId) {
         if (refError) throw refError;
         if (!referrals || referrals.length === 0) return [];
 
-        const friendIds = referrals.map(r => r.referred_id);
+        const friendIds = referrals.map(r => String(r.referred_id));
 
         const { data: users, error: usersError } = await supabaseClient
             .from('users')
@@ -43,7 +43,8 @@ window.fetchFriendsFromDB = async function(userId) {
         const inviteCounts = {};
         if (!subRefError && subReferrals) {
             subReferrals.forEach(r => {
-                inviteCounts[r.referrer_id] = (inviteCounts[r.referrer_id] || 0) + 1;
+                const refIdStr = String(r.referrer_id);
+                inviteCounts[refIdStr] = (inviteCounts[refIdStr] || 0) + 1;
             });
         }
 
@@ -58,7 +59,7 @@ window.fetchFriendsFromDB = async function(userId) {
             return {
                 name: name,
                 totalCommission: ref.total_commission || 0, 
-                referralsCount: inviteCounts[ref.referred_id] || 0 
+                referralsCount: inviteCounts[String(ref.referred_id)] || 0 
             };
         });
 
@@ -70,15 +71,14 @@ window.fetchFriendsFromDB = async function(userId) {
 
 // Render Friends Interface
 window.renderFriendsPage = async function(container) {
-    // Perform check immediately
+    // Perform check immediately when opening the page
     if (window.initReferralCheck) {
-        window.initReferralCheck();
+        await window.initReferralCheck();
     }
 
     const referralLink = window.generateReferralLink();
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    // Safe Translation Fetcher with hardcoded defaults
     const getTranslation = (key, defaultText) => {
         if (typeof t === 'function') {
             const val = t(key);
@@ -96,7 +96,6 @@ window.renderFriendsPage = async function(container) {
 
     container.innerHTML = `
         <style>
-            /* ====== Zelo Theme Colors & Styling ====== */
             .zelo-info-card {
                 background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(16, 185, 129, 0.08));
                 backdrop-filter: blur(16px);
@@ -183,7 +182,6 @@ window.renderFriendsPage = async function(container) {
                 backdrop-filter: blur(12px);
                 padding: 12px 16px; margin-bottom: 10px;
                 border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);
-                transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
             }
 
             .empty-state-glass {
@@ -202,13 +200,11 @@ window.renderFriendsPage = async function(container) {
             </p>
         </div>
         
-        <!-- Commission Glass Info Card -->
         <div class="zelo-info-card" style="text-align: ${isAr ? 'right' : 'left'};">
             <h4 style="margin: 0 0 6px 0; color: #fff; font-size: 0.95rem; font-weight: 900;">${commissionTitle}</h4>
             <p style="margin: 0; color: #cbd5e1; font-size: 0.75rem; line-height: 1.6;">${commissionDesc}</p>
         </div>
 
-        <!-- Clean Invite Action Card (No links or IDs displayed) -->
         <div class="zelo-link-card">
             <div class="link-text-box" id="ref-link-box">
                 ⚡ <span>${isAr ? 'ادعُ أصدقاءك وانمُ بفريقك اليوم!' : 'Invite your friends & grow your team today!'}</span>
@@ -223,7 +219,6 @@ window.renderFriendsPage = async function(container) {
             </div>
         </div>
 
-        <!-- Friends List Title -->
         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
             <span style="font-size: 1rem;">👥</span>
             <h4 style="color: #fff; margin: 0; font-size: 1rem; font-weight: 800;" id="friends-count-title">
@@ -322,11 +317,16 @@ window.shareOnTelegram = function(link) {
 };
 
 // ==========================================
-// 🚀 Improved Referral Logic
+// 🚀 Referral Processing & Auto-Check Logic
 // ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         return { success: false, message: "No database connection" };
+    }
+
+    // منع المستخدم من إحالة نفسه
+    if (String(referrerId) === String(newUserId)) {
+        return { success: false, message: "Self referral not allowed" };
     }
 
     try {
@@ -347,7 +347,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 };
 
-// Automatic Check Triggered immediately upon app launch
 window.initReferralCheck = async function() {
     try {
         if (!window.Telegram || !window.Telegram.WebApp) return;
@@ -374,5 +373,9 @@ window.initReferralCheck = async function() {
 
 // Execute check immediately on load
 (function() {
-    window.initReferralCheck();
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        window.initReferralCheck();
+    } else {
+        document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
+    }
 })();
