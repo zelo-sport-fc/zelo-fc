@@ -71,7 +71,6 @@ window.fetchFriendsFromDB = async function(userId) {
 
 // Render Friends Interface
 window.renderFriendsPage = async function(container) {
-    // Perform check immediately when opening the page
     if (window.initReferralCheck) {
         await window.initReferralCheck();
     }
@@ -321,54 +320,72 @@ window.shareOnTelegram = function(link) {
 // ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        console.error("Supabase client not available.");
         return { success: false, message: "No database connection" };
     }
 
-    // منع المستخدم من إحالة نفسه
     if (String(referrerId) === String(newUserId)) {
         return { success: false, message: "Self referral not allowed" };
     }
 
     try {
-        const { error: refError } = await supabaseClient
+        const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ referrer_id: String(referrerId), referred_id: String(newUserId), total_commission: 0 }]);
 
         if (refError) {
             if (refError.code === '23505') return { success: true, alreadyProcessed: true }; 
-            throw refError;
+            console.error("Supabase error inserting referral:", refError);
+            return { success: false, error: refError };
         }
 
         return { success: true, message: "Referral recorded successfully" };
 
     } catch (error) {
-        console.error("Referral processing error:", error);
+        console.error("Referral processing exception:", error);
         return { success: false };
     }
 };
 
 window.initReferralCheck = async function() {
     try {
-        if (!window.Telegram || !window.Telegram.WebApp) return;
+        let referrerId = null;
+        let currentUserId = null;
 
-        const webApp = window.Telegram.WebApp;
-        const initDataUnsafe = webApp.initDataUnsafe;
-        
-        if (!initDataUnsafe || !initDataUnsafe.start_param) return;
+        // 1. استخراج معامل الداعي والمعرف من WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            const webApp = window.Telegram.WebApp;
+            const initDataUnsafe = webApp.initDataUnsafe;
 
-        // 1. استخراج معرّف المستخدم المباشر فورياً من بيانات التليجرام أو من حالة المستخدم
-        let currentUserId = initDataUnsafe.user 
-            ? initDataUnsafe.user.id 
-            : ((typeof userState !== 'undefined' && userState.userId) ? userState.userId : null);
+            if (initDataUnsafe) {
+                if (initDataUnsafe.start_param) {
+                    referrerId = initDataUnsafe.start_param;
+                }
+                if (initDataUnsafe.user) {
+                    currentUserId = initDataUnsafe.user.id;
+                }
+            }
+        }
 
-        // 2. إذا لم يكن المعرف قد اكتمل تحميله بعد، ننتظر نصف ثانية ونحاول مجدداً
+        // 2. البحث عن المعامل في URL Query String كخيار احتياطي
+        if (!referrerId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            referrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
+        }
+
+        // 3. الاحتياط لمعرف المستخدم من userState
+        if (!currentUserId && typeof userState !== 'undefined' && userState.userId) {
+            currentUserId = userState.userId;
+        }
+
         if (!currentUserId) {
-            setTimeout(window.initReferralCheck, 500);
+            setTimeout(window.initReferralCheck, 600);
             return;
         }
 
-        let startParam = initDataUnsafe.start_param; 
-        let referrerId = startParam.startsWith('ref_') ? startParam.replace('ref_', '') : startParam;
+        if (referrerId && typeof referrerId === 'string') {
+            referrerId = referrerId.replace('ref_', '').trim();
+        }
 
         if (referrerId && String(referrerId) !== String(currentUserId)) {
             await window.apiProcessReferral(referrerId, currentUserId);
@@ -378,7 +395,6 @@ window.initReferralCheck = async function() {
     }
 };
 
-// Execute check immediately on load
 (function() {
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         window.initReferralCheck();
