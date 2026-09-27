@@ -351,16 +351,23 @@ window.initReferralCheck = async function() {
     try {
         if (!window.Telegram || !window.Telegram.WebApp) return;
 
-        const initDataUnsafe = window.Telegram.WebApp.initDataUnsafe;
+        const webApp = window.Telegram.WebApp;
+        const initDataUnsafe = webApp.initDataUnsafe;
+        
         if (!initDataUnsafe || !initDataUnsafe.start_param) return;
 
+        // 1. استخراج معرّف المستخدم المباشر فورياً من بيانات التليجرام أو من حالة المستخدم
+        let currentUserId = initDataUnsafe.user 
+            ? initDataUnsafe.user.id 
+            : ((typeof userState !== 'undefined' && userState.userId) ? userState.userId : null);
+
+        // 2. إذا لم يكن المعرف قد اكتمل تحميله بعد، ننتظر نصف ثانية ونحاول مجدداً
+        if (!currentUserId) {
+            setTimeout(window.initReferralCheck, 500);
+            return;
+        }
+
         let startParam = initDataUnsafe.start_param; 
-        let currentUserId = (typeof userState !== 'undefined' && userState.userId) 
-            ? userState.userId 
-            : (initDataUnsafe.user ? initDataUnsafe.user.id : null);
-
-        if (!currentUserId) return;
-
         let referrerId = startParam.startsWith('ref_') ? startParam.replace('ref_', '') : startParam;
 
         if (referrerId && String(referrerId) !== String(currentUserId)) {
@@ -379,3 +386,4 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
+        
