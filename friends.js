@@ -342,7 +342,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     const numNewUserId = parseInt(cleanNewUser, 10);
 
     if (isNaN(numReferrerId) || isNaN(numNewUserId)) {
-        console.warn("Invalid referral IDs:", referrerId, newUserId);
         return { success: false, message: "Invalid ID format" };
     }
 
@@ -351,7 +350,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
-        // تم حذف حقل status نهائياً لتأخذ قاعدة البيانات القيمة الافتراضية المسموحة لديها
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
@@ -367,7 +365,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
                 return { success: true, alreadyProcessed: true };
             } 
             console.error("Supabase error inserting referral:", refError);
-            alert(`❌ فشل الحفظ في Supabase:\n${refError.message || JSON.stringify(refError)}`);
             return { success: false, error: refError };
         }
 
@@ -377,7 +374,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
 
     } catch (error) {
         console.error("Referral processing exception:", error);
-        alert(`❌ خطأ في الاتصال: ${error.message}`);
         return { success: false };
     }
 };
@@ -444,4 +440,4 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
-    
+                
