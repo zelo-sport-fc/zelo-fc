@@ -351,14 +351,14 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
-        // إدخال البيانات مع دعم جميع أعمدة جدول Supabase
+        // تم تغيير 'active' إلى 'pending' لتطابق قيد جدول Supabase
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
                 referrer_id: numReferrerId, 
                 referred_id: numNewUserId, 
                 reward_points: 0,
-                status: 'active',
+                status: 'pending',
                 total_commission: 0
             }]);
 
@@ -425,11 +425,6 @@ window.initReferralCheck = async function() {
             currentUserId = userState.userId;
         }
 
-        // تم التعليق على التنبيه التشخيصي لضمان تجربة مستخدم سلسة بدون انبثاق النافذة
-        // if (referrerId) {
-        //     alert(`🔍 تم التقاط الداعي: ${referrerId}\nالمستخدم الحالي: ${currentUserId || 'جاري التحميل...'}`);
-        // }
-
         if (!currentUserId) {
             setTimeout(window.initReferralCheck, 600);
             return;
@@ -450,3 +445,4 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
+    
