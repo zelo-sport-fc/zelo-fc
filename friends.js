@@ -2,7 +2,7 @@
 // 👥 Friends Module & Referral System - Zelo Dark Glass Theme
 // ==========================================
 
-// Generate dynamic referral link (معدلة لتضمن استخدام ID تلجرام العددي دائماً)
+// Generate dynamic referral link (استخدام ID تلجرام العددي دائماً)
 window.generateReferralLink = function() {
     let cleanUserId = "";
     if (typeof userState !== 'undefined' && userState.userId) {
@@ -327,7 +327,7 @@ window.shareOnTelegram = function(link) {
 };
 
 // ==========================================
-// 🚀 Referral Processing & Auto-Check Logic (معدلة ومعالجة بالكامل)
+// 🚀 Referral Processing & Auto-Check Logic (المعدلة والمحسنة)
 // ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
@@ -335,7 +335,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
         return { success: false, message: "No database connection" };
     }
 
-    // استخراج الأرقام فقط لمنع أي خطأ في التحويل
     const cleanReferrer = String(referrerId).replace(/[^\d]/g, '');
     const cleanNewUser = String(newUserId).replace(/[^\d]/g, '');
 
@@ -352,7 +351,6 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
-        // الإضافة بنفس أعمدة الجدول القائمة بدون إرسال id لتوليد UUID تلقائيًا
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
@@ -363,12 +361,16 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
             }]);
 
         if (refError) {
-            if (refError.code === '23505') return { success: true, alreadyProcessed: true }; 
+            if (refError.code === '23505') {
+                localStorage.removeItem('pending_referrer_id'); // مسح التخزين في حال ثبت التسجيل
+                return { success: true, alreadyProcessed: true };
+            } 
             console.error("Supabase error inserting referral:", refError);
             return { success: false, error: refError };
         }
 
         console.log("✅ تم تسجيل الإحالة بنجاح!");
+        localStorage.removeItem('pending_referrer_id'); // مسح الإحالة المعلقة بعد النجاح
         return { success: true, message: "Referral recorded successfully" };
 
     } catch (error) {
@@ -382,13 +384,12 @@ window.initReferralCheck = async function() {
         let referrerId = null;
         let currentUserId = null;
 
-        // 1. تهيئة تليجرام SDK وقراءة المعلمات
+        // 1. قراءة المعطيات من Telegram WebApp SDK
         if (window.Telegram && window.Telegram.WebApp) {
             const webApp = window.Telegram.WebApp;
-            webApp.ready(); // إعلام تليجرام أن التطبيق جاهز
+            webApp.ready();
 
             const initDataUnsafe = webApp.initDataUnsafe;
-
             if (initDataUnsafe) {
                 if (initDataUnsafe.start_param) {
                     referrerId = initDataUnsafe.start_param;
@@ -399,25 +400,35 @@ window.initReferralCheck = async function() {
             }
         }
 
-        // 2. استخراج المعطيات من رابط URL (للتصفح المباشر أو الروابط المباشرة)
+        // 2. قراءة المعطيات من URL Direct
         if (!referrerId) {
             const urlParams = new URLSearchParams(window.location.search);
             referrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
         }
 
+        // تنظيف وإعداد كود الداعي
+        if (referrerId && typeof referrerId === 'string') {
+            referrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
+            if (referrerId) {
+                localStorage.setItem('pending_referrer_id', referrerId); // حفظ مؤقت
+            }
+        } else {
+            referrerId = localStorage.getItem('pending_referrer_id');
+        }
+
+        // 3. تحديد ID المستخدم الحالي
         if (!currentUserId && typeof userState !== 'undefined' && userState.userId) {
             currentUserId = userState.userId;
         }
 
-        if (!currentUserId) {
-            // إعادة المحاولة بعد 500 مللي ثانية في حال تأخر تحضير بيانات المستخدم
-            setTimeout(window.initReferralCheck, 500);
-            return;
+        // 🟢 تنبيه تشخيصي مؤقت لمساعدتك في تجربة الفحص بنفسك
+        if (referrerId) {
+            alert(`🔍 تم التقاط الداعي: ${referrerId}\nالمستخدم الحالي: ${currentUserId || 'جاري التحميل...'}`);
         }
 
-        // تنظيف بادئة ref_ أو rref_
-        if (referrerId && typeof referrerId === 'string') {
-            referrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
+        if (!currentUserId) {
+            setTimeout(window.initReferralCheck, 600);
+            return;
         }
 
         if (referrerId && String(referrerId) !== String(currentUserId)) {
@@ -435,4 +446,3 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
-                
