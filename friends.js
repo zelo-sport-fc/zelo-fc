@@ -351,14 +351,13 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
-        // تم تغيير 'active' إلى 'pending' لتطابق قيد جدول Supabase
+        // تم حذف حقل status نهائياً لتأخذ قاعدة البيانات القيمة الافتراضية المسموحة لديها
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
                 referrer_id: numReferrerId, 
                 referred_id: numNewUserId, 
                 reward_points: 0,
-                status: 'pending',
                 total_commission: 0
             }]);
 
