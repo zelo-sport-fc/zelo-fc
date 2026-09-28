@@ -2,12 +2,17 @@
 // 👥 Friends Module & Referral System - Zelo Dark Glass Theme
 // ==========================================
 
-// Generate dynamic referral link
+// Generate dynamic referral link (معدلة لتضمن استخدام ID تلجرام العددي دائماً)
 window.generateReferralLink = function() {
-    let uniqueIdentifier = (typeof userState !== 'undefined' && (userState.userId || userState.username)) ? (userState.userId || userState.username) : "user";
-    let cleanIdentifier = String(uniqueIdentifier).replace(/[@\s]/g, '');
+    let cleanUserId = "";
+    if (typeof userState !== 'undefined' && userState.userId) {
+        cleanUserId = String(userState.userId).replace(/[^\d]/g, '');
+    }
     
-    return `https://t.me/Zelo_Sport_bot/app?startapp=ref_${cleanIdentifier}`;
+    // في حال عدم توفر الآيدي يتم استخدام آيدي وهمي لمنع انهيار الرابط
+    if (!cleanUserId) cleanUserId = "user";
+    
+    return `https://t.me/Zelo_Sport_bot/app?startapp=ref_${cleanUserId}`;
 };
 
 // Fetch invited friends and their aggregated referral data from Supabase
@@ -18,10 +23,10 @@ window.fetchFriendsFromDB = async function(userId) {
     }
 
     try {
-        const numericUserId = parseInt(userId, 10);
+        const numericUserId = parseInt(String(userId).replace(/[^\d]/g, ''), 10);
         if (isNaN(numericUserId)) return [];
 
-        // 1. جلب قائمة الإحالات لهذا المستخدم مع الاعتماد على reward_points الموجود في الجدول
+        // 1. جلب قائمة الإحالات لهذا المستخدم
         const { data: referrals, error: refError } = await supabaseClient
             .from('referrals')
             .select('referred_id, reward_points') 
@@ -30,7 +35,7 @@ window.fetchFriendsFromDB = async function(userId) {
         if (refError) throw refError;
         if (!referrals || referrals.length === 0) return [];
 
-        const friendIds = referrals.map(r => parseInt(r.referred_id, 10)).filter(id => !isNaN(id));
+        const friendIds = referrals.map(r => parseInt(String(r.referred_id).replace(/[^\d]/g, ''), 10)).filter(id => !isNaN(id));
 
         // 2. جلب معلومات الأصدقاء من جدول users
         const { data: users, error: usersError } = await supabaseClient
@@ -322,7 +327,7 @@ window.shareOnTelegram = function(link) {
 };
 
 // ==========================================
-// 🚀 Referral Processing & Auto-Check Logic
+// 🚀 Referral Processing & Auto-Check Logic (معدلة ومعالجة بالكامل)
 // ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
@@ -330,10 +335,15 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
         return { success: false, message: "No database connection" };
     }
 
-    const numReferrerId = parseInt(referrerId, 10);
-    const numNewUserId = parseInt(newUserId, 10);
+    // استخراج الأرقام فقط لمنع أي خطأ في التحويل
+    const cleanReferrer = String(referrerId).replace(/[^\d]/g, '');
+    const cleanNewUser = String(newUserId).replace(/[^\d]/g, '');
+
+    const numReferrerId = parseInt(cleanReferrer, 10);
+    const numNewUserId = parseInt(cleanNewUser, 10);
 
     if (isNaN(numReferrerId) || isNaN(numNewUserId)) {
+        console.warn("Invalid referral IDs:", referrerId, newUserId);
         return { success: false, message: "Invalid ID format" };
     }
 
@@ -342,7 +352,7 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
-        // الإضافة بنفس أعمدة الجدول القائمة تماماً (بدون إرسال id لتجنب خطأ UUID)
+        // الإضافة بنفس أعمدة الجدول القائمة بدون إرسال id لتوليد UUID تلقائيًا
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
@@ -358,6 +368,7 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
             return { success: false, error: refError };
         }
 
+        console.log("✅ تم تسجيل الإحالة بنجاح!");
         return { success: true, message: "Referral recorded successfully" };
 
     } catch (error) {
@@ -371,20 +382,24 @@ window.initReferralCheck = async function() {
         let referrerId = null;
         let currentUserId = null;
 
+        // 1. تهيئة تليجرام SDK وقراءة المعلمات
         if (window.Telegram && window.Telegram.WebApp) {
             const webApp = window.Telegram.WebApp;
+            webApp.ready(); // إعلام تليجرام أن التطبيق جاهز
+
             const initDataUnsafe = webApp.initDataUnsafe;
 
             if (initDataUnsafe) {
                 if (initDataUnsafe.start_param) {
                     referrerId = initDataUnsafe.start_param;
                 }
-                if (initDataUnsafe.user) {
+                if (initDataUnsafe.user && initDataUnsafe.user.id) {
                     currentUserId = initDataUnsafe.user.id;
                 }
             }
         }
 
+        // 2. استخراج المعطيات من رابط URL (للتصفح المباشر أو الروابط المباشرة)
         if (!referrerId) {
             const urlParams = new URLSearchParams(window.location.search);
             referrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
@@ -395,12 +410,14 @@ window.initReferralCheck = async function() {
         }
 
         if (!currentUserId) {
-            setTimeout(window.initReferralCheck, 600);
+            // إعادة المحاولة بعد 500 مللي ثانية في حال تأخر تحضير بيانات المستخدم
+            setTimeout(window.initReferralCheck, 500);
             return;
         }
 
+        // تنظيف بادئة ref_ أو rref_
         if (referrerId && typeof referrerId === 'string') {
-            referrerId = referrerId.replace('ref_', '').trim();
+            referrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
         }
 
         if (referrerId && String(referrerId) !== String(currentUserId)) {
@@ -418,3 +435,4 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
+                
