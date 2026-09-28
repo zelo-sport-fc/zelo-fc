@@ -327,7 +327,7 @@ window.shareOnTelegram = function(link) {
 };
 
 // ==========================================
-// 🚀 Referral Processing & Auto-Check Logic (المعدلة والمحسنة)
+// 🚀 Referral Processing & Auto-Check Logic
 // ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
@@ -351,30 +351,34 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
+        // إدخال البيانات مع دعم جميع أعمدة جدول Supabase
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
                 referrer_id: numReferrerId, 
                 referred_id: numNewUserId, 
                 reward_points: 0,
-                status: 'active'
+                status: 'active',
+                total_commission: 0
             }]);
 
         if (refError) {
             if (refError.code === '23505') {
-                localStorage.removeItem('pending_referrer_id'); // مسح التخزين في حال ثبت التسجيل
+                localStorage.removeItem('pending_referrer_id');
                 return { success: true, alreadyProcessed: true };
             } 
             console.error("Supabase error inserting referral:", refError);
+            alert(`❌ فشل الحفظ في Supabase:\n${refError.message || JSON.stringify(refError)}`);
             return { success: false, error: refError };
         }
 
-        console.log("✅ تم تسجيل الإحالة بنجاح!");
-        localStorage.removeItem('pending_referrer_id'); // مسح الإحالة المعلقة بعد النجاح
+        console.log("✅ تم تسجيل الإحالة بنجاح في قاعدة البيانات!");
+        localStorage.removeItem('pending_referrer_id');
         return { success: true, message: "Referral recorded successfully" };
 
     } catch (error) {
         console.error("Referral processing exception:", error);
+        alert(`❌ خطأ في الاتصال: ${error.message}`);
         return { success: false };
     }
 };
@@ -410,7 +414,7 @@ window.initReferralCheck = async function() {
         if (referrerId && typeof referrerId === 'string') {
             referrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
             if (referrerId) {
-                localStorage.setItem('pending_referrer_id', referrerId); // حفظ مؤقت
+                localStorage.setItem('pending_referrer_id', referrerId);
             }
         } else {
             referrerId = localStorage.getItem('pending_referrer_id');
@@ -421,10 +425,10 @@ window.initReferralCheck = async function() {
             currentUserId = userState.userId;
         }
 
-        // 🟢 تنبيه تشخيصي مؤقت لمساعدتك في تجربة الفحص بنفسك
-        if (referrerId) {
-            alert(`🔍 تم التقاط الداعي: ${referrerId}\nالمستخدم الحالي: ${currentUserId || 'جاري التحميل...'}`);
-        }
+        // تم التعليق على التنبيه التشخيصي لضمان تجربة مستخدم سلسة بدون انبثاق النافذة
+        // if (referrerId) {
+        //     alert(`🔍 تم التقاط الداعي: ${referrerId}\nالمستخدم الحالي: ${currentUserId || 'جاري التحميل...'}`);
+        // }
 
         if (!currentUserId) {
             setTimeout(window.initReferralCheck, 600);
