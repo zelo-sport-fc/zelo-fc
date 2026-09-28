@@ -21,10 +21,10 @@ window.fetchFriendsFromDB = async function(userId) {
         const numericUserId = parseInt(userId, 10);
         if (isNaN(numericUserId)) return [];
 
-        // 1. جلب قائمة الإحالات لهذا المستخدم
+        // 1. جلب قائمة الإحالات لهذا المستخدم مع الاعتماد على reward_points الموجود في الجدول
         const { data: referrals, error: refError } = await supabaseClient
             .from('referrals')
-            .select('referred_id, total_commission') 
+            .select('referred_id, reward_points') 
             .eq('referrer_id', numericUserId);
 
         if (refError) throw refError;
@@ -64,7 +64,7 @@ window.fetchFriendsFromDB = async function(userId) {
             }
             return {
                 name: name,
-                totalCommission: ref.total_commission || 0, 
+                rewardPoints: ref.reward_points || 0, 
                 referralsCount: inviteCounts[String(ref.referred_id)] || 0 
             };
         });
@@ -265,7 +265,7 @@ window.renderFriendsPage = async function(container) {
                     </div>
                     <div style="text-align: ${isAr ? 'left' : 'right'};">
                         <div style="color: #00FF87; font-size: 0.95rem; font-weight: 900; font-family: monospace; text-shadow: 0 0 8px rgba(0, 255, 135, 0.4);">
-                            +${(friend.totalCommission || 0).toLocaleString()} 🏆
+                            +${(friend.rewardPoints || 0).toLocaleString()} 🏆
                         </div>
                         <div style="color: #8B5CF6; font-size: 0.65rem; font-weight: bold; margin-top: 2px;">
                             ${getTranslation('commission', isAr ? 'عمولة مكتسبة' : 'Commission')}
@@ -342,12 +342,14 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
     }
 
     try {
+        // الإضافة بنفس أعمدة الجدول القائمة تماماً (بدون إرسال id لتجنب خطأ UUID)
         const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
                 referrer_id: numReferrerId, 
                 referred_id: numNewUserId, 
-                total_commission: 0 
+                reward_points: 0,
+                status: 'active'
             }]);
 
         if (refError) {
@@ -369,7 +371,6 @@ window.initReferralCheck = async function() {
         let referrerId = null;
         let currentUserId = null;
 
-        // 1. استخراج معامل الداعي والمعرف من WebApp
         if (window.Telegram && window.Telegram.WebApp) {
             const webApp = window.Telegram.WebApp;
             const initDataUnsafe = webApp.initDataUnsafe;
@@ -384,13 +385,11 @@ window.initReferralCheck = async function() {
             }
         }
 
-        // 2. البحث عن المعامل في URL Query String كخيار احتياطي
         if (!referrerId) {
             const urlParams = new URLSearchParams(window.location.search);
             referrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
         }
 
-        // 3. الاحتياط لمعرف المستخدم من userState
         if (!currentUserId && typeof userState !== 'undefined' && userState.userId) {
             currentUserId = userState.userId;
         }
@@ -419,4 +418,3 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
-                                       
