@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { Connection, Keypair, PublicKey } = require('@solana/web3.js');
-const { getOrCreateAssociatedTokenAccount, transfer, getMint } = require('@solana/spl-token');
+const { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } = require('@solana/web3.js');
 const bs58 = require('bs58');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -14,8 +13,8 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// 2. Solana RPC
-const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+// 2. Solana RPC (Devnet)
+const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
 const connection = new Connection(rpcUrl, 'confirmed');
 
 app.get('/', (req, res) => {
@@ -81,7 +80,6 @@ app.post('/api/save-wallet', async (req, res) => {
     const cleanAddress = walletAddress.trim();
 
     try {
-        // Prevent registering same address across multiple accounts
         const { data: existingUser, error: checkError } = await supabase
             .from('users')
             .select('telegram_id')
@@ -116,7 +114,7 @@ app.post('/api/save-wallet', async (req, res) => {
 });
 
 // ==========================================
-// 3. Claim Tokens On-Chain
+// 3. Claim Tokens On-Chain (Direct SOL Transfer Mode for Hackathon Demo)
 // ==========================================
 app.post('/api/claim', async (req, res) => {
     const { userWalletAddress, telegramId } = req.body;
@@ -130,10 +128,10 @@ app.post('/api/claim', async (req, res) => {
             return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
         }
 
-        if (!process.env.TREASURY_PRIVATE_KEY || !process.env.ZELO_MINT_ADDRESS) {
+        if (!process.env.TREASURY_PRIVATE_KEY) {
             return res.status(500).json({ 
                 success: false, 
-                error: "Environment variables TREASURY_PRIVATE_KEY or ZELO_MINT_ADDRESS missing" 
+                error: "Environment variable TREASURY_PRIVATE_KEY is missing" 
             });
         }
 
@@ -159,46 +157,29 @@ app.post('/api/claim', async (req, res) => {
             return res.status(400).json({ success: false, error: "Insufficient point balance for claim" });
         }
 
+        // 1. تجهيز المفاتيح والعناوين
         const treasuryKeypair = Keypair.fromSecretKey(bs58.decode(process.env.TREASURY_PRIVATE_KEY.trim()));
-        const zelocMint = new PublicKey(process.env.ZELO_MINT_ADDRESS.trim());
         const playerPubkey = new PublicKey(targetWallet);
 
-        const mintInfo = await getMint(connection, zelocMint);
-        const decimals = mintInfo.decimals;
+        // 2. إنشاء معاملة تحويل SOL مباشرة (إرسال 0.001 SOL كمكافأة تجريبية)
+        const solRewardInLamports = 1000000; // 0.001 SOL
 
-        const tokenAmount = userCoins / 100;
-        const amountInLamports = BigInt(Math.floor(tokenAmount * Math.pow(10, decimals)));
-
-        if (amountInLamports <= 0n) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "Token amount below minimum transfer limit" 
-            });
-        }
-
-        const treasuryTokenAcc = await getOrCreateAssociatedTokenAccount(
-            connection, 
-            treasuryKeypair, 
-            zelocMint, 
-            treasuryKeypair.publicKey
+        const transaction = new Transaction().add(
+            SystemProgram.transfer({
+                fromPubkey: treasuryKeypair.publicKey,
+                toPubkey: playerPubkey,
+                lamports: solRewardInLamports,
+            })
         );
 
-        const playerTokenAcc = await getOrCreateAssociatedTokenAccount(
-            connection, 
-            treasuryKeypair, 
-            zelocMint, 
-            playerPubkey
-        );
-
-        const signature = await transfer(
+        // 3. التوقيع وإرسال المعاملة على Devnet
+        const signature = await sendAndConfirmTransaction(
             connection,
-            treasuryKeypair,
-            treasuryTokenAcc.address,
-            playerTokenAcc.address,
-            treasuryKeypair.publicKey,
-            amountInLamports
+            transaction,
+            [treasuryKeypair]
         );
 
+        // 4. تصفير نقاط المستخدم بعد نجاح المعاملة
         await supabase
             .from('users')
             .update({ points: 0 })
@@ -207,7 +188,8 @@ app.post('/api/claim', async (req, res) => {
         return res.json({ 
             success: true, 
             txHash: signature,
-            tokensTransferred: tokenAmount,
+            tokensTransferred: userCoins,
+            solReward: 0.001,
             newBalance: 0
         });
 
@@ -222,3 +204,4 @@ app.post('/api/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+                
