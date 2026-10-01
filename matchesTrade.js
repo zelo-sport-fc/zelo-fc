@@ -206,7 +206,7 @@ window.openSwapModal = function(matchId, teamName) {
     document.body.appendChild(modal);
 };
 
-// 5. تنفيذ الشراء والتوقيع على البلوكشين (الدالة المحدثة للتوافق مع جدول Supabase)
+// 5. تنفيذ الشراء والتوقيع على البلوكشين (مُعدل لحل خيار predicted_score دون تعديل قاعدة البيانات)
 window.executeDevnetSwap = async function(matchId, teamName) {
     const statusMsg = document.getElementById("swap-status-msg");
     const btn = document.getElementById("btn-confirm-swap");
@@ -269,6 +269,7 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                     telegram_id: String(tgId),
                     match_id: String(matchId),
                     predicted_winner: teamName,
+                    predicted_score: teamName, // إضافة قيمة لتجاوز شرط NOT NULL
                     amount_sol: solAmount,
                     status: 'PENDING'
                 }]);
@@ -302,6 +303,7 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                     telegram_id: String(tgId),
                     match_id: String(matchId),
                     predicted_winner: teamName,
+                    predicted_score: teamName, // إضافة قيمة لتجاوز شرط NOT NULL
                     amount_sol: solAmount,
                     status: 'PENDING'
                 }]);
@@ -336,4 +338,4 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         if (typeof showPage === 'function') showPage('wallet');
     }
 };
-                    
+                        
