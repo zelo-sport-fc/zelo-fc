@@ -5,11 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#121215">
     <title>ZELO FC App</title>
+
+    <!-- 🛠️ [خيارات المطور 1/3]: أدوات التصحيح (Eruda Mobile DevTools) -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>
+        // تفعيل كونسول المطور فوراً
+        eruda.init();
+        console.log("🚀 [DevMode] Eruda Console Initialized Successfully.");
+    </script>
+
+    <!-- 🛠️ [خيارات المطور 2/3]: لالتقاط جميع الأخطاء البرمجية وحظر الملفات -->
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error("❌ [Global Error]:", { msg, url, lineNo, columnNo, error });
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error("❌ [Unhandled Promise Rejection]:", event.reason);
+        });
+    </script>
     
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Web3 & Crypto SDKs (Latest & Stable Versions) -->
+    <!-- Web3 & Crypto SDKs -->
     <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.js"></script>
@@ -74,7 +94,7 @@
             z-index: 1000;
         }
 
-        /* Bottom Navigation Bar (Optimized for 6 Items) */
+        /* Bottom Navigation Bar */
         .bottom-nav {
             position: fixed;
             bottom: 12px;
@@ -144,7 +164,6 @@
             text-shadow: 0 0 5px rgba(253, 29, 29, 0.5);
         }
 
-        /* Generic UI Card */
         .card {
             background: var(--bg-card);
             backdrop-filter: blur(10px);
@@ -158,12 +177,6 @@
             transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
-        .card:active {
-            transform: translateY(2px) scale(0.99);
-            border-color: rgba(252, 176, 69, 0.4);
-        }
-
-        /* Primary Action Button */
         .btn-action {
             position: relative;
             width: 100%;
@@ -184,27 +197,6 @@
             z-index: 1;
         }
 
-        .btn-action:active {
-            transform: scale(0.97);
-        }
-
-        /* Back Button */
-        .btn-back {
-            background: rgba(253, 29, 29, 0.12);
-            color: var(--accent-gold);
-            border: 1px solid rgba(252, 176, 69, 0.3);
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        /* Keyframe Animations */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
@@ -231,7 +223,7 @@
 
     <!-- Header / Top Bar -->
     <header class="top-bar" id="top-bar">
-        <div id="club" style="font-size: 0.9rem; color: #e0e0e0; font-weight: bold;">⚡ ZELO FC</div>
+        <div id="club" style="font-size: 0.9rem; color: #e0e0e0; font-weight: bold; cursor: pointer;" onclick="window.checkAppDiagnostics()">⚡ ZELO FC <span style="font-size: 0.65rem; color: #fcb045;">(🔍 فحص)</span></div>
         <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(252, 176, 69, 0.3);">
             0 🪙
         </div>
@@ -268,32 +260,50 @@
         </button>
     </nav>
 
-    <!-- Data & Application Logic Scripts (Unified Cache Version ?v=1000) -->
-    <script src="clubsData.js?v=1000"></script>
-    <script src="data.js?v=1000"></script> 
-    <script src="countries.js?v=1000"></script>
-    <script src="i18n-helpers.js?v=1000"></script>
-    <script src="ranking.js?v=1000"></script>
+    <!-- Data & Application Logic Scripts -->
+    <script src="clubsData.js?v=2000"></script>
+    <script src="data.js?v=2000"></script> 
+    <script src="countries.js?v=2000"></script>
+    <script src="i18n-helpers.js?v=2000"></script>
+    <script src="ranking.js?v=2000"></script>
     
-    <script src="login.js?v=1000"></script>
-    <script src="weekly_match_rankings.js?v=1000"></script>
-    <script src="predictions_ranking.js?v=1000"></script> 
+    <script src="login.js?v=2000"></script>
+    <script src="weekly_match_rankings.js?v=2000"></script>
+    <script src="predictions_ranking.js?v=2000"></script> 
 
-    <!-- Trading & Matches Module Script (Meteora & Jupiter Swap Engine) -->
-    <script src="matchesTrade.js?v=1111"></script>
+    <!-- Trading & Matches Module Script -->
+    <script src="matchesTrade.js?v=2000"></script>
 
     <!-- UI Pages Scripts -->
-    <script src="home.js?v=1000"></script>
-    <script src="tasks.js?v=1000"></script>
-    <script src="leaderboard.js?v=1000"></script>
-    <script src="friends.js?v=1000"></script>
+    <script src="home.js?v=2000"></script>
+    <script src="tasks.js?v=2000"></script>
+    <script src="leaderboard.js?v=2000"></script>
+    <script src="friends.js?v=2000"></script>
     
     <!-- Wallet Integration Scripts -->
-    <script src="wallet-ton.js?v=1000"></script>
-    <script src="wallet-solana.js?v=1000"></script>
+    <script src="wallet-ton.js?v=2000"></script>
+    <script src="wallet-solana.js?v=2000"></script>
     
     <!-- Main App Router & Handler -->
-    <script src="app.js?v=1000"></script>
+    <script src="app.js?v=2000"></script>
+
+    <!-- 🛠️️ [خيارات المطور 3/3]: دالة الفحص السريع للنظام -->
+    <script>
+        window.checkAppDiagnostics = function() {
+            const report = {
+                "Telegram WebApp": typeof window.Telegram !== "undefined" && !!window.Telegram.WebApp,
+                "renderMeteoraPage": typeof window.renderMeteoraPage === "function",
+                "handleLaunchMatchTokens": typeof window.handleLaunchMatchTokens === "function",
+                "openSwapModal": typeof window.openSwapModal === "function",
+                "Supabase Client": typeof window.supabaseClient !== "undefined" && !!window.supabaseClient,
+                "Sample Matches Data": typeof window.sampleMatchesData !== "undefined" ? window.sampleMatchesData.length : 0
+            };
+
+            console.table(report);
+            alert("📋 نتائج الفحص:\n\n" + JSON.stringify(report, null, 2));
+        };
+    </script>
 
 </body>
-</html>
+                </html>
+                
