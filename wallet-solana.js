@@ -11,11 +11,11 @@ const TOKEN_NAME = "ZELOFC";
 if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     const script = document.createElement('script');
     script.id = 'solana-web3-script';
-    script.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
+    script.src = 'https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js';
     document.head.appendChild(script);
 }
 
-// دالة مساعدة معززة للحصول على معرف التلجرام الصحيح
+// دالة مساعدة للحصول على معرف التلجرام
 function getTelegramId() {
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
@@ -39,22 +39,19 @@ function getTelegramId() {
     return 'guest';
 }
 
-// 2. دالة بناء الواجهة
-function renderWalletPage(container) {
+// 2. دالة بناء الواجهة الرئيسيّة للمحفظة
+async function renderWalletPage(container) {
     if (!container) return;
 
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    // قراءة البيانات من حالة المستخدم أولاً ثم LocalStorage
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
         : Number(localStorage.getItem('user_coins') || 0);
 
-    // 🎯 التحقق من شرط الحد الأدنى للسحب
     const canClaim = userCoins >= MIN_CLAIM_LIMIT;
     const neededCoins = MIN_CLAIM_LIMIT - userCoins;
 
-    // النصوص المترجمة
     const txtTonWallet = isAr ? 'محفظة TON' : 'TON Wallet';
     const txtSolanaWallet = isAr ? 'محفظة Solana (Devnet)' : 'Solana Wallet (Devnet)';
     const txtConnected = isAr ? '● متصل' : '● Connected';
@@ -68,8 +65,8 @@ function renderWalletPage(container) {
     const txtSaveAddress = isAr ? '💾 حفظ العنوان' : '💾 Save Address';
     const txtBalanceTitle = isAr ? `رصيد ${TOKEN_NAME}` : `${TOKEN_NAME} Balance`;
     const txtTotalEarned = isAr ? 'إجمالي المكتسب:' : 'Total Earned:';
+    const txtTradeSectionTitle = isAr ? '📊 توكنات المباريات والتخمينات الحالية' : '📊 Match Tokens & Active Predictions';
 
-    // 🎯 نص الزر المترجم حسب الرصيد والحد الأدنى
     let txtClaimBtn = '';
     if (canClaim) {
         txtClaimBtn = isAr ? `مطالبة برصيد رمزي ${TOKEN_NAME} ⚡` : `Claim ${TOKEN_NAME} Tokens ⚡`;
@@ -89,7 +86,6 @@ function renderWalletPage(container) {
 
     const isTonConnected = !!(tonWallet || (window.tonConnectUI && window.tonConnectUI.connected));
 
-    // مزامنة حالة التطبيق
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
         userState.solanaWallet = solanaWallet;
@@ -99,33 +95,25 @@ function renderWalletPage(container) {
 
     const solanaSpecificStyles = `
         <style>
-            .btn-glass-solana {
-                background: linear-gradient(135deg, #AB9FF2, #512DA8);
-                color: white; border: none; border-radius: 10px;
-                padding: 10px 14px; font-weight: bold; font-size: 0.88rem;
-                cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-                margin-bottom: 8px;
+            .wallet-glass-card {
+                background: rgba(28, 28, 34, 0.7);
+                backdrop-filter: blur(10px);
+                border-radius: 16px;
+                padding: 14px;
+                margin-bottom: 14px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
             }
-            .solana-input-sm {
-                width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.5);
-                border: 1px solid rgba(171, 159, 242, 0.3); border-radius: 8px;
-                color: #fff; font-family: monospace; font-size: 0.82rem;
-                box-sizing: border-box; margin-bottom: 8px; text-align: center;
-                outline: none;
-            }
-            .solana-input-sm:focus { border-color: #14F195; }
-            .btn-claim-main {
-                background: linear-gradient(135deg, #14F195, #00B4D8);
-                color: #000; border: none; border-radius: 12px;
-                padding: 12px 16px; font-size: 0.95rem; font-weight: 900; cursor: pointer;
-                width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-                box-shadow: 0 4px 15px rgba(20, 241, 149, 0.3);
-                transition: all 0.2s;
-            }
-            .btn-claim-main:disabled {
-                background: #33333e; color: #888; cursor: not-allowed; box-shadow: none; border: 1px solid rgba(255,255,255,0.1);
-            }
-            .btn-claim-main:active:not(:disabled) { transform: scale(0.98); }
+            .wallet-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+            .wallet-logo-title { display: flex; align-items: center; gap: 8px; }
+            .wallet-logo-sm { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.2); }
+            .address-box-sm { background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; font-family: monospace; font-size: 0.82rem; text-align: center; margin-bottom: 10px; word-break: break-all; }
+            .btn-action-sm { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+            .btn-danger-sm { background: rgba(253,29,29,0.15); border: 1px solid rgba(253,29,29,0.3); color: #fd1d1d; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+            .btn-glass-ton { background: linear-gradient(135deg, #0088cc, #005588); color: white; border: none; border-radius: 10px; padding: 10px; width: 100%; font-weight: bold; cursor: pointer; }
+            .btn-glass-solana { background: linear-gradient(135deg, #AB9FF2, #512DA8); color: white; border: none; border-radius: 10px; padding: 10px 14px; font-weight: bold; font-size: 0.88rem; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; }
+            .solana-input-sm { width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(171, 159, 242, 0.3); border-radius: 8px; color: #fff; font-family: monospace; font-size: 0.82rem; box-sizing: border-box; margin-bottom: 8px; text-align: center; outline: none; }
+            .btn-claim-main { background: linear-gradient(135deg, #14F195, #00B4D8); color: #000; border: none; border-radius: 12px; padding: 12px 16px; font-size: 0.95rem; font-weight: 900; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(20, 241, 149, 0.3); }
+            .btn-claim-main:disabled { background: #33333e; color: #888; cursor: not-allowed; box-shadow: none; border: 1px solid rgba(255,255,255,0.1); }
         </style>
     `;
 
@@ -198,7 +186,20 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- 3. TOKEN BALANCE & CLAIM CARD -->
+        <!-- 3. MATCH TOKENS & PREDICTIONS PORTFOLIO (جديد ⚡) -->
+        <div class="wallet-glass-card" style="border-top: 2px solid #14F195;">
+            <div class="wallet-header-flex">
+                <span style="color:#fff; font-weight:bold; font-size:0.9rem;">${txtTradeSectionTitle}</span>
+                <button onclick="showPage('meteora')" style="background: rgba(20,241,149,0.15); border: 1px solid rgba(20,241,149,0.4); color: #14F195; border-radius: 6px; padding: 3px 8px; font-size: 0.7rem; cursor: pointer; font-weight: bold;">
+                    🚀 تداول الآن
+                </button>
+            </div>
+            <div id="user-tokens-list" style="font-size: 0.8rem; color: #aaa; text-align: center; padding: 10px 0;">
+                ⏳ جاري تحميل صفقات التوكنز...
+            </div>
+        </div>
+
+        <!-- 4. TOKEN BALANCE & CLAIM CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -216,7 +217,6 @@ function renderWalletPage(container) {
                 </span>
             </div>
 
-            <!-- 🎯 تطبيق شرط التفعيل لزر المطالبة -->
             <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()" ${!canClaim ? 'disabled' : ''}>
                 ${txtClaimBtn}
             </button>
@@ -227,17 +227,20 @@ function renderWalletPage(container) {
 
     if (solanaWallet) {
         fetchRealSolanaBalance(solanaWallet);
+        fetchUserMatchTokens(solanaWallet);
+    } else {
+        const tokenListEl = document.getElementById('user-tokens-list');
+        if (tokenListEl) tokenListEl.innerText = "💡 قم بربط محفظة Solana لرؤية توكنات المباريات التي تملكها.";
     }
 }
 
 window.renderWalletPage = renderWalletPage;
 
-// 3. دالة جلب رصيد Solana الفعلي على الشبكة التجريبية (Devnet)
+// 3. جلب رصيد Solana التجريبي On-Chain
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
         if (window.solanaWeb3) {
-            // 🎯 تم التعديل إلى رابط Devnet التجريبي
             const connection = new window.solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
             const pubKey = new window.solanaWeb3.PublicKey(address);
             const balance = await connection.getBalance(pubKey);
@@ -251,7 +254,53 @@ async function fetchRealSolanaBalance(address) {
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// 4. دالة حفظ المحفظة وإرسالها إلى قاعدة البيانات بالسيرفر (/api/save-wallet)
+// 4. جلب وعرض توكنات المباريات الخاصة بالمستخدم من Supabase (جديد ⚡)
+async function fetchUserMatchTokens(walletAddress) {
+    const listEl = document.getElementById('user-tokens-list');
+    if (!listEl) return;
+
+    if (!window.supabaseClient) {
+        listEl.innerHTML = `<span style="color: #888;">لا تتوفر صفقات حالية.</span>`;
+        return;
+    }
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('match_predictions')
+            .select('*')
+            .eq('wallet_address', walletAddress)
+            .order('created_at', { ascending: false });
+
+        if (error || !data || data.length === 0) {
+            listEl.innerHTML = `<span style="color: #888;">لم تقم بتخمين/شراء توكنات مباريات بعد.</span>`;
+            return;
+        }
+
+        let html = `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+        data.forEach(item => {
+            const txShort = item.tx_hash ? `${item.tx_hash.slice(0, 6)}...${item.tx_hash.slice(-6)}` : 'On-Chain';
+            html += `
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; text-align: right;">
+                    <div>
+                        <div style="color: #fcb045; font-weight: bold; font-size: 0.82rem;">⚽ فريق: ${item.selected_team}</div>
+                        <div style="color: #666; font-size: 0.68rem; font-family: monospace;">Tx: ${txShort}</div>
+                    </div>
+                    <div style="text-align: left;">
+                        <span style="color: #14F195; font-weight: bold; font-size: 0.85rem;">+${item.amount_sol} SOL</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        listEl.innerHTML = html;
+
+    } catch (err) {
+        console.error("Error fetching match tokens:", err);
+        listEl.innerHTML = `<span style="color: #888;">خطأ في قراءة بيانات التوكنات.</span>`;
+    }
+}
+
+// 5. حفظ المحفظة والسيرفر
 async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     const saveBtn = document.getElementById('btn-save-sol-addr');
@@ -305,7 +354,7 @@ async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') 
     }
 }
 
-// 5. ربط محفظة Phantom تلقائياً
+// 6. ربط Phantom تلقائياً
 window.connectPhantomWallet = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if ("solana" in window && window.solana.isPhantom) {
@@ -313,11 +362,11 @@ window.connectPhantomWallet = function() {
             saveSolanaAddressToStateAndDB(res.publicKey.toString(), 'solana');
         }).catch((err) => console.error(err));
     } else {
-        alert(isAr ? 'يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الحقل المخصص.' : 'Please copy your wallet address from the Phantom app and paste it in the field.');
+        alert(isAr ? 'يرجى فتح التطبيق داخل متصفح Phantom أو إدخال العنوان يدوياً.' : 'Please open the app in Phantom Browser or enter address manually.');
     }
 };
 
-// 6. التحقق من صحة عنوان Solana يدوياً
+// 7. التحقق وحفظ العنوان يدوياً
 window.saveSolanaWalletAddress = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     const input = document.getElementById('solana-address-input');
@@ -333,7 +382,7 @@ window.saveSolanaWalletAddress = function() {
     }
 };
 
-// 7. دالة المطالبة بخصم النقاط وتحويل الرموز (/api/claim)
+// 8. المطالبة بالنقاط والتحويل
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
@@ -345,11 +394,10 @@ window.claimCoinsToSolanaWallet = async function() {
         ? Number(userState.points) 
         : Number(localStorage.getItem('user_coins') || 0);
 
-    // 🎯 حماية حاسمة: منع التنفيذ إذا كان الرصيد أقل من الحد الأدنى
     if (userCoins < MIN_CLAIM_LIMIT) {
         alert(isAr 
-            ? `⚠️ الحد الأدنى للسحب هو ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} نقطة. رصيدك الحالي لا يكفي.` 
-            : `⚠️ Minimum claim limit is ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} points. Your current balance is not enough.`);
+            ? `⚠️ الحد الأدنى للسحب هو ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} نقطة.` 
+            : `⚠️ Minimum claim limit is ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} points.`);
         return;
     }
 
@@ -357,7 +405,7 @@ window.claimCoinsToSolanaWallet = async function() {
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
-        alert(isAr ? '⚠️ يرجى ربط أو حفظ محفظة Solana أولاً!' : '⚠️ Please connect or save your Solana Wallet first!');
+        alert(isAr ? '⚠️ يرجى ربط محفظة Solana أولاً!' : '⚠️ Please connect Solana Wallet first!');
         return;
     }
 
@@ -417,7 +465,7 @@ window.claimCoinsToSolanaWallet = async function() {
     }
 };
 
-// 8. الفصل والنسخ
+// 9. الفصل والنسخ
 window.disconnectSolanaWallet = function() {
     localStorage.removeItem('solana_wallet');
     if (typeof userState !== 'undefined') {
@@ -441,4 +489,3 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-        
