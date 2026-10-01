@@ -260,50 +260,49 @@
         </button>
     </nav>
 
-    <!-- Data & Application Logic Scripts -->
-    <script src="clubsData.js?v=2000"></script>
-    <script src="data.js?v=2000"></script> 
-    <script src="countries.js?v=2000"></script>
-    <script src="i18n-helpers.js?v=2000"></script>
-    <script src="ranking.js?v=2000"></script>
+    <!-- Data & Application Logic Scripts (الإصدار المحدث v=2002) -->
+    <script src="clubsData.js?v=2002"></script>
+    <script src="data.js?v=2002"></script> 
+    <script src="countries.js?v=2002"></script>
+    <script src="i18n-helpers.js?v=2002"></script>
+    <script src="ranking.js?v=2002"></script>
     
-    <script src="login.js?v=2000"></script>
-    <script src="weekly_match_rankings.js?v=2000"></script>
-    <script src="predictions_ranking.js?v=2000"></script> 
+    <script src="login.js?v=2002"></script>
+    <script src="weekly_match_rankings.js?v=2002"></script>
+    <script src="predictions_ranking.js?v=2002"></script> 
 
     <!-- Trading & Matches Module Script -->
-    <script src="matchesTrade.js?v=2001"></script>
+    <script src="matchesTrade.js?v=2002"></script>
 
     <!-- UI Pages Scripts -->
-    <script src="home.js?v=2000"></script>
-    <script src="tasks.js?v=2000"></script>
-    <script src="leaderboard.js?v=2000"></script>
-    <script src="friends.js?v=2000"></script>
+    <script src="home.js?v=2002"></script>
+    <script src="tasks.js?v=2002"></script>
+    <script src="leaderboard.js?v=2002"></script>
+    <script src="friends.js?v=2002"></script>
     
     <!-- Wallet Integration Scripts -->
-    <script src="wallet-ton.js?v=2000"></script>
-    <script src="wallet-solana.js?v=2000"></script>
+    <script src="wallet-ton.js?v=2002"></script>
+    <script src="wallet-solana.js?v=2002"></script>
     
     <!-- Main App Router & Handler -->
-    <script src="app.js?v=2001"></script>
+    <script src="app.js?v=2002"></script>
 
-    <!-- 🛠️️ [خيارات المطور 3/3]: دالة الفحص السريع للنظام -->
+    <!-- 🛠 [خيارات المطور 3/3]: دالة الفحص السريع للنظام -->
     <script>
         window.checkAppDiagnostics = function() {
             const report = {
                 "Telegram WebApp": typeof window.Telegram !== "undefined" && !!window.Telegram.WebApp,
                 "renderMeteoraPage": typeof window.renderMeteoraPage === "function",
-                "handleLaunchMatchTokens": typeof window.handleLaunchMatchTokens === "function",
+                "executeDevnetSwap": typeof window.executeDevnetSwap === "function",
                 "openSwapModal": typeof window.openSwapModal === "function",
-                "Supabase Client": typeof window.supabaseClient !== "undefined" && !!window.supabaseClient,
-                "Sample Matches Data": typeof window.sampleMatchesData !== "undefined" ? window.sampleMatchesData.length : 0
+                "Solana Web3 Library": typeof window.solanaWeb3 !== "undefined",
+                "Supabase Client": typeof window.supabaseClient !== "undefined" && !!window.supabaseClient
             };
 
             console.table(report);
-            alert("📋 نتائج الفحص:\n\n" + JSON.stringify(report, null, 2));
+            alert("📋 نتائج الفحص الشامل:\n\n" + JSON.stringify(report, null, 2));
         };
     </script>
 
 </body>
-                </html>
-                
+</html>
