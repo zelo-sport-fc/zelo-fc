@@ -206,7 +206,7 @@ window.openSwapModal = function(matchId, teamName) {
     document.body.appendChild(modal);
 };
 
-// 5. تنفيذ الشراء والتوقيع على البلوكشين (معدل للعمل داخل تلغرام وخارجه)
+// 5. تنفيذ الشراء والتوقيع على البلوكشين (الدالة المحدثة للتوافق مع جدول Supabase)
 window.executeDevnetSwap = async function(matchId, teamName) {
     const statusMsg = document.getElementById("swap-status-msg");
     const btn = document.getElementById("btn-confirm-swap");
@@ -223,11 +223,11 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         ? userState.solanaWallet 
         : (localStorage.getItem('solana_wallet') || '');
 
-    // المسار الأول: إذا كان المستخدم يفتح من متصفح المحفظة المباشر (Phantom/Solflare)
+    // 1. التداول عبر متصفح المحفظة المباشر (Phantom/Solflare)
     if (provider && provider.isPhantom) {
         const solanaWeb3Lib = window.solanaWeb3;
         if (!solanaWeb3Lib) {
-            alert("⚠️ مكتبة Solana Web3 غير محملة. يرجى التأكد من إضافة السكريبت.");
+            alert("⚠️ مكتبة Solana Web3 غير محملة.");
             return;
         }
 
@@ -258,20 +258,19 @@ window.executeDevnetSwap = async function(matchId, teamName) {
             if (statusMsg) statusMsg.innerText = "في انتظار توقيعك من المحفظة...";
 
             const signed = await provider.signAndSendTransaction(transaction);
-            
             if (statusMsg) statusMsg.innerText = "جاري توثيق المعاملة على البلوكشين...";
 
             await connection.confirmTransaction(signed.signature, 'confirmed');
 
             if (window.supabaseClient) {
                 const tgId = window.userState?.userId || window.userState?.telegramId || localStorage.getItem('telegram_id') || 'guest';
+                
                 await window.supabaseClient.from('match_predictions').insert([{
                     telegram_id: String(tgId),
-                    wallet_address: userPublicKey.toBase58(),
-                    match_id: matchId,
-                    selected_team: teamName,
+                    match_id: String(matchId),
+                    predicted_winner: teamName,
                     amount_sol: solAmount,
-                    tx_hash: signed.signature
+                    status: 'PENDING'
                 }]);
             }
 
@@ -289,30 +288,28 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         return;
     }
 
-    // المسار الثاني: التداول داخل تلغرام إذا كان عنوان محفظة Solana محفوظاً
+    // 2. التداول داخل بوت تلغرام (Telegram Mini App)
     if (savedWallet) {
         try {
             btn.disabled = true;
             btn.innerText = "⏳ جاري تسجيل التخمين...";
-            if (statusMsg) statusMsg.innerText = "جاري حفظ المعاملة في قاعدة البيانات...";
+            if (statusMsg) statusMsg.innerText = "جاري الحفظ في قاعدة البيانات...";
 
             const tgId = window.userState?.userId || window.userState?.telegramId || localStorage.getItem('telegram_id') || 'guest';
-            const simulatedTxHash = 'Devnet-' + Math.random().toString(36).substring(2, 11).toUpperCase();
 
             if (window.supabaseClient) {
                 const { error } = await window.supabaseClient.from('match_predictions').insert([{
                     telegram_id: String(tgId),
-                    wallet_address: savedWallet,
-                    match_id: matchId,
-                    selected_team: teamName,
+                    match_id: String(matchId),
+                    predicted_winner: teamName,
                     amount_sol: solAmount,
-                    tx_hash: simulatedTxHash
+                    status: 'PENDING'
                 }]);
 
                 if (error) throw error;
             }
 
-            alert(`✅ تم تسجيل تخمينك بنجاح لـ (${teamName}) بقيمة ${solAmount} SOL!\n\nالمحفظة المسجلة:\n${savedWallet.slice(0, 8)}...${savedWallet.slice(-8)}`);
+            alert(`✅ تم تسجيل تخمينك بنجاح لـ (${teamName}) بقيمة ${solAmount} SOL!`);
             document.getElementById("swap-modal")?.remove();
             if (typeof showPage === 'function') showPage('wallet');
 
@@ -326,11 +323,9 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         return;
     }
 
-    // المسار الثالث: عدم وجود محفظة متصلة أو محفوظة
+    // 3. عدم وجود محفظة متصلة أو محفوظة
     const openPhantom = confirm(
-        "⚠️ لم يتم العثور على عنوان محفظة Solana مقترن.\n\n" +
-        "• لاختيار الربط عبر محفظةPhantom: اضغط 'موافق' لفتح التطبيق داخل Phantom.\n" +
-        "• لإدخال عنوان محفظتك يدويًا: اضغط 'إلغاء' وانتقل لصفحة المحفظة."
+        "⚠️ لم يتم العثور على عنوان محفظة Solana.\n\nهل تريد فتح التطبيق داخل تطبيق Phantom؟"
     );
 
     if (openPhantom) {
@@ -341,4 +336,4 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         if (typeof showPage === 'function') showPage('wallet');
     }
 };
-        
+                    
