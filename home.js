@@ -150,14 +150,18 @@ window.renderHomePage = function(container) {
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
         const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
 
-        // تجهيز موديول بطاقات الشراء والتداول من ملف matchesTrade.js إن وجد
+        // تجهيز كروت التداول ديناميكياً بدون التأثير على استقرار التطبيق
         let matchTradeCardsHtml = '';
         if (typeof window.renderMatchTradeCard === 'function') {
-            const sampleMatches = [
-                { id: 'm1', teamA: 'Real Madrid', teamB: 'Barcelona' },
-                { id: 'm2', teamA: 'Man City', teamB: 'Arsenal' }
-            ];
-            matchTradeCardsHtml = sampleMatches.map(m => window.renderMatchTradeCard(m)).join('');
+            try {
+                const sampleMatches = [
+                    { id: 'm1', teamA: 'Real Madrid', teamB: 'Barcelona' },
+                    { id: 'm2', teamA: 'Man City', teamB: 'Arsenal' }
+                ];
+                matchTradeCardsHtml = sampleMatches.map(m => window.renderMatchTradeCard(m)).join('');
+            } catch (errTrade) {
+                console.warn("Match trade render warning:", errTrade);
+            }
         }
 
         target.innerHTML = `
@@ -401,27 +405,13 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
-                <!-- قسم تداول أندية المباريات عبر وحدة Meteora -->
                 ${matchTradeCardsHtml ? `
                 <div class="trading-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">📊</span>
-                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtLiveMatc
-                                                                                                                        <!-- قسم تداول أندية المباريات عبر وحدة Meteora -->
-                ${matchTradeCardsHtml ? `
-                <div class="trading-section" style="margin-top: 12px;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size: 0.9rem;">📊</span>
-                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtLiveMatchesTrade}</h4>
-                        </div>
-                    </div>
-                    ${matchTradeCardsHtml}
-                </div>
-                ` : ''}
-
-                <div class="clubs-section" style="margin-top: 12px;">
+                            <h
+                                            <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
@@ -433,25 +423,27 @@ window.renderHomePage = function(container) {
                     <div class="glass-club-card">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div class="club-logo-wrapper">
-                                <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;" alt="Man Utd">
+                                <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
                             </div>
                             <div style="text-align: ${isAr ? 'right' : 'left'};">
-                                <div style="color: #fff; font-weight: 800; font-size: 0.85rem;">Manchester United</div>
-                                <div style="color: #94a3b8; font-size: 0.7rem;">${txtFans}</div>
+                                <h3 style="margin: 0; color: #fff; font-size: 0.92rem; font-weight: 900;">Manchester United 🇬🇧</h3>
+                                <span style="color: #9ca3af; font-size: 0.72rem; font-weight: 600;">${txtFans}</span>
                             </div>
                         </div>
-                        <div class="club-points-badge">100 PTS</div>
+                        <div class="club-points-badge">
+                            100 PTS
+                        </div>
                     </div>
                 </div>
             </div>
         `;
 
-        // تشغيل مؤقت تحديث أسعار سولانا
+        // تشغيل تحديث سعر Solana أول مرة ثم كل 5 ثوانٍ
         window.updateHomeSolPrice();
-        window.solPriceInterval = setInterval(window.updateHomeSolPrice, 3000);
+        window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
-    } catch (err) {
-        console.error("Error rendering Home Page:", err);
+    } catch (e) {
+        console.error("Render HomePage Error:", e);
     }
 };
                   
