@@ -3,7 +3,7 @@
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100;
-const MIN_CLAIM_LIMIT = 20000; // 🎯 الحد الأدنى للسحب/المطالبة (يمكنك تعديل الرقم)
+const MIN_CLAIM_LIMIT = 20000; // 🎯 الحد الأدنى للسحب/المطالبة
 const BACKEND_URL = "https://zelo-fc.onrender.com";
 const TOKEN_NAME = "ZELOFC";
 
@@ -56,12 +56,12 @@ function renderWalletPage(container) {
 
     // النصوص المترجمة
     const txtTonWallet = isAr ? 'محفظة TON' : 'TON Wallet';
-    const txtSolanaWallet = isAr ? 'محفظة Solana' : 'Solana Wallet';
+    const txtSolanaWallet = isAr ? 'محفظة Solana (Devnet)' : 'Solana Wallet (Devnet)';
     const txtConnected = isAr ? '● متصل' : '● Connected';
     const txtConnectTon = isAr ? 'ربط محفظة تلغرام 💎' : 'Connect Telegram Wallet 💎';
     const txtCopy = isAr ? '📋 نسخ' : '📋 Copy';
     const txtDisconnect = isAr ? '🔌 فصل' : '🔌 Disconnect';
-    const txtOnChainSol = isAr ? 'رصيد SOL على الشبكة:' : 'On-Chain SOL:';
+    const txtOnChainSol = isAr ? 'رصيد SOL (Devnet):' : 'On-Chain SOL (Devnet):';
     const txtChecking = isAr ? '⏳ جاري الفحص...' : '⏳ Checking...';
     const txtAutoConnectPhantom = isAr ? 'ربط تلقائي لمحفظة Phantom' : 'Auto Connect Phantom';
     const txtPlaceholderSol = isAr ? 'أو ألصق عنوان محفظة Solana...' : 'Or paste Solana address...';
@@ -232,12 +232,13 @@ function renderWalletPage(container) {
 
 window.renderWalletPage = renderWalletPage;
 
-// 3. دالة جلب رصيد Solana الفعلي على الشبكة
+// 3. دالة جلب رصيد Solana الفعلي على الشبكة التجريبية (Devnet)
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
         if (window.solanaWeb3) {
-            const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+            // 🎯 تم التعديل إلى رابط Devnet التجريبي
+            const connection = new window.solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
             const pubKey = new window.solanaWeb3.PublicKey(address);
             const balance = await connection.getBalance(pubKey);
             const solVal = (balance / window.solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
@@ -440,4 +441,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-                
+        
