@@ -35,15 +35,15 @@ window.updateHomeSolPrice = async function() {
             if (data && data.bidPrice && data.askPrice) {
                 const bid = parseFloat(data.bidPrice);
                 const ask = parseFloat(data.askPrice);
-                realPrice = (bid + ask) / 2; // السعر المتوسط الحقيقي المباشر
-                realSpread = (ask - bid).toFixed(4); // فارق السعر المباشر الحقيقي
+                realPrice = (bid + ask) / 2;
+                realSpread = (ask - bid).toFixed(4);
             }
         }
     } catch (err) {
         console.warn("Binance API fetch warning, trying backup...", err);
     }
 
-    // 2. مصدر احتياطي حقيقي (CoinGecko) في حال تعثر المصدر الأول
+    // 2. مصدر احتياطي حقيقي (CoinGecko)
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         try {
             const resBackup = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
@@ -59,7 +59,6 @@ window.updateHomeSolPrice = async function() {
         }
     }
 
-    // إذا تعذر جلب السعر لأي سبب، يتم الحفاظ على السعر السابق
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         if (window.solPriceHistory.length > 0) {
             realPrice = window.solPriceHistory[window.solPriceHistory.length - 1];
@@ -70,13 +69,11 @@ window.updateHomeSolPrice = async function() {
 
     const finalPriceStr = `$${realPrice.toFixed(2)}`;
     
-    // إضافة السعر الحقيقي إلى مصفوفة التاريخ
     window.solPriceHistory.push(realPrice);
     if (window.solPriceHistory.length > 20) {
         window.solPriceHistory.shift();
     }
 
-    // تحديث النصوص في الواجهة بالأرقام الحقيقية
     if (elPriceHeader) elPriceHeader.innerText = finalPriceStr;
     if (elPriceOracle) elPriceOracle.innerText = finalPriceStr;
     if (elLivePrice) elLivePrice.innerText = finalPriceStr;
@@ -91,9 +88,8 @@ window.updateHomeSolPrice = async function() {
     if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
-    // رسم السلسلة الزمنية الحقيقية (Sparkline Graph) بناءً على تحركات السعر الحقيقية
     if (svgPath && history.length > 1) {
-        const range = (maxP - minP) || 0.05; // تجنب القسمة على صفر في حال ثبات السعر اللحظي
+        const range = (maxP - minP) || 0.05;
         const width = 200;
         const height = 30;
         
@@ -128,9 +124,6 @@ window.renderHomePage = function(container) {
         };
         const isAr = state.lang === 'ar';
 
-        // ==========================================
-        // 🌐 نصوص الترجمة التلقائية بناءً على اللغة
-        // ==========================================
         const txtOfficialSite = isAr ? 'الموقع الرسمي' : 'Official Site';
         const txtMarketFeed = isAr ? 'بث السوق المباشر' : 'Real-Time Market Feed';
         const txtLiveMarket = isAr ? 'السوق المباشر' : 'LIVE MARKET';
@@ -150,7 +143,6 @@ window.renderHomePage = function(container) {
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
         const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
 
-        // تجهيز كروت التداول ديناميكياً بدون التأثير على استقرار التطبيق
         let matchTradeCardsHtml = '';
         if (typeof window.renderMatchTradeCard === 'function') {
             try {
@@ -410,12 +402,18 @@ window.renderHomePage = function(container) {
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">📊</span>
-                            <h
-                                            <div class="clubs-section" style="margin-top: 12px;">
+                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtLiveMatchesTrade}</h4>
+                        </div>
+                    </div>
+                    ${matchTradeCardsHtml}
+                </div>
+                ` : ''}
+
+                <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
-                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
+                                    <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
                         </div>
                         <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${txtActive}</span>
                     </div>
@@ -438,7 +436,6 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // تشغيل تحديث سعر Solana أول مرة ثم كل 5 ثوانٍ
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
@@ -446,4 +443,3 @@ window.renderHomePage = function(container) {
         console.error("Render HomePage Error:", e);
     }
 };
-                  
