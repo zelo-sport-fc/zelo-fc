@@ -156,7 +156,7 @@ async function fetchDataAndRoute() {
             .maybeSingle();
 
         if (error) {
-            console.warn("⚠️️ Supabase read warning (using default state):", error);
+            console.warn("⚠ Supabase read warning (using default state):", error);
         }
 
         if (data) {
@@ -313,41 +313,35 @@ function showPage(pageId) {
             }
             break;
         case 'meteora':
-            if (typeof renderMeteoraPage === "function") {
-                renderMeteoraPage(contentDiv);
+            // ✅ ربط أملس بدون التنبيهات المزعجة (No Alert Windows)
+            if (typeof window.renderMeteoraPage === "function") {
+                window.renderMeteoraPage(contentDiv);
             } else {
                 const isAr = userState.lang === 'ar';
                 contentDiv.innerHTML = `
-                    <div class="card" style="text-align: center; padding: 25px 15px;">
+                    <div class="card" style="text-align: center; padding: 30px 15px;">
                         <div style="font-size: 3.5rem; margin-bottom: 10px;">☄️</div>
-                        <h2 style="font-size: 1.5rem; color: var(--accent-gold); margin-bottom: 10px;">
-                            ${isAr ? 'مسابقة Meteora Launch' : 'Meteora Launchpad'}
+                        <h2 style="font-size: 1.4rem; color: var(--accent-gold); margin-bottom: 8px;">
+                            ${isAr ? 'منصة Meteora Launchpad' : 'Meteora Launchpad'}
                         </h2>
-                        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
+                        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
                             ${isAr 
-                                ? 'تداول توكنات أندية كرة القدم وشارك في سيولة Meteora DBC & DAMM v2 للحصول على مكافآت.' 
-                                : 'Trade football club tokens and participate in Meteora DBC & DAMM v2 liquidity pools.'}
+                                ? 'جاري إعداد سوق تداول وإطلاق توكنات المباريات...' 
+                                : 'Preparing match tokens launchpad and trading market...'}
                         </p>
-                        <button id="btn-open-meteora-trade" class="btn-action">
-                            ${isAr ? 'فتح سوق التداول 🚀' : 'Open Trading Market 🚀'}
-                        </button>
+                        <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(252,176,69,0.2); border-radius: 50%; border-top-color: var(--accent-gold); animation: spin 0.8s linear infinite;"></div>
                     </div>
+                    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
                 `;
 
-                const tradeBtn = document.getElementById("btn-open-meteora-trade");
-                if (tradeBtn) {
-                    tradeBtn.onclick = () => {
-                        if (typeof openMatchesTradeModal === "function") {
-                            openMatchesTradeModal();
-                        } else {
-                            alert(isAr ? 'جاري تحميل وحدة التداول...' : 'Loading trading module...');
-                        }
-                    };
-                }
-
-                if (typeof openMatchesTradeModal === "function") {
-                    openMatchesTradeModal();
-                }
+                // المحاولة مرة أخرى تلقائياً بدون إزعاج المستخدم
+                setTimeout(() => {
+                    if (typeof window.renderMeteoraPage === "function") {
+                        window.renderMeteoraPage(contentDiv);
+                    } else if (typeof window.openMatchesTradeModal === "function") {
+                        window.openMatchesTradeModal();
+                    }
+                }, 300);
             }
             break;
     }
@@ -373,5 +367,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                          }
-                              
+                                }
+                
