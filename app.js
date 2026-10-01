@@ -156,7 +156,7 @@ async function fetchDataAndRoute() {
             .maybeSingle();
 
         if (error) {
-            console.warn("⚠️ Supabase read warning (using default state):", error);
+            console.warn("⚠️️ Supabase read warning (using default state):", error);
         }
 
         if (data) {
@@ -313,22 +313,41 @@ function showPage(pageId) {
             }
             break;
         case 'meteora':
-            if (typeof openMatchesTradeModal === "function") {
-                openMatchesTradeModal();
-            } else if (typeof renderMeteoraPage === "function") {
+            if (typeof renderMeteoraPage === "function") {
                 renderMeteoraPage(contentDiv);
             } else {
+                const isAr = userState.lang === 'ar';
                 contentDiv.innerHTML = `
-                    <div style="padding: 30px 20px; text-align: center; color: white;">
-                        <h2 style="font-size: 1.8rem; margin-bottom: 15px;">☄️ Meteora Token Launch</h2>
-                        <p style="color: #ccc; margin-bottom: 25px;">
-                            ${userState.lang === 'ar' ? 'مسابقة إطلاق التوكنات والتداول عبر Meteora (DBC + DAMM v2)' : 'Meteora DBC + DAMM v2 Token Launch & Trading Module'}
+                    <div class="card" style="text-align: center; padding: 25px 15px;">
+                        <div style="font-size: 3.5rem; margin-bottom: 10px;">☄️</div>
+                        <h2 style="font-size: 1.5rem; color: var(--accent-gold); margin-bottom: 10px;">
+                            ${isAr ? 'مسابقة Meteora Launch' : 'Meteora Launchpad'}
+                        </h2>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
+                            ${isAr 
+                                ? 'تداول توكنات أندية كرة القدم وشارك في سيولة Meteora DBC & DAMM v2 للحصول على مكافآت.' 
+                                : 'Trade football club tokens and participate in Meteora DBC & DAMM v2 liquidity pools.'}
                         </p>
-                        <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                            ${userState.lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
+                        <button id="btn-open-meteora-trade" class="btn-action">
+                            ${isAr ? 'فتح سوق التداول 🚀' : 'Open Trading Market 🚀'}
                         </button>
                     </div>
                 `;
+
+                const tradeBtn = document.getElementById("btn-open-meteora-trade");
+                if (tradeBtn) {
+                    tradeBtn.onclick = () => {
+                        if (typeof openMatchesTradeModal === "function") {
+                            openMatchesTradeModal();
+                        } else {
+                            alert(isAr ? 'جاري تحميل وحدة التداول...' : 'Loading trading module...');
+                        }
+                    };
+                }
+
+                if (typeof openMatchesTradeModal === "function") {
+                    openMatchesTradeModal();
+                }
             }
             break;
     }
@@ -354,4 +373,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                }
+                          }
+                              
