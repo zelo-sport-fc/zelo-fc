@@ -141,7 +141,9 @@ async function fetchDataAndRoute() {
 
     if (!supabaseClient) {
         console.warn("⚠️ [2] Supabase client is not initialized.");
-        triggerLoginScreen();
+        userState.hasLoggedIn = true;
+        await updateTopBar();
+        showPage('home');
         return;
     }
 
@@ -154,8 +156,7 @@ async function fetchDataAndRoute() {
             .maybeSingle();
 
         if (error) {
-            console.error("❌ Supabase error:", error);
-            throw error;
+            console.warn("⚠️ Supabase read warning (using default state):", error);
         }
 
         if (data) {
@@ -181,22 +182,20 @@ async function fetchDataAndRoute() {
             }
 
         } else {
-            console.log("🆕 [4] New user (unregistered).");
-            userState.hasLoggedIn = false;
+            console.log("🆕 [4] New or offline user.");
+            userState.hasLoggedIn = true;
+            if (!userState.selectedClubs || userState.selectedClubs.length === 0) {
+                userState.selectedClubs = ['m1'];
+            }
         }
     } catch (error) {
-        console.error("❌ [Error] Failed to fetch data:", error);
-        userState.hasLoggedIn = false; 
+        console.warn("⚠️ [Network Issues] Continuing with local fallback:", error);
+        userState.hasLoggedIn = true;
     }
 
-    if (!userState.hasLoggedIn || !userState.selectedClubs || userState.selectedClubs.length === 0) {
-        triggerLoginScreen();
-    } else {
-        console.log("🏠 [6] Routing to Home Screen...");
-        userState.hasLoggedIn = true;
-        await updateTopBar();
-        showPage('home'); 
-    }
+    console.log("🏠 [6] Routing to Home Screen...");
+    await updateTopBar();
+    showPage('home'); 
 }
 
 function triggerLoginScreen() {
@@ -251,12 +250,7 @@ async function updateTopBar() {
     
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
-        // 🟢 التعديل هنا: تحديد كود اللغة بناءً على خيار لغة المستخدم داخل التطبيق
         const localeLang = (userState.lang === 'ar') ? 'ar-EG' : 'en-US';
-        
-        // إذا كنت ترغب في إظهار الأرقام الإنجليزية (400) دائماً لجميع اللغات، يمكنك استخدام 'en-US' مباشرة:
-        // pointsEl.innerText = `🪙 ${displayPoints.toLocaleString('en-US')} ZELOFC`;
-        
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ZELOFC`;
     }
     
@@ -341,4 +335,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-        }
+                    }
+                              
