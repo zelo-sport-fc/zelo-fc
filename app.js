@@ -312,6 +312,25 @@ function showPage(pageId) {
                 }, 200);
             }
             break;
+        case 'meteora':
+            if (typeof openMatchesTradeModal === "function") {
+                openMatchesTradeModal();
+            } else if (typeof renderMeteoraPage === "function") {
+                renderMeteoraPage(contentDiv);
+            } else {
+                contentDiv.innerHTML = `
+                    <div style="padding: 30px 20px; text-align: center; color: white;">
+                        <h2 style="font-size: 1.8rem; margin-bottom: 15px;">☄️ Meteora Token Launch</h2>
+                        <p style="color: #ccc; margin-bottom: 25px;">
+                            ${userState.lang === 'ar' ? 'مسابقة إطلاق التوكنات والتداول عبر Meteora (DBC + DAMM v2)' : 'Meteora DBC + DAMM v2 Token Launch & Trading Module'}
+                        </p>
+                        <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
+                            ${userState.lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
+                        </button>
+                    </div>
+                `;
+            }
+            break;
     }
 }
 
@@ -335,5 +354,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                    }
-                              
+                }
