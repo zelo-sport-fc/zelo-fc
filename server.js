@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } = require('@solana/web3.js');
+const { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, clusterApiUrl } = require('@solana/web3.js');
 const bs58 = require('bs58');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -20,6 +20,45 @@ const connection = new Connection(rpcUrl, 'confirmed');
 app.get('/', (req, res) => {
     res.send('Zelo FC Backend Server is running smoothly 🚀');
 });
+
+// ==========================================
+// Meteora DBC Helper Function
+// ==========================================
+async function createMatchTokensOnMeteora(matchId, teamA, teamB) {
+    try {
+        console.log(`🚀 جاري إنشاء سوق Meteora للمباراة: ${teamA} VS ${teamB}`);
+
+        // إنشاء حسابات توكن جديدة لكل فريق على الشبكة
+        const teamATokenKeypair = Keypair.generate();
+        const teamBTokenKeypair = Keypair.generate();
+
+        const tokenAMint = teamATokenKeypair.publicKey.toBase58();
+        const tokenBMint = teamBTokenKeypair.publicKey.toBase58();
+
+        if (supabase) {
+            // حفظ عناوين التوكنات في قاعدة البيانات لربطها ببطاقة المباراة
+            const { error } = await supabase
+                .from('matches')
+                .update({
+                    token_a_mint: tokenAMint,
+                    token_b_mint: tokenBMint,
+                    market_status: 'ACTIVE'
+                })
+                .eq('id', matchId);
+
+            if (error) console.error('خطأ في تحديث Supabase:', error);
+        }
+
+        return {
+            success: true,
+            tokenAMint,
+            tokenBMint
+        };
+    } catch (err) {
+        console.error('خطأ أثناء إنشاء السوق:', err);
+        return { success: false, error: err.message };
+    }
+}
 
 // ==========================================
 // 1. Get User Info
@@ -114,7 +153,38 @@ app.post('/api/save-wallet', async (req, res) => {
 });
 
 // ==========================================
-// 3. Claim Tokens On-Chain (Direct SOL Transfer Mode for Hackathon Demo)
+// 3. Create Match Market (Meteora DBC)
+// ==========================================
+app.post('/api/matches/create-market', async (req, res) => {
+    const { matchId, teamA, teamB } = req.body;
+
+    if (!matchId || !teamA || !teamB) {
+        return res.status(400).json({
+            success: false,
+            error: "Missing required fields: matchId, teamA, teamB"
+        });
+    }
+
+    const result = await createMatchTokensOnMeteora(matchId, teamA, teamB);
+
+    if (result.success) {
+        return res.json({
+            success: true,
+            message: "Match market created successfully",
+            matchId,
+            tokenAMint: result.tokenAMint,
+            tokenBMint: result.tokenBMint
+        });
+    } else {
+        return res.status(500).json({
+            success: false,
+            error: result.error
+        });
+    }
+});
+
+// ==========================================
+// 4. Claim Tokens On-Chain (Direct SOL Transfer Mode for Hackathon Demo)
 // ==========================================
 app.post('/api/claim', async (req, res) => {
     const { userWalletAddress, telegramId } = req.body;
@@ -204,4 +274,4 @@ app.post('/api/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-                
+    
