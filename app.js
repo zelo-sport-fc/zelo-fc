@@ -1,6 +1,10 @@
 // ==========================================
-// ZELO FC - Core Application (app.js)
+// ⚽ ZELO FC - Core Application (app.js)
 // ==========================================
+
+// 🌐 ضبط إعدادات شبكة Solana Devnet للمسابقة
+window.IS_DEVNET = true;
+window.SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 
 const supabaseUrl = 'https://ttyfcwtlasvphkariqhw.supabase.co'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eWZjd3RsYXN2cGhrYXJpcWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODk1MjYsImV4cCI6MjA5ODc2NTUyNn0.m3wFMEASM3K63nm3bsIlrEOXhRvMQhUZqvpXyFq7NEg'; 
@@ -21,6 +25,7 @@ let userState = {
     walletAddress: null,
     solanaWallet: "",
     walletBalance: "0.00",
+    solanaNetwork: "devnet", // 🛠️ تفعيل شبكة Devnet
     hasLoggedIn: false,
     lang: "ar",
     referrals: [], 
@@ -110,7 +115,7 @@ function initTonConnect() {
                             .update({ wallet_address: userFriendlyAddress })
                             .eq('telegram_id', userState.userId);
                         if (error) console.error("❌ Wallet save error:", error);
-                        else console.log("✅ TON Wallet saved successfully!");
+                        else console.log("✅ Wallet saved successfully!");
                     }
                 } else {
                     userState.walletConnected = false;
@@ -313,7 +318,7 @@ function showPage(pageId) {
             }
             break;
         case 'meteora':
-            // ✅ ربط أملس بدون التنبيهات المزعجة (No Alert Windows)
+            // 🚀 عرض سوق التداول والتخمين المربوط بـ Solana Devnet مباشرة
             if (typeof window.renderMeteoraPage === "function") {
                 window.renderMeteoraPage(contentDiv);
             } else {
@@ -322,24 +327,21 @@ function showPage(pageId) {
                     <div class="card" style="text-align: center; padding: 30px 15px;">
                         <div style="font-size: 3.5rem; margin-bottom: 10px;">☄️</div>
                         <h2 style="font-size: 1.4rem; color: var(--accent-gold); margin-bottom: 8px;">
-                            ${isAr ? 'منصة Meteora Launchpad' : 'Meteora Launchpad'}
+                            ${isAr ? 'منصة Meteora Devnet Launchpad' : 'Meteora Devnet Launchpad'}
                         </h2>
                         <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
                             ${isAr 
-                                ? 'جاري إعداد سوق تداول وإطلاق توكنات المباريات...' 
-                                : 'Preparing match tokens launchpad and trading market...'}
+                                ? 'جاري تحميل سوق التداول المباشر بالـ Devnet SOL...' 
+                                : 'Loading live Devnet SOL trading market...'}
                         </p>
                         <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(252,176,69,0.2); border-radius: 50%; border-top-color: var(--accent-gold); animation: spin 0.8s linear infinite;"></div>
                     </div>
                     <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
                 `;
 
-                // المحاولة مرة أخرى تلقائياً بدون إزعاج المستخدم
                 setTimeout(() => {
                     if (typeof window.renderMeteoraPage === "function") {
                         window.renderMeteoraPage(contentDiv);
-                    } else if (typeof window.openMatchesTradeModal === "function") {
-                        window.openMatchesTradeModal();
                     }
                 }, 300);
             }
@@ -367,5 +369,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                                }
-                
+            }
+    
