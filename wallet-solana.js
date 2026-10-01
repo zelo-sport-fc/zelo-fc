@@ -3,7 +3,7 @@
 // ==========================================
 
 const COINS_PER_ZELO_TOKEN = 100;
-const MIN_CLAIM_LIMIT = 20000; // 🎯 الحد الأدنى للسحب/المطالبة
+const MIN_CLAIM_LIMIT = 1000; // 🎯 الحد الأدنى للسحب/المطالبة
 const BACKEND_URL = "https://zelo-fc.onrender.com";
 const TOKEN_NAME = "ZELOFC";
 
