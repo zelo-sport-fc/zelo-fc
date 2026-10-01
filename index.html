@@ -9,10 +9,10 @@
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Web3 & Crypto SDKs -->
-    <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Web3 & Crypto SDKs (Updated & Stable Versions) -->
+    <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.js"></script>
     
     <style>
         :root {
@@ -279,26 +279,32 @@
         </button>
     </nav>
 
-    <!-- Data & Application Logic Scripts -->
-    <script src="clubsData.js?v=200"></script>
-    <script src="data.js?v=200"></script> 
-    <script src="countries.js?v=200"></script>
-    <script src="i18n-helpers.js?v=200"></script>
-    <script src="ranking.js?v=200"></script>
+    <!-- Data & Core Application Logic Scripts -->
+    <script src="clubsData.js?v=210"></script>
+    <script src="data.js?v=210"></script> 
+    <script src="countries.js?v=210"></script>
+    <script src="i18n-helpers.js?v=210"></script>
+    <script src="ranking.js?v=210"></script>
     
-    <script src="login.js?v=200"></script>
-    <script src="weekly_match_rankings.js?v=200"></script>
-    <script src="predictions_ranking.js?v=200"></script> 
-    <script src="home.js?v=500"></script>
-    <script src="tasks.js?v=400"></script>
-    <script src="leaderboard.js?v=300"></script>
-    <script src="friends.js?v=950"></script>
+    <script src="login.js?v=210"></script>
+    <script src="weekly_match_rankings.js?v=210"></script>
+    <script src="predictions_ranking.js?v=210"></script> 
+
+    <!-- Trading & Matches Module Script -->
+    <script src="matchesTrade.js?v=100"></script>
+
+    <!-- UI Pages Scripts -->
+    <script src="home.js?v=600"></script>
+    <script src="tasks.js?v=410"></script>
+    <script src="leaderboard.js?v=310"></script>
+    <script src="friends.js?v=960"></script>
     
-    <!-- Wallet Scripts -->
-    <script src="wallet-ton.js?v=910"></script>
-    <script src="wallet-solana.js?v=970"></script>
+    <!-- Wallet Integration Scripts -->
+    <script src="wallet-ton.js?v=920"></script>
+    <script src="wallet-solana.js?v=980"></script>
     
-    <script src="app.js?v=302"></script>
+    <!-- Main App Router & Handler -->
+    <script src="app.js?v=310"></script>
 
 </body>
 </html>
