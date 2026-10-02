@@ -2,7 +2,6 @@
 // ⚽ Meteora Devnet Launchpad & Trading Engine
 // ==========================================
 
-// تأكيد تعريف Buffer لتجنب الأخطاء
 if (typeof window.Buffer === 'undefined' && typeof buffer !== 'undefined') {
     window.Buffer = buffer.Buffer;
 }
@@ -119,7 +118,7 @@ window.renderMeteoraPage = async function(container) {
         container.innerHTML = html;
     } catch (e) {
         console.error("❌ خطأ في عرض الواجهة:", e);
-        container.innerHTML = `<div style="text-align:center; color:#ff4d4d; padding:20px;">حدث خطأ أثناء تحميل البيانات، يرجى المحاولة لاحقاً.</div>`;
+        container.innerHTML = `<div style="text-align:center; color:#ff4d4d; padding:20px;">حدث خطأ أثناء تحميل البيانات.</div>`;
     }
 };
 
@@ -154,7 +153,7 @@ window.openSwapModal = function(matchId, teamName, priceSol) {
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button id="btn-confirm-swap" onclick="window.executeDevnetSwap('${matchId}', '${safeTeamName}')" style="background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.85rem; cursor: pointer;">
-                    🚀 إتمام المقايضة (Swap)
+                    🚀 إتمام المقايضة (Swap on DBC)
                 </button>
             </div>
         </div>
@@ -176,12 +175,12 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
     try {
         if (btn) btn.disabled = true;
-        if (statusMsg) statusMsg.innerText = "⏳ جاري تنفيذ عملية المقايضة...";
+        if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد العملية...";
 
         const provider = window.solana || window.solflare;
 
-        // 1. التوقيع والتحويل المباشر إذا كان المزود موجوداً ومتصلاً
-        if (provider && provider.isConnected && typeof provider.signAndSendTransaction === 'function') {
+        // 1. التفاعل المباشر إذا كان المزود موجوداً ومتصلاً
+        if (provider && provider.isConnected) {
             const resp = await provider.connect();
             const userPublicKey = resp.publicKey;
             const solanaWeb3Lib = window.solanaWeb3;
@@ -203,36 +202,53 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                 const signed = await provider.signAndSendTransaction(transaction);
                 await connection.confirmTransaction(signed.signature, 'confirmed');
 
-                alert(`✅ تمت عملية الشراء واقتطاع الرصيد بنجاح!\n\nرمز المعاملة:\n${signed.signature}`);
+                alert(`✅ تمت عملية الشراء بنجاح!\n\nرقم المعاملة:\n${signed.signature}`);
                 const modal = document.getElementById("swap-modal");
                 if (modal) modal.remove();
                 return;
             }
         } 
         
-        // 2. التنفيذ الداخلي ورابط Phantom الآمن بدون تعارض Event
+        // 2. التحويل السلس لروابط Deep Links دون التسبب في خطأ Event
         if (window.Telegram?.WebApp?.openLink) {
             const currentUrl = window.location.href;
             const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
             
-            // فتح Phantom عبر بيئة Telegram WebApp الرسمية
             window.Telegram.WebApp.openLink(phantomUrl);
-            
-            if (statusMsg) statusMsg.innerText = "✅ تم فتح تطبيق المحفظة لتأكيد المعاملة";
+            if (statusMsg) statusMsg.innerText = "📱 جاري التوجيه إلى محفظة Phantom...";
         } else {
-            alert(`✅ تم إرسال الطلب بنجاح لـ ${teamName} بمبلغ ${solAmount} SOL`);
+            alert(`✅ تمت المحاكاة بنجاح لشراء ${teamName} بمبلغ ${solAmount} SOL`);
             const modal = document.getElementById("swap-modal");
             if (modal) modal.remove();
         }
 
     } catch (err) {
-        console.error("❌ تفاصيل الخطأ:", err);
-        const errorText = typeof err === 'object' && err !== null ? (err.message || JSON.stringify(err)) : String(err);
-        alert("❌ تعذر إتمام العملية: " + (errorText.includes("Object") ? "يرجى التأكد من ربط المحفظة وإتاحة الإذن" : errorText));
+        console.error("❌ تفاصيل الخطأ الأصلية:", err);
+
+        // استخراج رسالة الخطأ ومنع طباعة "Event {isTrusted: true}"
+        let errorMsg = "تم إلغاء العملية أو لم يتم منح الإذن من المحفظة.";
+        
+        if (err && typeof err === 'object') {
+            if (err.message) {
+                errorMsg = err.message;
+            } else if (err.constructor && err.constructor.name === "Event") {
+                errorMsg = "تم حظر إتاحة النافذة المنبثقة من قبل المتصفح، يرجى إعادة المحاولة الضغط مباشرة.";
+            } else {
+                try {
+                    const parsed = JSON.stringify(err);
+                    if (parsed !== "{}" && parsed !== "[]") errorMsg = parsed;
+                } catch(e){}
+            }
+        } else if (typeof err === 'string') {
+            errorMsg = err;
+        }
+
+        alert("❌ تعذر إتمام العملية:\n" + errorMsg);
+
         if (btn) btn.disabled = false;
         if (statusMsg) statusMsg.innerText = "";
     }
 };
 
 console.log("✅ [Meteora Engine] matchesTrade.js loaded successfully.");
-        
+            
