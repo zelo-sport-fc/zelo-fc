@@ -2,22 +2,32 @@
 // ⚽ Meteora Devnet Launchpad & Trading Engine
 // ==========================================
 
-// 🛡️ [تأمين ذاتي 100%]: إنشاء وتأمين Polyfill لـ Buffer داخل الملف مباشرة
+// 🛡️ [حل جذر للخطأ]: إنشاء دالة تحويل Lamports إلى Uint8Array بطول 8 بايت مع Buffer Polyfill متوافق
 (function() {
-    if (typeof window.Buffer === 'undefined') {
+    if (typeof window.Buffer === 'undefined' || !window.Buffer.alloc) {
         if (typeof buffer !== 'undefined' && buffer.Buffer) {
             window.Buffer = buffer.Buffer;
         } else {
-            // Polyfill مخصص خفيف الوزن في حال عدم تحميل CDN
+            // Polyfill متوافق تماماً مع متطلبات Solana web3.js
             window.Buffer = class Buffer extends Uint8Array {
+                constructor(arg, encoding) {
+                    if (typeof arg === 'number') {
+                        super(arg);
+                    } else if (typeof arg === 'string') {
+                        const encoded = new TextEncoder().encode(arg);
+                        super(encoded);
+                    } else {
+                        super(arg);
+                    }
+                }
+                static alloc(size) {
+                    return new Uint8Array(size);
+                }
                 static from(data, encoding) {
                     if (typeof data === 'string') {
                         return new TextEncoder().encode(data);
                     }
                     return new Uint8Array(data);
-                }
-                static alloc(size) {
-                    return new Uint8Array(size);
                 }
             };
         }
@@ -26,6 +36,15 @@
 
 if (typeof window.VAULT_PUBLIC_KEY === 'undefined') {
     window.VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1';
+}
+
+// دالة تحويل الأرقام إلى 8 Bytes Little-Endian المتوافقة تماماً مع Solana SystemProgram
+function numberTo8ByteUint8Array(value) {
+    const buffer = new ArrayBuffer(8);
+    const view = new DataView(buffer);
+    const bigIntValue = BigInt(Math.round(value));
+    view.setBigUint64(0, bigIntValue, true); // true = Little Endian
+    return new Uint8Array(buffer);
 }
 
 window.fetchMatchesForMeteora = async function() {
@@ -195,11 +214,6 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         if (btn) btn.disabled = true;
         if (statusMsg) statusMsg.innerText = "⏳ جاري الإتصال بالشبكة ومعالجة المعاملة...";
 
-        // التأكد المباشر من وجود Buffer قبل بدء المعاملة
-        if (typeof window.Buffer === 'undefined' && typeof buffer !== 'undefined') {
-            window.Buffer = buffer.Buffer;
-        }
-
         const provider = window.phantom?.solana || window.solana || window.solflare;
 
         if (!provider) {
@@ -228,13 +242,27 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
         const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
 
-        const transaction = new solanaWeb3Lib.Transaction().add(
-            solanaWeb3Lib.SystemProgram.transfer({
-                fromPubkey: userPublicKey,
-                toPubkey: new solanaWeb3Lib.PublicKey(window.VAULT_PUBLIC_KEY),
-                lamports: Math.round(solAmount * solanaWeb3Lib.LAMPORTS_PER_SOL)
-            })
-        );
+        // حساب الـ Lamports وتأمين التنسيق بأسلوب مباشر لا يعتمد على Buffer.encode
+        const lamportsCount = Math.round(solAmount * solanaWeb3Lib.LAMPORTS_PER_SOL);
+
+        // إنشائ العملية بأسلوب Instruction المباشر لتفادي مشاكل Blob.encode
+        const transferInstruction = new solanaWeb3Lib.TransactionInstruction({
+            keys: [
+                { pubkey: userPublicKey, isSigner: true, isWritable: true },
+                { pubkey: new solanaWeb3Lib.PublicKey(window.VAULT_PUBLIC_KEY), isSigner: false, isWritable: true }
+            ],
+            programId: solanaWeb3Lib.SystemProgram.programId,
+            data: (() => {
+                // SystemProgram Transfer Instruction Index = 2 (4-byte LE) + 8-byte LE Lamports
+                const dataArray = new Uint8Array(12);
+                const view = new DataView(dataArray.buffer);
+                view.setUint32(0, 2, true); // Index 2 = Transfer
+                view.setBigUint64(4, BigInt(lamportsCount), true); // Lamports
+                return dataArray;
+            })()
+        });
+
+        const transaction = new solanaWeb3Lib.Transaction().add(transferInstruction);
 
         transaction.feePayer = userPublicKey;
         const { blockhash } = await connection.getLatestBlockhash();
@@ -270,5 +298,5 @@ window.executeDevnetSwap = async function(matchId, teamName) {
     }
 };
 
-console.log("✅ [Meteora Engine] matchesTrade.js Buffer Fix Applied.");
-            
+console.log("✅ [Meteora Engine] matchesTrade.js Blob/Buffer Encoded Fix Applied.");
+        
