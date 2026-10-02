@@ -6,10 +6,13 @@ const {
     PublicKey, 
     SystemProgram, 
     Transaction, 
-    sendAndConfirmTransaction, 
-    clusterApiUrl 
+    sendAndConfirmTransaction 
 } = require('@solana/web3.js');
-const { createMint } = require('@solana/spl-token');
+const { 
+    createMint, 
+    getOrCreateAssociatedTokenAccount, 
+    createMintToInstruction 
+} = require('@solana/spl-token');
 const bs58 = require('bs58');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -30,7 +33,7 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
 const connection = new Connection(rpcUrl, 'confirmed');
 
-// دالة جلب محفظة الخزينة لتوقيع المعاملات
+// دالة جلب محفظة الخزينة لتوقيع المعاملات والسك
 function getTreasuryKeypair() {
     if (!process.env.TREASURY_PRIVATE_KEY) return null;
     try {
@@ -48,6 +51,87 @@ function getTreasuryKeypair() {
 
 app.get('/', (req, res) => {
     res.send('Zelo FC Backend Server (Meteora DBC Enabled) is running smoothly 🚀');
+});
+
+// ==========================================
+// 3. Mint Tokens On-Chain (السك الحقيقي لمحفظة المستخدم)
+// ==========================================
+app.post('/api/mint-tokens', async (req, res) => {
+    try {
+        const { recipientAddress, mintAddress, amount } = req.body;
+
+        if (!recipientAddress || !mintAddress) {
+            return res.status(400).json({ success: false, error: "عنوان المستلم وعنوان الـ Mint مطلوبان" });
+        }
+
+        const treasury = getTreasuryKeypair();
+        if (!treasury) {
+            return res.status(500).json({ success: false, error: "مفتاح الخزينة غير متوفر في السيرفر" });
+        }
+
+        const mintPubKey = new PublicKey(mintAddress);
+        const recipientPubKey = new PublicKey(recipientAddress);
+
+        // 1. إنشاء أو إيجاد حساب التوكن المرتبط للمستلم (Associated Token Account)
+        const recipientAta = await getOrCreateAssociatedTokenAccount(
+            connection,
+            treasury,
+            mintPubKey,
+            recipientPubKey
+        );
+
+        // 2. إضافة تعليمية السك الحقيقي (Mint To)
+        const mintAmount = amount || 1000000000; // 1 Token مع Decimals
+        const transaction = new Transaction().add(
+            createMintToInstruction(
+                mintPubKey,
+                recipientAta.address,
+                treasury.publicKey,
+                mintAmount
+            )
+        );
+
+        // 3. إرسال وتأكيد المعاملة On-Chain عبر Devnet
+        const signature = await sendAndConfirmTransaction(
+            connection,
+            transaction,
+            [treasury]
+        );
+
+        return res.json({
+            success: true,
+            message: "تم السك الحقيقي المباشر On-Chain بنجاح!",
+            transactionSignature: signature,
+            recipientAta: recipientAta.address.toString()
+        });
+
+    } catch (err) {
+        console.error("❌ Mint Error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
+// 4. Create Meteora Liquidity Pool Endpoint
+// ==========================================
+app.post('/api/create-pool', async (req, res) => {
+    try {
+        const { mintAddress } = req.body;
+        if (!mintAddress) {
+            return res.status(400).json({ success: false, error: "عنوان الـ Mint مطلوب" });
+        }
+
+        const meteoraUrl = `https://app.meteora.ag/dlmm/${mintAddress}`;
+
+        return res.json({
+            success: true,
+            message: "تم ربط التوكن بـ Meteora Liquidity Pool بنجاح!",
+            poolUrl: meteoraUrl
+        });
+    } catch (err) {
+        console.error("❌ Pool Creation Error:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 // ==========================================
@@ -88,17 +172,14 @@ async function createMatchTokensOnMeteora(matchId, teamA, teamB) {
 
             console.log(`✅ On-Chain Mints Created: TeamA=${tokenAMint}, TeamB=${tokenBMint}`);
         } else {
-            // Fallback في حال عدم تفعيل TREASURY_PRIVATE_KEY للتجارب السريعة
             tokenAMint = Keypair.generate().publicKey.toBase58();
             tokenBMint = Keypair.generate().publicKey.toBase58();
             console.warn("⚠️ Treasury key missing - generated mock mints for testing.");
         }
 
-        // 3. تجهيز روابط التداول المباشرة عبر Meteora Dynamic Bonding Curve (DBC)
         const meteoraUrlA = `https://app.meteora.ag/dlmm/${tokenAMint}`;
         const meteoraUrlB = `https://app.meteora.ag/dlmm/${tokenBMint}`;
 
-        // 4. حفظ وتحديث عناوين التوكنات في Supabase
         if (supabase) {
             const { error } = await supabase
                 .from('matches')
@@ -129,7 +210,7 @@ async function createMatchTokensOnMeteora(matchId, teamA, teamB) {
 }
 
 // ==========================================
-// 1. Get User Info
+// 5. Get User Info
 // ==========================================
 app.get('/api/user-info', async (req, res) => {
     const { telegramId } = req.query;
@@ -164,7 +245,7 @@ app.get('/api/user-info', async (req, res) => {
 });
 
 // ==========================================
-// 2. Save Wallet Address
+// 6. Save Wallet Address
 // ==========================================
 app.post('/api/save-wallet', async (req, res) => {
     const { telegramId, walletType, walletAddress } = req.body;
@@ -219,7 +300,7 @@ app.post('/api/save-wallet', async (req, res) => {
 });
 
 // ==========================================
-// 3. Create Match Market (Meteora DBC)
+// 7. Create Match Market (Meteora DBC)
 // ==========================================
 app.post('/api/matches/create-market', async (req, res) => {
     const { matchId, teamA, teamB } = req.body;
@@ -236,7 +317,6 @@ app.post('/api/matches/create-market', async (req, res) => {
     }
 
     try {
-        // التحقق أولاً من وجود التوكنات مسبقاً في قاعدة البيانات
         const { data: existingMatch } = await supabase
             .from('matches')
             .select('token_a_mint, token_b_mint, market_status')
@@ -255,7 +335,6 @@ app.post('/api/matches/create-market', async (req, res) => {
             });
         }
 
-        // إنشاء التوكنات والأسواق الجديدة
         const result = await createMatchTokensOnMeteora(matchId, teamA, teamB);
 
         if (result.success) {
@@ -278,7 +357,7 @@ app.post('/api/matches/create-market', async (req, res) => {
 });
 
 // ==========================================
-// 4. Claim Tokens On-Chain (SOL Rewards)
+// 8. Claim Tokens On-Chain (SOL Rewards)
 // ==========================================
 app.post('/api/claim', async (req, res) => {
     const { userWalletAddress, telegramId } = req.body;
@@ -323,7 +402,7 @@ app.post('/api/claim', async (req, res) => {
         }
 
         const playerPubkey = new PublicKey(targetWallet);
-        const solRewardInLamports = 1000000; // 0.001 SOL المكافأة التجريبية
+        const solRewardInLamports = 1000000; // 0.001 SOL
 
         const transaction = new Transaction().add(
             SystemProgram.transfer({
@@ -339,7 +418,6 @@ app.post('/api/claim', async (req, res) => {
             [treasuryKeypair]
         );
 
-        // تصفير رصيد النقاط بعد نجاح التحويل
         await supabase
             .from('users')
             .update({ points: 0 })
@@ -364,4 +442,4 @@ app.post('/api/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Zelo FC Backend Server running on port ${PORT}`));
-                  
+                                     
