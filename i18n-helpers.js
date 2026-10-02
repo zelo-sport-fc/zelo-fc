@@ -80,6 +80,8 @@ window.i18n = {
         fanPoints: "نقاط المشجع",
         members: "الأعضاء",
         myRank: "ترتيبي الحالي",
+        fansLabel: "{count} مشجعين",
+        viewFansLabel: "عرض المشجعين",
 
         // Wallet Screen (المحفظة)
         walletTitle: "محفظتك",
@@ -115,7 +117,7 @@ window.i18n = {
         msgPhantomNotice: "يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الحقل.",
         msgInvalidSolanaAddress: "⚠️ يرجى إدخال عنوان محفظة Solana صحيح.",
         msgMinClaimAlert: "⚠️ الحد الأدنى للمطالبة هو {min} نقطة. رصيدك الحالي لا يكفي.",
-        msgConnectSolanaFirst: "⚠️️ يرجى ربط أو حفظ محفظة Solana أولاً!",
+        msgConnectSolanaFirst: "⚠ يرجى ربط أو حفظ محفظة Solana أولاً!",
         msgClaimConfirm: "هل تؤكد خصم {coins} نقطة للحصول على {tokens} من عملة {tokenName}؟",
         txtProcessingTransfer: "⏳ جاري تحويل الرموز...",
         msgClaimSuccess: "✅ نجاح! تم تحويل الرموز على الشبكة!\n\nرمز المعاملة (Tx Hash):\n{txHash}",
@@ -219,6 +221,8 @@ window.i18n = {
         fanPoints: "Fan Points",
         members: "Members",
         myRank: "My Rank",
+        fansLabel: "{count} Fans",
+        viewFansLabel: "View Fans",
 
         // Wallet Screen
         walletTitle: "Your Wallet",
