@@ -1,13 +1,16 @@
 window.solPriceHistory = window.solPriceHistory || [];
 
+// دالة الترجمة المساعدة للـ Component
 function t(key, fallback = '', params = {}) {
     let text = fallback || key;
     if (typeof window.getT === 'function') {
         const res = window.getT(key);
         if (res && res !== key) text = res;
-    } else if (window.i18n && typeof window.i18n.t === 'function') {
-        const res = window.i18n.t(key);
-        if (res && res !== key) text = res;
+    } else if (window.i18n && typeof window.i18n[getCurrentLang()] !== 'undefined') {
+        const lang = getCurrentLang();
+        if (window.i18n[lang] && window.i18n[lang][key] !== undefined) {
+            text = window.i18n[lang][key];
+        }
     }
     if (params && typeof params === 'object') {
         Object.keys(params).forEach(p => {
@@ -17,6 +20,15 @@ function t(key, fallback = '', params = {}) {
     return text;
 }
 
+// دالة جلب اللغة الحالية
+function getCurrentLang() {
+    return localStorage.getItem('app_lang') || 
+           (typeof userState !== 'undefined' && userState?.lang) || 
+           window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
+           'ar';
+}
+
+// فتح الموقع الرسمي
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
@@ -26,7 +38,7 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// Function to fetch real-time Solana price and update UI
+// جلب سعر Solana المباشر وتحديث الرسم البياني
 window.updateHomeSolPrice = async function() {
     const elPriceHeader = document.getElementById('home-sol-price');
     const elPriceOracle = document.getElementById('home-sol-oracle-val');
@@ -125,6 +137,7 @@ window.updateHomeSolPrice = async function() {
     }
 };
 
+// رسم الصفحة الرئيسية
 window.renderHomePage = function(container) {
     let target = container || document.getElementById('app') || document.getElementById('main-content') || document.body;
     if (!target) return;
@@ -134,36 +147,35 @@ window.renderHomePage = function(container) {
     }
 
     try {
-        const state = (typeof userState !== 'undefined' && userState) ? userState : { 
-            lang: 'ar', 
-            username: '@Zelo_fc', 
-            userId: '1654537339' 
-        };
-
-        const currentLang = state.lang || 'ar';
+        const currentLang = getCurrentLang();
         const isRtl = currentLang === 'ar';
         const dir = isRtl ? 'rtl' : 'ltr';
         const textAlign = isRtl ? 'right' : 'left';
         const arrowIcon = isRtl ? '👈' : '👉';
 
-        // Translated UI Labels
+        const state = (typeof userState !== 'undefined' && userState) ? userState : { 
+            username: '@Zelo_fc', 
+            userId: '1654537339' 
+        };
+
+        // ✅ تم تصحيح المفاتيح لتطابق ملف اللغات i18n
         const txtOfficialSite = t('officialSite', 'الموقع الرسمي');
-        const txtMarketFeed = t('realTimeMarketFeed', 'بث السوق المباشر');
+        const txtMarketFeed = t('marketFeed', 'بث السوق المباشر');
         const txtLiveMarket = t('liveMarket', 'السوق المباشر');
         const txtLiveSolPrice = t('liveSolPrice', 'سعر $SOL المباشر');
-        const txtBidAskSpread = t('bidAskSpread', 'فارق العرض/الطلب');
+        const txtBidAskSpread = t('bidAskSpread', 'فارق البيع/الشراء');
         const txtWeeklyChallenges = t('weeklyChallenges', 'التحديات الأسبوعية');
         const txtCupsSub = t('cupsSub', '🇪🇺 الكؤوس الأوروبية • 🇪🇸 الكؤوس الإسبانية');
         const txtChallengesRanking = t('challengesRanking', 'ترتيب التحديات');
         const txtRankingSub = t('rankingSub', '⭐ اكتشف أفضل اللاعبين وترتيبك');
         const txtSupportedClubs = t('supportedClubs', 'الأندية المدعومة');
-        const txtActive = t('activeClubs', '1 نشط');
+        const txtActive = t('activeCount', 'نشط 1');
         const txtFans = t('fansCount', '3 مشجعين');
         const txtLoading = t('loading', 'جاري التحميل...');
-        const txtTime1m = t('time1m', '-1د');
-        const txtTime30s = t('time30s', '-30ث');
-        const txtTimeNow = t('timeNow', 'الآن');
-        const txtTimeHigh = t('timeHigh', 'الأعلى');
+        const txtTime1m = '-1د';
+        const txtTime30s = '-30ث';
+        const txtTimeNow = 'الآن';
+        const txtTimeHigh = 'الأعلى';
 
         const username = state.username || '@Zelo_fc';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
@@ -412,29 +424,31 @@ window.renderHomePage = function(container) {
                 </div>
 
                 <div class="clubs-section" style="margin-top: 12px;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
+                    <div style="display:flex; align-items:center; justify-space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size: 0.9rem;">🛡️</span>
+                                                 <span style="font-size: 0.9rem;">🛡️</span>
                             <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
                         </div>
                         <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${txtActive}</span>
                     </div>
+
                     <div class="glass-club-card">
-                        <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
                             <div class="club-logo-wrapper">
-                                <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
+                                <span style="font-size: 1.2rem;">🔴</span>
                             </div>
                             <div style="text-align: ${textAlign};">
-                                <div style="color: #fff; font-weight: 800; font-size: 0.9rem;">Manchester United</div>
-                                <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 600;">${txtFans}</div>
+                                <div style="color: #fff; font-weight: 800; font-size: 0.9rem;">Liverpool FC</div>
+                                <div style="color: #94a3b8; font-size: 0.72rem;">${txtFans}</div>
                             </div>
                         </div>
-                        <div class="club-points-badge">1,250 PTS</div>
+                        <div class="club-points-badge">100 ZELOFC</div>
                     </div>
                 </div>
             </div>
         `;
 
+        // تشغيل تحديث سعر SOL المباشر وتفعيله كل 5 ثوانٍ
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
@@ -442,5 +456,3 @@ window.renderHomePage = function(container) {
         console.error("Error rendering home page:", err);
     }
 };
-
-           
