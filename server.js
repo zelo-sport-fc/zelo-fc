@@ -8,16 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// 1. Supabase Client Setup
-// ==========================================
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
-// ==========================================
-// 2. Solana RPC Connection & Treasury Key
-// ==========================================
 const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
 const connection = new Connection(rpcUrl, 'confirmed');
 
@@ -29,25 +23,19 @@ function getTreasuryKeypair() {
             ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(secretKeyString)))
             : Keypair.fromSecretKey(bs58.decode(secretKeyString));
     } catch (e) {
-        console.error("❌ Invalid TREASURY_PRIVATE_KEY format:", e.message);
+        console.error("Invalid TREASURY_PRIVATE_KEY format:", e.message);
         return null;
     }
 }
 
-app.get('/', (req, res) => {
-    res.send('Zelo FC Backend Server is running smoothly 🚀');
-});
+app.get('/', (req, res) => res.send('Zelo FC Backend Server is running smoothly 🚀'));
 
-// ==========================================
-// 3. Get User Info
-// ==========================================
 app.get('/api/user-info', async (req, res) => {
     const { telegramId } = req.query;
 
     if (!telegramId || telegramId === 'guest') {
         return res.status(400).json({ success: false, error: "Invalid or missing Telegram ID" });
     }
-
     if (!supabase) {
         return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
     }
@@ -73,20 +61,15 @@ app.get('/api/user-info', async (req, res) => {
     }
 });
 
-// ==========================================
-// 4. Save Wallet Address
-// ==========================================
 app.post('/api/save-wallet', async (req, res) => {
     const { telegramId, walletType, walletAddress } = req.body;
 
     if (!telegramId || telegramId === 'guest') {
         return res.status(400).json({ success: false, error: "Invalid or missing Telegram ID" });
     }
-
     if (!walletAddress || !walletType || !['solana', 'ton'].includes(walletType)) {
         return res.status(400).json({ success: false, error: "Invalid wallet type or address" });
     }
-
     if (!supabase) {
         return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
     }
@@ -125,9 +108,6 @@ app.post('/api/save-wallet', async (req, res) => {
     }
 });
 
-// ==========================================
-// 5. Claim Rewards (SOL Transfer)
-// ==========================================
 app.post('/api/claim', async (req, res) => {
     const { userWalletAddress, telegramId } = req.body;
 
@@ -135,17 +115,13 @@ app.post('/api/claim', async (req, res) => {
         if (!telegramId || telegramId === 'guest') {
             return res.status(400).json({ success: false, error: "Invalid Telegram ID" });
         }
-
         if (!supabase) {
             return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
         }
 
         const treasuryKeypair = getTreasuryKeypair();
         if (!treasuryKeypair) {
-            return res.status(500).json({ 
-                success: false, 
-                error: "Treasury private key is missing or invalid" 
-            });
+            return res.status(500).json({ success: false, error: "Treasury private key is missing or invalid" });
         }
 
         const { data: userData, error: userError } = await supabase
@@ -171,7 +147,7 @@ app.post('/api/claim', async (req, res) => {
         }
 
         const playerPubkey = new PublicKey(targetWallet);
-        const solRewardInLamports = 1000000; // 0.001 SOL
+        const solRewardInLamports = 1000000;
 
         const transaction = new Transaction().add(
             SystemProgram.transfer({
@@ -181,11 +157,7 @@ app.post('/api/claim', async (req, res) => {
             })
         );
 
-        const signature = await sendAndConfirmTransaction(
-            connection,
-            transaction,
-            [treasuryKeypair]
-        );
+        const signature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
 
         await supabase
             .from('users')
@@ -202,10 +174,7 @@ app.post('/api/claim', async (req, res) => {
 
     } catch (err) {
         console.error("Claim Transfer Error:", err);
-        return res.status(500).json({ 
-            success: false, 
-            error: err.message || "An error occurred during transfer processing" 
-        });
+        return res.status(500).json({ success: false, error: err.message || "An error occurred during transfer processing" });
     }
 });
 
