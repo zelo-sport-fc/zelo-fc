@@ -1,7 +1,4 @@
-
-
 window.solPriceHistory = window.solPriceHistory || [];
-
 
 function t(key, fallback = '', params = {}) {
     let text = fallback || key;
@@ -414,7 +411,7 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
-                                <div class="clubs-section" style="margin-top: 12px;">
+                <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
@@ -422,7 +419,6 @@ window.renderHomePage = function(container) {
                         </div>
                         <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${txtActive}</span>
                     </div>
-
                     <div class="glass-club-card">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div class="club-logo-wrapper">
@@ -446,3 +442,5 @@ window.renderHomePage = function(container) {
         console.error("Error rendering home page:", err);
     }
 };
+
+           
