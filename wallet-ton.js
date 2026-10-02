@@ -1,11 +1,13 @@
 
 function t(key, fallback = '', params = {}) {
     let text = fallback || key;
-    if (typeof window.t === 'function') {
-        const res = window.t(key, params);
-        if (res && res !== key) text = res;
-    } else if (typeof window.getT === 'function') {
+    
+    // التحقق من وجود دالة ترجمة أصلية غير الدالة الحالية
+    if (typeof window.getT === 'function') {
         const res = window.getT(key);
+        if (res && res !== key) text = res;
+    } else if (window.i18n && typeof window.i18n.t === 'function') {
+        const res = window.i18n.t(key);
         if (res && res !== key) text = res;
     }
     
@@ -16,6 +18,7 @@ function t(key, fallback = '', params = {}) {
     }
     return text;
 }
+
 
 (function injectWalletStyles() {
     if (document.getElementById('wallet-core-styles')) return;
@@ -81,19 +84,15 @@ function t(key, fallback = '', params = {}) {
     document.head.appendChild(style);
 })();
 
-if (!window.TON_CONNECT_UI && !document.getElementById('ton-connect-script')) {
-    const script = document.createElement('script');
-    script.id = 'ton-connect-script';
-    script.src = 'https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
-    script.onload = () => { initTonConnectUI(); };
-    document.head.appendChild(script);
-} else {
-    initTonConnectUI();
-}
+
+let isTonInitializing = false;
 
 function initTonConnectUI() {
-    if (window.TON_CONNECT_UI && !window.tonConnectUI) {
+    if (window.tonConnectUI || isTonInitializing) return;
+    
+    if (typeof TON_CONNECT_UI !== 'undefined') {
         try {
+            isTonInitializing = true;
             const currentLang = (typeof userState !== 'undefined' && userState?.lang) ? userState.lang : 'en';
 
             window.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -105,15 +104,19 @@ function initTonConnectUI() {
                 }
             });
 
+            // متابعة تغيير الحالة مع استخدام flag لمنع الحلقة المفرغة
+            let lastAddress = localStorage.getItem('ton_wallet_address') || '';
+            
             window.tonConnectUI.onStatusChange((wallet) => {
-                if (wallet) {
-                    const rawAddress = wallet.account.address;
+                let newAddress = '';
+                if (wallet && wallet.account) {
+                    newAddress = wallet.account.address;
                     if (typeof userState !== 'undefined') {
-                        userState.walletAddress = rawAddress;
-                        userState.tonWallet = rawAddress;
+                        userState.walletAddress = newAddress;
+                        userState.tonWallet = newAddress;
                         userState.walletConnected = true;
                     }
-                    localStorage.setItem('ton_wallet_address', rawAddress);
+                    localStorage.setItem('ton_wallet_address', newAddress);
                 } else {
                     if (typeof userState !== 'undefined') {
                         userState.walletAddress = '';
@@ -122,13 +125,34 @@ function initTonConnectUI() {
                     }
                     localStorage.removeItem('ton_wallet_address');
                 }
-                if (typeof showPage === 'function') showPage('wallet');
+
+                // تجنب التحديث وتكرار showPage إذا لم تتغير الحالة الفعلية
+                if (newAddress !== lastAddress) {
+                    lastAddress = newAddress;
+                    const walletContainer = document.getElementById('main-content');
+                    if (typeof renderWalletPage === 'function' && walletContainer) {
+                        renderWalletPage(walletContainer);
+                    }
+                }
             });
         } catch (e) {
             console.error("TON Connect UI Init Error:", e);
+        } finally {
+            isTonInitializing = false;
         }
     }
 }
+
+if (!window.TON_CONNECT_UI && !document.getElementById('ton-connect-script')) {
+    const script = document.createElement('script');
+    script.id = 'ton-connect-script';
+    script.src = 'https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
+    script.onload = () => { initTonConnectUI(); };
+    document.head.appendChild(script);
+} else {
+    initTonConnectUI();
+}
+
 
 window.triggerConnect = async function() {
     if (window.tonConnectUI) {
@@ -164,6 +188,9 @@ window.triggerDisconnect = async function() {
         userState.tonWallet = '';
         userState.walletConnected = false;
     }
-    if (typeof showPage === 'function') showPage('wallet');
+    const walletContainer = document.getElementById('main-content');
+    if (typeof renderWalletPage === 'function' && walletContainer) {
+        renderWalletPage(walletContainer);
+    }
 };
-                    
+                            
