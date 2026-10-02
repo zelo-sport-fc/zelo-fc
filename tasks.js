@@ -1,12 +1,24 @@
-
-
 (function() {
     
-    function t(key, fallback = '') {
-        if (typeof window.getT === 'function') {
-            return window.getT(key);
+    
+    function t(key, fallback = '', params = {}) {
+        if (typeof window.t === 'function') {
+            const res = window.t(key, params);
+            if (res && res !== key) return res;
         }
-        return fallback;
+        if (typeof window.getT === 'function') {
+            const res = window.getT(key);
+            if (res && res !== key) return res;
+        }
+        return fallback || key;
+    }
+
+    
+    function getTaskTitle(task) {
+        if (typeof window.getTaskName === 'function') {
+            return window.getTaskName(task);
+        }
+        return t(task.titleKey, task.title || '');
     }
 
     window.defaultTasksData = [
@@ -137,7 +149,7 @@
             userState.tasks = window.defaultTasksData.map(t => ({...t}));
         }
 
-        const isRtl = (userState && userState.lang === 'ar');
+        const isRtl = (typeof userState !== 'undefined' && userState?.lang === 'ar');
         const borderSide = isRtl ? 'border-right' : 'border-left';
 
         const styles = `
@@ -206,7 +218,7 @@
             </style>
         `;
 
-        container.innerHTML = styles + `<div style="text-align:center; padding:50px; color: #00FF87; font-weight:bold;">⏳ ${t('loadingTasks', 'Loading tasks...')}</div>`;
+        container.innerHTML = styles + `<div style="text-align:center; padding:50px; color: #00FF87; font-weight:bold;">⏳ ${t('loadingTasks', 'جاري تحميل المهام...')}</div>`;
 
         await syncTasksFromDB();
 
@@ -217,7 +229,7 @@
             else if (task.id === 'pump_fun') { iconClass = 'icon-pump'; iconSymbol = '💊'; }
 
             const btnClass = task.completed ? 'btn-task-done' : 'btn-task-go';
-            const btnText = task.completed ? t('taskDone', 'Done ✅') : t('taskGo', 'Go 🚀');
+            const btnText = task.completed ? t('taskDone', 'مكتمل ✅') : t('taskGo', 'انطلق 🚀');
             const btnState = task.completed ? 'disabled' : '';
 
             let buttonAction = `onclick="executeTask('${task.id}', '${task.url}', ${task.points})"`;
@@ -229,7 +241,7 @@
                 <div class="task-premium-card" style="border-${isRtl ? 'right' : 'left'}: 3px solid ${task.completed ? '#00FF87' : 'transparent'};">
                     <div class="task-icon-box ${iconClass}">${iconSymbol}</div>
                     <div class="task-info" style="text-align: ${isRtl ? 'right' : 'left'};">
-                        <h5 style="margin: 0; color: #fff; font-size: 0.9rem; font-weight: 800;">${t(task.titleKey)}</h5>
+                        <h5 style="margin: 0; color: #fff; font-size: 0.9rem; font-weight: 800;">${getTaskTitle(task)}</h5>
                         <div class="task-points-badge">+${task.points} ZELO</div>
                     </div>
                     <button id="btn-task-${task.id}" class="${btnClass}" ${buttonAction} ${btnState}>${btnText}</button>
@@ -239,11 +251,11 @@
 
         container.innerHTML = styles + `
             <div style="text-align: center; margin-bottom: 18px;">
-                <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 4px 0; font-size: 1.3rem; font-weight: 900;">
-                    ${t('rewardsCenter', 'Rewards Center')}
+                <h2 style="background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 4px 0; font-size: 1.3rem; font-weight: 900;" data-i18n="rewardsCenter">
+                    ${t('rewardsCenter', 'مركز المكافآت')}
                 </h2>
-                <p style="color: #94a3b8; font-size: 0.8rem; margin: 0; font-weight: bold;">
-                    ${t('rewardsSub', 'Complete daily tasks to boost your ZELO points!')}
+                <p style="color: #94a3b8; font-size: 0.8rem; margin: 0; font-weight: bold;" data-i18n="rewardsSub">
+                    ${t('rewardsSub', 'أكمل المهام اليومية لزيادة ثروتك من نقاط زيلو!')}
                 </p>
             </div>
 
@@ -251,20 +263,20 @@
                 <div style="text-align: ${isRtl ? 'right' : 'left'}; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.4rem;">🎁</span>
                     <div>
-                        <h4 style="margin: 0; color: #fff; font-size: 0.9rem; font-weight: 900;">${t('dailyReward', 'Daily Reward')}</h4>
+                        <h4 style="margin: 0; color: #fff; font-size: 0.9rem; font-weight: 900;" data-i18n="dailyReward">${t('dailyReward', 'المكافأة اليومية')}</h4>
                         <p style="margin: 0; font-size: 0.72rem; color: #00FF87; font-weight: bold;">
-                            +200 ZELO <span style="color: #94a3b8; font-weight: normal;">(${t('every24h', 'Every 24h')})</span>
+                            +200 ZELO <span style="color: #94a3b8; font-weight: normal;">(<span data-i18n="every24h">${t('every24h', 'كل 24 ساعة')}</span>)</span>
                         </p>
                     </div>
                 </div>
                 <button id="btn-daily-claim" class="${userState.dailyCheckInClaimed ? 'btn-task-done' : 'btn-task-go'}" onclick="claimDaily()" ${userState.dailyCheckInClaimed ? 'disabled' : ''}>
-                    ${userState.dailyCheckInClaimed ? t('claimed', 'Claimed ✅') : t('claim', 'Claim ✨')}
+                    ${userState.dailyCheckInClaimed ? t('claimed', 'تم ✅') : t('claim', 'استلام ✨')}
                 </button>
             </div>
 
             <div style="display:flex; align-items:center; gap:6px; margin-bottom: 12px;">
                 <span style="font-size:1rem;">📋</span>
-                <h4 style="color: #fff; margin: 0; font-size: 0.95rem; font-weight: 800;">${t('availableTasks', 'Available Tasks')}</h4>
+                <h4 style="color: #fff; margin: 0; font-size: 0.95rem; font-weight: 800;" data-i18n="availableTasks">${t('availableTasks', 'المهام المتاحة')}</h4>
             </div>
             
             <div class="tasks-container">${tasksHtml}</div>
@@ -292,7 +304,7 @@
 
         const btn = document.getElementById(`btn-task-${taskId}`);
         if (btn) {
-            btn.innerHTML = t('verifying', '⏳ Verifying...');
+            btn.innerHTML = t('verifying', '⏳ تحقق...');
             btn.className = "btn-task-done";
             btn.disabled = true;
         }
@@ -306,17 +318,17 @@
                     task.completed = true;
                     if (!response.alreadyDone) {
                         userState.points = (userState.points || 0) + points;
-                        alert(`🎉 ${t('xConnectedSuccess', 'X Account connected successfully:')} +${points} ZELO.`);
+                        alert(`🎉 ${t('xConnectedSuccess', 'تم ربط الحساب وإضافة النقاط بنجاح:')} +${points} ZELO.`);
                     }
                     if (typeof updateTopBar === "function") updateTopBar();
                     renderTasksPage(document.getElementById("main-content"));
                 } else {
-                    alert(t('xConnectError', 'An error occurred with X verification.'));
-                    if (btn) { btn.innerHTML = t('taskGo', 'Go 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
+                    alert(t('xConnectError', 'حدث خطأ أثناء الاتصال بـ X.'));
+                    if (btn) { btn.innerHTML = t('taskGo', 'انطلق 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
                 }
             } catch (error) {
                 task.isProcessing = false;
-                if (btn) { btn.innerHTML = t('taskGo', 'Go 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
+                if (btn) { btn.innerHTML = t('taskGo', 'انطلق 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
             }
         }, 4000);
     };
@@ -339,7 +351,7 @@
 
         const btn = document.getElementById(`btn-task-${taskId}`);
         if (btn) {
-            btn.innerHTML = t('verifying', '⏳ Verifying...');
+            btn.innerHTML = t('verifying', '⏳ تحقق...');
             btn.className = "btn-task-done";
             btn.disabled = true;
         }
@@ -353,17 +365,17 @@
                     task.completed = true;
                     if (!response.alreadyDone) {
                         userState.points = (userState.points || 0) + points;
-                        alert(`🎉 ${t('taskSuccess', 'Task completed! Earned:')} +${points} ZELO!`);
+                        alert(`🎉 ${t('taskSuccess', 'تم إنجاز المهمة وحصلت على:')} +${points} ZELO!`);
                     }
                     if (typeof updateTopBar === "function") updateTopBar();
                     renderTasksPage(document.getElementById("main-content"));
                 } else {
-                    alert(t('taskVerifyError', 'Verification error.'));
-                    if (btn) { btn.innerHTML = t('taskGo', 'Go 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
+                    alert(t('taskVerifyError', 'حدث خطأ أثناء التحقق من المهمة.'));
+                    if (btn) { btn.innerHTML = t('taskGo', 'انطلق 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
                 }
             } catch (error) {
                 task.isProcessing = false;
-                if (btn) { btn.innerHTML = t('taskGo', 'Go 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
+                if (btn) { btn.innerHTML = t('taskGo', 'انطلق 🚀'); btn.className = "btn-task-go"; btn.disabled = false; }
             }
         }, 3000);
     };
@@ -373,7 +385,7 @@
 
         const btn = document.getElementById("btn-daily-claim");
         if (btn) {
-            btn.innerHTML = t('claiming', '⏳ Claiming...');
+            btn.innerHTML = t('claiming', '⏳ جاري الاستلام...');
             btn.disabled = true;
         }
 
@@ -381,16 +393,16 @@
         if (response.success) {
             userState.dailyCheckInClaimed = true;
             userState.points = (userState.points || 0) + response.pointsAdded;
-            alert(`🎉 ${t('dailyClaimSuccess', 'Daily reward claimed:')} +${response.pointsAdded} ZELO!`);
+            alert(`🎉 ${t('dailyClaimSuccess', 'تم استلام المكافأة اليومية بنجاح:')} +${response.pointsAdded} ZELO!`);
             if (typeof updateTopBar === "function") updateTopBar();
             renderTasksPage(document.getElementById("main-content"));
         } else {
-            alert(t('dailyClaimError', 'Failed to claim daily reward.'));
+            alert(t('dailyClaimError', 'فشل استلام المكافأة اليومية، حاول لاحقاً.'));
             if (btn) {
-                btn.innerHTML = t('claim', 'Claim ✨');
+                btn.innerHTML = t('claim', 'استلام ✨');
                 btn.disabled = false;
             }
         }
     };
 })();
-                    
+                        
