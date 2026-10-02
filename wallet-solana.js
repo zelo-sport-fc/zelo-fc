@@ -5,7 +5,8 @@ const TOKEN_NAME = "ZELOFC";
 
 function t(key, fallback = '', params = {}) {
     let text = fallback || key;
-    if (typeof window.t === 'function') {
+    // تم إضافة شرط window.t !== t لمنع الاستدعاء الذاتي والتكرار اللانهائي
+    if (typeof window.t === 'function' && window.t !== t) {
         const res = window.t(key, params);
         if (res && res !== key) text = res;
     } else if (typeof window.getT === 'function') {
@@ -323,7 +324,7 @@ window.saveSolanaWalletAddress = function() {
     if (solanaRegex.test(solAddress)) {
         saveSolanaAddressToStateAndDB(solAddress, 'solana');
     } else {
-        alert(t('msgInvalidSolanaAddress', '⚠️️ Please enter a valid Solana wallet address.'));
+        alert(t('msgInvalidSolanaAddress', '⚠ Please enter a valid Solana wallet address.'));
     }
 };
 
@@ -435,4 +436,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-                      
+        
