@@ -26,6 +26,14 @@
         });
     </script>
     
+    <!-- Polyfill لتعريف Buffer لـ Web3 Solana (حل مشكلة Buffer is not defined) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+    <script>
+        if (typeof window.Buffer === 'undefined' && typeof buffer !== 'undefined') {
+            window.Buffer = buffer.Buffer;
+        }
+    </script>
+
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
@@ -260,38 +268,39 @@
         </button>
     </nav>
 
-    <!-- Data & Application Logic Scripts (الإصدار المحدث v=2002) -->
-    <script src="clubsData.js?v=2002"></script>
-    <script src="data.js?v=2002"></script> 
-    <script src="countries.js?v=2002"></script>
-    <script src="i18n-helpers.js?v=2002"></script>
-    <script src="ranking.js?v=2002"></script>
+    <!-- Data & Application Logic Scripts (الإصدار المحدث v=1) -->
+    <script src="clubsData.js?v=1"></script>
+    <script src="data.js?v=1"></script> 
+    <script src="countries.js?v=1"></script>
+    <script src="i18n-helpers.js?v=1"></script>
+    <script src="ranking.js?v=1"></script>
     
-    <script src="login.js?v=2002"></script>
-    <script src="weekly_match_rankings.js?v=2002"></script>
-    <script src="predictions_ranking.js?v=2002"></script> 
+    <script src="login.js?v=1"></script>
+    <script src="weekly_match_rankings.js?v=1"></script>
+    <script src="predictions_ranking.js?v=1"></script> 
 
     <!-- Trading & Matches Module Script -->
-    <script src="matchesTrade.js?v=2296"></script>
+    <script src="matchesTrade.js?v=1"></script>
 
     <!-- UI Pages Scripts -->
-    <script src="home.js?v=2002"></script>
-    <script src="tasks.js?v=2002"></script>
-    <script src="leaderboard.js?v=2002"></script>
-    <script src="friends.js?v=2002"></script>
+    <script src="home.js?v=1"></script>
+    <script src="tasks.js?v=1"></script>
+    <script src="leaderboard.js?v=1"></script>
+    <script src="friends.js?v=1"></script>
     
     <!-- Wallet Integration Scripts -->
-    <script src="wallet-ton.js?v=2002"></script>
-    <script src="wallet-solana.js?v=2002"></script>
+    <script src="wallet-ton.js?v=1"></script>
+    <script src="wallet-solana.js?v=1"></script>
     
     <!-- Main App Router & Handler -->
-    <script src="app.js?v=2022"></script>
+    <script src="app.js?v=1"></script>
 
     <!-- 🛠 [خيارات المطور 3/3]: دالة الفحص السريع للنظام -->
     <script>
         window.checkAppDiagnostics = function() {
             const report = {
                 "Telegram WebApp": typeof window.Telegram !== "undefined" && !!window.Telegram.WebApp,
+                "Buffer Polyfill": typeof window.Buffer !== "undefined",
                 "renderMeteoraPage": typeof window.renderMeteoraPage === "function",
                 "executeDevnetSwap": typeof window.executeDevnetSwap === "function",
                 "openSwapModal": typeof window.openSwapModal === "function",
@@ -305,4 +314,5 @@
     </script>
 
 </body>
-</html>
+    </html>
+    
