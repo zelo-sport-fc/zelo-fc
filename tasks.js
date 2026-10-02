@@ -1,6 +1,5 @@
 (function() {
     
-    
     function t(key, fallback = '', params = {}) {
         if (typeof fallback === 'object' && fallback !== null) {
             params = fallback;
@@ -9,12 +8,13 @@
 
         let text = fallback || key;
         
+        // التأكد من أن النتيجة نص (string) وليست كائن (object) لمنع ظهور [object Object]
         if (typeof window.t === 'function' && window.t !== t) {
             const res = window.t(key, params);
-            if (res && res !== key) text = res;
+            if (res && res !== key && typeof res === 'string') text = res;
         } else if (typeof window.getT === 'function') {
             const res = window.getT(key);
-            if (res && res !== key) text = res;
+            if (res && res !== key && typeof res === 'string') text = res;
         }
         
         if (params && typeof params === 'object') {
@@ -25,10 +25,23 @@
         return text;
     }
 
-    
+    // دالة آمنة لجلب معرف المستخدم بغض النظر عن طريقة حفظه
+    function getSafeUserId() {
+        if (typeof userState !== 'undefined') {
+            if (userState.userId) return userState.userId;
+            if (userState.telegramId) return userState.telegramId;
+        }
+        if (typeof getTelegramId === 'function') {
+            const id = getTelegramId();
+            if (id && id !== 'guest') return id;
+        }
+        return localStorage.getItem('telegram_id') || null;
+    }
+
     function getTaskTitle(task) {
         if (typeof window.getTaskName === 'function') {
-            return window.getTaskName(task);
+            const name = window.getTaskName(task);
+            if (typeof name === 'string') return name;
         }
         return t(task.titleKey, typeof task.title === 'string' ? task.title : '');
     }
@@ -45,10 +58,13 @@
 
     async function apiVerifyTask(taskId, points) {
         if (!supabaseClient) return { success: false, message: "No DB connection" };
+        const userId = getSafeUserId();
+        if (!userId) return { success: false, message: "No User ID" };
+
         try {
             const { error: taskError } = await supabaseClient
                 .from('user_tasks')
-                .insert([{ telegram_id: userState.userId, task_id: taskId, reward_points: points }]);
+                .insert([{ telegram_id: userId, task_id: taskId, reward_points: points }]);
 
             if (taskError) {
                 if (taskError.code === '23505') return { success: true, alreadyDone: true }; 
@@ -59,7 +75,7 @@
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userId);
 
             if (userData && userData.length > 0) {
                 currentPoints = parseInt(userData[0].points) || 0;
@@ -68,14 +84,14 @@
             const newPoints = currentPoints + (parseInt(points) || 0);
 
             await supabaseClient.from('users').upsert(
-                { telegram_id: userState.userId, points: newPoints },
+                { telegram_id: userId, points: newPoints },
                 { onConflict: 'telegram_id' }
             );
 
             await supabaseClient
                 .from('club_fans_rankings')
                 .update({ total_fan_points: newPoints })
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userId);
 
             return { success: true, alreadyDone: false };
         } catch (error) {
@@ -86,13 +102,16 @@
 
     async function apiClaimDaily() {
         if (!supabaseClient) return { success: false };
+        const userId = getSafeUserId();
+        if (!userId) return { success: false };
+
         const dailyPoints = 200; 
         try {
             let currentPoints = 0;
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userId);
 
             if (userData && userData.length > 0) {
                 currentPoints = parseInt(userData[0].points) || 0;
@@ -103,14 +122,14 @@
             const { error } = await supabaseClient
                 .from('users')
                 .update({ points: newPoints, last_daily_claim: new Date().toISOString() })
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userId);
 
             if (error) throw error;
 
             await supabaseClient
                 .from('club_fans_rankings')
                 .update({ total_fan_points: newPoints })
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userId);
 
             return { success: true, pointsAdded: dailyPoints };
         } catch (error) {
@@ -120,7 +139,8 @@
     }
 
     async function syncTasksFromDB() {
-        if (!supabaseClient || !userState.userId) return;
+        const userId = getSafeUserId();
+        if (!supabaseClient || !userId) return;
 
         if (!userState.tasks || userState.tasks.length === 0) {
             userState.tasks = window.defaultTasksData.map(item => ({...item}));
@@ -130,7 +150,7 @@
             const { data: tasksData } = await supabaseClient
                 .from('user_tasks')
                 .select('task_id')
-                .eq('telegram_id', userState.userId);
+                .eq('telegram_id', userId);
 
             if (tasksData) {
                 const completedIds = tasksData.map(item => item.task_id);
@@ -142,7 +162,7 @@
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('last_daily_claim')
-                .eq('telegram_id', userState.userId)
+                .eq('telegram_id', userId)
                 .single();
 
             if (userData && userData.last_daily_claim) {
@@ -413,8 +433,4 @@
             if (btn) {
                 btn.innerHTML = t('claim', 'استلام ✨');
                 btn.disabled = false;
-            }
-        }
-    };
-})();
-                
+ 
