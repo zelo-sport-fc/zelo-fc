@@ -2,15 +2,27 @@
     
     
     function t(key, fallback = '', params = {}) {
-        if (typeof window.t === 'function') {
+        if (typeof fallback === 'object' && fallback !== null) {
+            params = fallback;
+            fallback = key;
+        }
+
+        let text = fallback || key;
+        
+        if (typeof window.t === 'function' && window.t !== t) {
             const res = window.t(key, params);
-            if (res && res !== key) return res;
-        }
-        if (typeof window.getT === 'function') {
+            if (res && res !== key) text = res;
+        } else if (typeof window.getT === 'function') {
             const res = window.getT(key);
-            if (res && res !== key) return res;
+            if (res && res !== key) text = res;
         }
-        return fallback || key;
+        
+        if (params && typeof params === 'object') {
+            Object.keys(params).forEach(p => {
+                text = text.replace(new RegExp(`{${p}}`, 'g'), params[p]);
+            });
+        }
+        return text;
     }
 
     
@@ -18,7 +30,7 @@
         if (typeof window.getTaskName === 'function') {
             return window.getTaskName(task);
         }
-        return t(task.titleKey, task.title || '');
+        return t(task.titleKey, typeof task.title === 'string' ? task.title : '');
     }
 
     window.defaultTasksData = [
@@ -111,7 +123,7 @@
         if (!supabaseClient || !userState.userId) return;
 
         if (!userState.tasks || userState.tasks.length === 0) {
-            userState.tasks = window.defaultTasksData.map(t => ({...t}));
+            userState.tasks = window.defaultTasksData.map(item => ({...item}));
         }
 
         try {
@@ -121,7 +133,7 @@
                 .eq('telegram_id', userState.userId);
 
             if (tasksData) {
-                const completedIds = tasksData.map(t => t.task_id);
+                const completedIds = tasksData.map(item => item.task_id);
                 userState.tasks.forEach(task => {
                     if (completedIds.includes(task.id)) task.completed = true;
                 });
@@ -146,7 +158,7 @@
 
     window.renderTasksPage = async function(container) {
         if (!userState.tasks || userState.tasks.length === 0) {
-            userState.tasks = window.defaultTasksData.map(t => ({...t}));
+            userState.tasks = window.defaultTasksData.map(item => ({...item}));
         }
 
         const isRtl = (typeof userState !== 'undefined' && userState?.lang === 'ar');
@@ -285,7 +297,7 @@
     };
 
     window.startXLogin = async function(taskId, points) {
-        const task = userState.tasks.find(t => t.id === taskId);
+        const task = userState.tasks.find(item => item.id === taskId);
         
         if (!task || task.completed || task.isProcessing) return;
         task.isProcessing = true;
@@ -334,7 +346,7 @@
     };
 
     window.executeTask = async function(taskId, url, points) {
-        const task = userState.tasks.find(t => t.id === taskId);
+        const task = userState.tasks.find(item => item.id === taskId);
         
         if (!task || task.completed || task.isProcessing) return;
         task.isProcessing = true;
@@ -405,4 +417,4 @@
         }
     };
 })();
-                        
+                
