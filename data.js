@@ -1,7 +1,3 @@
-// ==========================================
-// 🚀 ملف البيانات والترجمة (data.js) - Zelo Sport
-// ==========================================
-
 const i18n = {
     ar: {
         welcomeTitle: "مرحباً بك في Zelo Sport",
@@ -55,10 +51,6 @@ const i18n = {
         btnConnect: "💎 اتصل بمحفظتك الحقيقية (TON Connect)",
         alertDisconnect: "هل تريد قطع اتصال المحفظة الحالية؟",
         alertDisconnected: "تم قطع الاتصال بنجاح.",
-
-        // ==========================================
-        // 🆕 الإضافات الجديدة (الخاصة بالتحديات والترتيب)
-        // ==========================================
         weeklyChallenges: "تحديات الأسبوع",
         loadingMatches: "جاري جلب المباريات...",
         noMatchesAvailable: "لا توجد مباريات متاحة للتوقع حالياً.",
@@ -89,16 +81,12 @@ const i18n = {
         enterGoalsError: "يرجى إدخال عدد الأهداف لكلا الفريقين",
         matchStartedError: "عذراً، لا يمكن تسجيل التوقع لأن المباراة بدأت بالفعل.",
         connectionError: "حدث خطأ في الاتصال. يرجى المحاولة لاحقاً.",
-
-        // الترتيب الأسبوعي
         fetchingRanking: "⏳ جاري جلب الترتيب...",
         noRankingData: "لا توجد بيانات ترتيب حالياً",
         userCurrentRank: "أنت حالياً في المركز:",
         unranked: "غير مصنف",
         yourPoints: "نقاطك:",
         failedLoadRanking: "تعذر تحميل الترتيب.",
-
-        // نصوص إضافية لقسم الأصدقاء
         fetchingFriends: "جاري جلب بيانات الأصدقاء من السيرفر...",
         newFriend: "صديق جديد",
         emptyFriendsState: "لم تقم بدعوة أي أصدقاء حتى الآن.<br>شارك رابطك لتبدأ بجمع نقاط ZELO FC!",
@@ -156,10 +144,6 @@ const i18n = {
         btnConnect: "💎 Connect Real Wallet (TON Connect)",
         alertDisconnect: "Do you want to disconnect the current wallet?",
         alertDisconnected: "Disconnected successfully.",
-
-        // ==========================================
-        // 🆕 New Additions (Challenges & Rankings)
-        // ==========================================
         weeklyChallenges: "Weekly Challenges",
         loadingMatches: "Loading matches...",
         noMatchesAvailable: "No matches available for prediction currently.",
@@ -190,16 +174,12 @@ const i18n = {
         enterGoalsError: "Please enter the score for both teams",
         matchStartedError: "Match has already started. Cannot submit prediction.",
         connectionError: "Connection error. Please try again later.",
-
-        // Weekly Rankings
         fetchingRanking: "⏳ Fetching ranking...",
         noRankingData: "No ranking data available",
         userCurrentRank: "You are currently ranked:",
         unranked: "Unranked",
         yourPoints: "Your points:",
         failedLoadRanking: "Failed to load ranking.",
-
-        // Additional Friends Strings
         fetchingFriends: "Fetching friends data from server...",
         newFriend: "New Friend",
         emptyFriendsState: "You haven't invited any friends yet.<br>Share your link to start collecting ZELO FC points!",
@@ -207,21 +187,14 @@ const i18n = {
     }
 };
 
-// ==========================================
-// 🛠️ التجميع التلقائي لجميع الأندية
-// ==========================================
 let clubsData = [];
 
-// هذا الكود يسحب كل الأندية من كل الدول تلقائياً دون الحاجة لكتابة اسم كل دولة
 if (typeof allWorldCupCountriesClubs !== 'undefined') {
     for (const country in allWorldCupCountriesClubs) {
         clubsData.push(...allWorldCupCountriesClubs[country]);
     }
 }
 
-// ==========================================
-// المهام الافتراضية للتطبيق
-// ==========================================
 const defaultTasksData = [
     { id: "task1", textAr: "اشترك في قناة ZELO FC", textEn: "Join ZELO FC Channel", reward: 500, link: "https://t.me/zelosport" },
     { id: "task2", textAr: "تابعنا على إكس (تويتر)", textEn: "Follow us on X (Twitter)", reward: 300, link: "https://twitter.com/zelosport" }
