@@ -1,6 +1,4 @@
-// ==========================================
-// 🏠 Zelo Sport - Home Page Module (home.js)
-// ==========================================
+
 
 window.solPriceHistory = window.solPriceHistory || [];
 
@@ -13,7 +11,7 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// دالة جلب البيانات الحقيقية لسعر Solana وتحديث الواجهة
+// Function to fetch real-time Solana price and update UI
 window.updateHomeSolPrice = async function() {
     const elPriceHeader = document.getElementById('home-sol-price');
     const elPriceOracle = document.getElementById('home-sol-oracle-val');
@@ -27,7 +25,7 @@ window.updateHomeSolPrice = async function() {
     let realPrice = 0;
     let realSpread = "0.0100";
 
-    // 1. جلب السعر المباشر الحقيقي والهامش (Spread) من Binance Orderbook
+    // 1. Fetch live real price and spread from Binance Orderbook
     try {
         const res = await fetch('https://api.binance.com/api/v3/ticker/bookTicker?symbol=SOLUSDT');
         if (res.ok) {
@@ -35,15 +33,15 @@ window.updateHomeSolPrice = async function() {
             if (data && data.bidPrice && data.askPrice) {
                 const bid = parseFloat(data.bidPrice);
                 const ask = parseFloat(data.askPrice);
-                realPrice = (bid + ask) / 2; // السعر المتوسط الحقيقي المباشر
-                realSpread = (ask - bid).toFixed(4); // فارق السعر المباشر الحقيقي
+                realPrice = (bid + ask) / 2;
+                realSpread = (ask - bid).toFixed(4);
             }
         }
     } catch (err) {
         console.warn("Binance API fetch warning, trying backup...", err);
     }
 
-    // 2. مصدر احتياطي حقيقي (CoinGecko) في حال تعثر المصدر الأول
+    // 2. Backup source (CoinGecko) if primary fails
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         try {
             const resBackup = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
@@ -59,7 +57,7 @@ window.updateHomeSolPrice = async function() {
         }
     }
 
-    // إذا تعذر جلب السعر لأي سبب، يتم الحفاظ على السعر السابق
+    // If fetching price fails, keep previous price
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         if (window.solPriceHistory.length > 0) {
             realPrice = window.solPriceHistory[window.solPriceHistory.length - 1];
@@ -70,13 +68,13 @@ window.updateHomeSolPrice = async function() {
 
     const finalPriceStr = `$${realPrice.toFixed(2)}`;
     
-    // إضافة السعر الحقيقي إلى مصفوفة التاريخ
+    // Add real price to history array
     window.solPriceHistory.push(realPrice);
     if (window.solPriceHistory.length > 20) {
         window.solPriceHistory.shift();
     }
 
-    // تحديث النصوص في الواجهة بالأرقام الحقيقية
+    // Update UI elements
     if (elPriceHeader) elPriceHeader.innerText = finalPriceStr;
     if (elPriceOracle) elPriceOracle.innerText = finalPriceStr;
     if (elLivePrice) elLivePrice.innerText = finalPriceStr;
@@ -91,9 +89,9 @@ window.updateHomeSolPrice = async function() {
     if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
-    // رسم السلسلة الزمنية الحقيقية (Sparkline Graph) بناءً على تحركات السعر الحقيقية
+    // Draw sparkline graph based on price movements
     if (svgPath && history.length > 1) {
-        const range = (maxP - minP) || 0.05; // تجنب القسمة على صفر في حال ثبات السعر اللحظي
+        const range = (maxP - minP) || 0.05;
         const width = 200;
         const height = 30;
         
@@ -122,28 +120,25 @@ window.renderHomePage = function(container) {
 
     try {
         const state = (typeof userState !== 'undefined' && userState) ? userState : { 
-            lang: 'ar', 
+            lang: 'en', 
             username: '@Zelo_fc', 
             userId: '1654537339' 
         };
-        const isAr = state.lang === 'ar';
 
-        // ==========================================
-        // 🌐 نصوص الترجمة التلقائية بناءً على اللغة
-        // ==========================================
-        const txtOfficialSite = isAr ? 'الموقع الرسمي' : 'Official Site';
-        const txtMarketFeed = isAr ? 'بث السوق المباشر' : 'Real-Time Market Feed';
-        const txtLiveMarket = isAr ? 'السوق المباشر' : 'LIVE MARKET';
-        const txtLiveSolPrice = isAr ? 'سعر $SOL المباشر' : 'Live $SOL Price';
-        const txtBidAskSpread = isAr ? 'فارق البيع/الشراء' : 'Bid/Ask Spread';
-        const txtWeeklyChallenges = isAr ? 'تحديات الأسبوع' : 'Weekly Challenges';
-        const txtCupsSub = isAr ? '🇪🇺 الكؤوس الأوروبية • 🇪🇸 الكؤوس الإسبانية' : '🇪🇺 European Cups • 🇪🇸 Spanish Cups';
-        const txtChallengesRanking = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
-        const txtRankingSub = isAr ? 'اكتشف أفضل اللاعبين وترتيبك ⭐️' : '⭐ Discover top players and your rank';
-        const txtSupportedClubs = isAr ? 'الأندية المدعومة' : 'Supported Clubs';
-        const txtActive = isAr ? 'نشط 1' : '1 Active';
-        const txtFans = isAr ? '3 مشجعين' : '3 Fans';
-        const arrowIcon = isAr ? '👉' : '👈';
+        // English UI Labels
+        const txtOfficialSite = 'Official Site';
+        const txtMarketFeed = 'Real-Time Market Feed';
+        const txtLiveMarket = 'LIVE MARKET';
+        const txtLiveSolPrice = 'Live $SOL Price';
+        const txtBidAskSpread = 'Bid/Ask Spread';
+        const txtWeeklyChallenges = 'Weekly Challenges';
+        const txtCupsSub = '🇪🇺 European Cups • 🇪🇸 Spanish Cups';
+        const txtChallengesRanking = 'Challenges Ranking';
+        const txtRankingSub = '⭐ Discover top players and your rank';
+        const txtSupportedClubs = 'Supported Clubs';
+        const txtActive = '1 Active';
+        const txtFans = '3 Fans';
+        const arrowIcon = '👉';
 
         const username = state.username || '@Zelo_fc';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
@@ -333,7 +328,7 @@ window.renderHomePage = function(container) {
                         </div>
                     </div>
 
-                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px; text-align: ${isAr ? 'right' : 'left'};">${txtLiveSolPrice}</div>
+                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px; text-align: left;">${txtLiveSolPrice}</div>
 
                     <div class="sol-chart-area">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -374,7 +369,7 @@ window.renderHomePage = function(container) {
                     <div class="banner-icon-wrapper">
                         <span style="font-size:1.2rem;">🇬🇧</span>
                     </div>
-                    <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
+                    <div style="flex-grow: 1; text-align: left;">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
                         <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtCupsSub}</p>
                     </div>
@@ -383,7 +378,7 @@ window.renderHomePage = function(container) {
 
                 <div id="ranking-card" class="action-banner" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper">🔥</div>
-                    <div style="flex-grow: 1; text-align: ${isAr ? 'right' : 'left'};">
+                    <div style="flex-grow: 1; text-align: left;">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtChallengesRanking}</h3>
                         <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtRankingSub}</p>
                     </div>
@@ -404,26 +399,21 @@ window.renderHomePage = function(container) {
                             <div class="club-logo-wrapper">
                                 <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
                             </div>
-                            <div style="text-align: ${isAr ? 'right' : 'left'};">
-                                                            <h3 style="margin: 0; color: #fff; font-size: 0.92rem; font-weight: 900;">Manchester United 🇬🇧</h3>
-                                <span style="color: #9ca3af; font-size: 0.72rem; font-weight: 600;">${txtFans}</span>
+                            <div style="text-align: left;">
+                                <div style="color: #fff; font-weight: 800; font-size: 0.9rem;">Manchester United</div>
+                                <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 600;">${txtFans}</div>
                             </div>
                         </div>
-                        <div class="club-points-badge">
-                            100 PTS
-                        </div>
+                        <div class="club-points-badge">1,250 PTS</div>
                     </div>
                 </div>
             </div>
         `;
 
-        // تشغيل تحديث سعر Solana أول مرة ثم كل 5 ثوانٍ
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
-    } catch (e) {
-        console.error("Render HomePage Error:", e);
+    } catch (err) {
+        console.error("Error rendering home page:", err);
     }
 };
-
-          
