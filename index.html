@@ -31,6 +31,22 @@
             --glass-border: rgba(255, 255, 255, 0.05);
         }
 
+        /* =========================================================
+           إصلاح أزرار متصفح تيليجرام للأندرويد (إزالة المربعات البيضاء)
+           ========================================================= */
+        button, 
+        input[type="button"], 
+        input[type="submit"] {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            background-color: transparent;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -158,6 +174,54 @@
             z-index: 1;
         }
 
+        /* =========================================================
+           تنسيقات وإصلاحات المحفظة والمهام المضافة
+           ========================================================= */
+        .btn-wallet-action {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: var(--text-main) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            padding: 8px 18px !important;
+            border-radius: 10px !important;
+            font-size: 0.85rem !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .btn-wallet-action:active {
+            transform: scale(0.95);
+            border-color: var(--accent-gold) !important;
+            background: rgba(252, 176, 69, 0.15) !important;
+        }
+
+        .wallet-card-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            margin: 10px 0 !important;
+            direction: rtl !important;
+        }
+
+        .wallet-value {
+            direction: ltr !important;
+            unicode-bidi: embed !important;
+            font-family: monospace !important;
+            font-weight: bold !important;
+            font-size: 0.95rem !important;
+        }
+
+        #ton-connect-btn, 
+        #ton-connect-btn *, 
+        div[tc-root] button {
+            background-color: transparent !important;
+        }
+
+        /* Keyframes Animations */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -248,7 +312,7 @@
         });
     </script>
 
-    <!-- JS Scripts (تمت إضافة v=10.0 لتخطي التخزين المؤقت) -->
+    <!-- JS Scripts -->
     <script src="i18n.js?v=10.0"></script>
     <script src="clubsData.js?v=10.0"></script>
     <script src="data.js?v=10.0"></script> 
