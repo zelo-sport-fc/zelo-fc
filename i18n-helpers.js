@@ -311,6 +311,7 @@ window.getT = function(key) {
     return t(key);
 };
 
+// جلب اسم النادي حسب اللغة
 function getClubName(club) {
     if (!club) return '';
     const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
@@ -320,6 +321,7 @@ function getClubName(club) {
     return club.nameEn || club.name_en || club.nameAr || club.name_ar || club.name || '';
 }
 
+// جلب اسم المهمة حسب اللغة
 function getTaskName(task) {
     if (!task) return '';
     if (task.titleKey) {
@@ -329,9 +331,10 @@ function getTaskName(task) {
     if (lang === 'ar') {
         return task.textAr || task.text_ar || task.titleAr || task.title_ar || task.textEn || task.text_en || task.title || '';
     }
-    return task.textEn || task.text_en || task.titleEn || task.title_en || task.textAr || task.text_ar || task.title || '';
+    return task.textEn || task.text_en || task.titleEn || task.title_ar || task.title || '';
 }
 
+// تطبيق إعدادات الاتجاه والتنسيق والترجمة على عناصر الصفحة
 function applyLanguageSettings() {
     const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
