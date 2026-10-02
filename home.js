@@ -2,6 +2,24 @@
 
 window.solPriceHistory = window.solPriceHistory || [];
 
+
+function t(key, fallback = '', params = {}) {
+    let text = fallback || key;
+    if (typeof window.getT === 'function') {
+        const res = window.getT(key);
+        if (res && res !== key) text = res;
+    } else if (window.i18n && typeof window.i18n.t === 'function') {
+        const res = window.i18n.t(key);
+        if (res && res !== key) text = res;
+    }
+    if (params && typeof params === 'object') {
+        Object.keys(params).forEach(p => {
+            text = text.replace(new RegExp(`{${p}}`, 'g'), params[p]);
+        });
+    }
+    return text;
+}
+
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
@@ -120,25 +138,35 @@ window.renderHomePage = function(container) {
 
     try {
         const state = (typeof userState !== 'undefined' && userState) ? userState : { 
-            lang: 'en', 
+            lang: 'ar', 
             username: '@Zelo_fc', 
             userId: '1654537339' 
         };
 
-        // English UI Labels
-        const txtOfficialSite = 'Official Site';
-        const txtMarketFeed = 'Real-Time Market Feed';
-        const txtLiveMarket = 'LIVE MARKET';
-        const txtLiveSolPrice = 'Live $SOL Price';
-        const txtBidAskSpread = 'Bid/Ask Spread';
-        const txtWeeklyChallenges = 'Weekly Challenges';
-        const txtCupsSub = '🇪🇺 European Cups • 🇪🇸 Spanish Cups';
-        const txtChallengesRanking = 'Challenges Ranking';
-        const txtRankingSub = '⭐ Discover top players and your rank';
-        const txtSupportedClubs = 'Supported Clubs';
-        const txtActive = '1 Active';
-        const txtFans = '3 Fans';
-        const arrowIcon = '👉';
+        const currentLang = state.lang || 'ar';
+        const isRtl = currentLang === 'ar';
+        const dir = isRtl ? 'rtl' : 'ltr';
+        const textAlign = isRtl ? 'right' : 'left';
+        const arrowIcon = isRtl ? '👈' : '👉';
+
+        // Translated UI Labels
+        const txtOfficialSite = t('officialSite', 'الموقع الرسمي');
+        const txtMarketFeed = t('realTimeMarketFeed', 'بث السوق المباشر');
+        const txtLiveMarket = t('liveMarket', 'السوق المباشر');
+        const txtLiveSolPrice = t('liveSolPrice', 'سعر $SOL المباشر');
+        const txtBidAskSpread = t('bidAskSpread', 'فارق العرض/الطلب');
+        const txtWeeklyChallenges = t('weeklyChallenges', 'التحديات الأسبوعية');
+        const txtCupsSub = t('cupsSub', '🇪🇺 الكؤوس الأوروبية • 🇪🇸 الكؤوس الإسبانية');
+        const txtChallengesRanking = t('challengesRanking', 'ترتيب التحديات');
+        const txtRankingSub = t('rankingSub', '⭐ اكتشف أفضل اللاعبين وترتيبك');
+        const txtSupportedClubs = t('supportedClubs', 'الأندية المدعومة');
+        const txtActive = t('activeClubs', '1 نشط');
+        const txtFans = t('fansCount', '3 مشجعين');
+        const txtLoading = t('loading', 'جاري التحميل...');
+        const txtTime1m = t('time1m', '-1د');
+        const txtTime30s = t('time30s', '-30ث');
+        const txtTimeNow = t('timeNow', 'الآن');
+        const txtTimeHigh = t('timeHigh', 'الأعلى');
 
         const username = state.username || '@Zelo_fc';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
@@ -157,6 +185,7 @@ window.renderHomePage = function(container) {
                                 #08090C;
                     color: #fff;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    direction: ${dir};
                 }
                 .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
@@ -231,7 +260,7 @@ window.renderHomePage = function(container) {
 
                 .sol-price-axis {
                     font-family: monospace; font-size: 0.68rem; color: #14F195; opacity: 0.85;
-                    text-align: right; display: flex; flex-direction: column; gap: 2px;
+                    text-align: ${isRtl ? 'left' : 'right'}; display: flex; flex-direction: column; gap: 2px;
                 }
 
                 .sol-time-axis {
@@ -315,20 +344,20 @@ window.renderHomePage = function(container) {
                             <div style="width:36px; height:36px; background:rgba(153,69,255,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(153,69,255,0.3);">
                                 <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width: 20px; height: 20px;" alt="Solana">
                             </div>
-                            <div>
+                            <div style="text-align: ${textAlign};">
                                 <div style="color: #fff; font-weight: 900; font-size: 0.95rem;">Solana</div>
                                 <div style="color: #94a3b8; font-size: 0.7rem; font-weight: 600;">${txtMarketFeed}</div>
                             </div>
                         </div>
-                        <div style="text-align: right;">
+                        <div style="text-align: ${isRtl ? 'left' : 'right'};">
                             <div class="sol-oracle-badge">
                                 <span style="width: 5px; height: 5px; background: #14F195; border-radius: 50%;"></span> ${txtLiveMarket}
                             </div>
-                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">Loading...</div>
+                            <div id="home-sol-price" style="color: #14F195; font-family: monospace; font-weight: 900; font-size: 1.1rem; margin-top: 1px;">${txtLoading}</div>
                         </div>
                     </div>
 
-                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px; text-align: left;">${txtLiveSolPrice}</div>
+                    <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 700; margin-top: 4px; text-align: ${textAlign};">${txtLiveSolPrice}</div>
 
                     <div class="sol-chart-area">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -342,10 +371,10 @@ window.renderHomePage = function(container) {
                             </div>
                         </div>
                         <div class="sol-time-axis">
-                            <span>-1m</span>
-                            <span>-30s</span>
-                            <span>Now</span>
-                            <span>High</span>
+                            <span>${txtTime1m}</span>
+                            <span>${txtTime30s}</span>
+                            <span>${txtTimeNow}</span>
+                            <span>${txtTimeHigh}</span>
                         </div>
                     </div>
 
@@ -369,7 +398,7 @@ window.renderHomePage = function(container) {
                     <div class="banner-icon-wrapper">
                         <span style="font-size:1.2rem;">🇬🇧</span>
                     </div>
-                    <div style="flex-grow: 1; text-align: left;">
+                    <div style="flex-grow: 1; text-align: ${textAlign};">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
                         <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtCupsSub}</p>
                     </div>
@@ -378,14 +407,14 @@ window.renderHomePage = function(container) {
 
                 <div id="ranking-card" class="action-banner" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper">🔥</div>
-                    <div style="flex-grow: 1; text-align: left;">
+                    <div style="flex-grow: 1; text-align: ${textAlign};">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtChallengesRanking}</h3>
                         <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtRankingSub}</p>
                     </div>
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
-                <div class="clubs-section" style="margin-top: 12px;">
+                                <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
@@ -399,7 +428,7 @@ window.renderHomePage = function(container) {
                             <div class="club-logo-wrapper">
                                 <img src="https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" style="width: 30px; height: 30px; object-fit: contain;">
                             </div>
-                            <div style="text-align: left;">
+                            <div style="text-align: ${textAlign};">
                                 <div style="color: #fff; font-weight: 800; font-size: 0.9rem;">Manchester United</div>
                                 <div style="color: #94a3b8; font-size: 0.72rem; font-weight: 600;">${txtFans}</div>
                             </div>
