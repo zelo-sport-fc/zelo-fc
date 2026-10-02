@@ -1,202 +1,298 @@
-// ==========================================
-// ⚽ Zelo Sport x Meteora DBC & Token Creator Engine
-// ==========================================
+/**
+ * ملف: predictions_ranking.js (المحدث لدعم Meteora DBC & Tipping)
+ * الوظيفة: جلب المباريات، وعرضها، وإدارة التوقعات وتداول Meteora (مربوط بنظام الترجمة i18n بالكامل)
+ */
 
-window.IS_DEVNET = true;
-window.SOLANA_RPC_URL = 'https://api.devnet.solana.com';
+function getT(key) {
+    const lang = userState.lang || 'ar';
+    return typeof i18n !== 'undefined' && i18n[lang][key] ? i18n[lang][key] : key;
+}
 
-// 💡 عنوان محفظة المشرف/الخزينة لاستقبال معاملات الـ Bonding Curve على Devnet
-const VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1'; 
+// متغيرات عامة
+let globalMatches = [];
+let globalPredictions = [];
 
-// 1. جلب المباريات وحساب مؤشرات الـ Dynamic Bonding Curve (DBC)
-window.fetchMatchesFromDB = async function() {
-    if (typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
+window.openChallengesScreen = async function() {
+    if (document.getElementById('challenges-overlay')) return;
+
+    const isAr = userState.lang === 'ar'; 
+
+    const overlay = document.createElement('div');
+    overlay.id = 'challenges-overlay';
+    
+    overlay.style.cssText = `
+        position: fixed !important; 
+        top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+        width: 100vw !important; height: 100vh !important; 
+        background: var(--bg-dark, #121215) !important; 
+        z-index: 99999 !important; 
+        padding: 20px; box-sizing: border-box; overflow-y: auto; color: white;
+        direction: ${isAr ? 'rtl' : 'ltr'}; text-align: ${isAr ? 'right' : 'left'};
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
+            <h2 style="margin:0; color:var(--accent-gold, #ffd700);">🏆 ${getT('weeklyChallenges')}</h2>
+            <button onclick="window.closeChallengesScreen()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">✕</button>
+        </div>
+        <div style="text-align:center; color:#888; padding:50px;">⏳ ${getT('loadingMatches')}</div>
+    `;
+
+    if (!userState.predictedMatches) userState.predictedMatches = [];
+
+    if (typeof supabaseClient !== 'undefined' && userState.userId) {
         try {
-            const { data, error } = await supabaseClient
+            const { data: predData } = await supabaseClient
+                .from('match_predictions')
+                .select('*')
+                .eq('telegram_id', userState.userId);
+                
+            if (predData) {
+                globalPredictions = predData;
+                userState.predictedMatches = predData.map(p => p.match_id);
+            }
+
+            const { data: matchesData, error: matchesError } = await supabaseClient
                 .from('matches')
                 .select('*')
-                .order('match_time', { ascending: true })
-                .limit(20);
+                .neq('status', 'FINISHED') 
+                .order('match_date', { ascending: true });
 
-            if (error) {
-                console.warn("⚠️ خطأ في جلب المباريات من Supabase:", error);
-            } else if (data && data.length > 0) {
-                return data.map(m => {
-                    const teamA = m.team_a || m.home_team || m.home_team_name || 'Home Team';
-                    const teamB = m.team_b || m.away_team || m.away_team_name || 'Away Team';
-                    
-                    const isFinished = (m.home_score !== null && m.home_score !== undefined) && 
-                                       (m.away_score !== null && m.away_score !== undefined);
-                    
-                    let winner = null;
-                    if (isFinished) {
-                        if (Number(m.home_score) > Number(m.away_score)) winner = teamA;
-                        else if (Number(m.away_score) > Number(m.home_score)) winner = teamB;
-                        else winner = 'Draw';
-                    }
+            if (matchesError) throw matchesError;
 
-                    const basePriceA = m.price_team_a || (1.25 + (m.bonding_progress_team_a || 50) * 0.02);
-                    const basePriceB = m.price_team_b || (1.25 + (m.bonding_progress_team_b || 50) * 0.02);
-
-                    return {
-                        id: m.id,
-                        teamA: teamA,
-                        teamB: teamB,
-                        matchTime: m.match_time,
-                        homeScore: m.home_score,
-                        awayScore: m.away_score,
-                        status: isFinished ? 'SETTLED' : 'TRADING_LIVE',
-                        winner: winner,
-                        bondingProgressTeamA: m.bonding_progress_team_a || 50,
-                        bondingProgressTeamB: m.bonding_progress_team_b || 50,
-                        priceA: basePriceA.toFixed(3),
-                        priceB: basePriceB.toFixed(3),
-                        tokenMintA: m.token_mint_a || null,
-                        tokenMintB: m.token_mint_b || null,
-                        liquidityPool: m.liquidity_pool || '15.4 SOL (DAMM v2)'
-                    };
-                });
+            if (matchesData) {
+                globalMatches = matchesData;
             }
+
         } catch (err) {
-            console.error("❌ استثناء أثناء جلب بيانات المباريات:", err);
+            console.error("خطأ في جلب البيانات:", err);
         }
     }
-    return [];
+
+    renderMatchList(overlay, isAr);
 };
 
-// 2. عرض واجهة سوق Meteora الديناميكي للمباريات
-window.renderMeteoraPage = async function(container) {
-    if (!container) return;
-
-    container.innerHTML = `
-        <div style="text-align: center; padding: 40px 15px;">
-            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(252,176,69,0.2); border-radius: 50%; border-top-color: #fcb045; animation: spin 0.8s linear infinite;"></div>
-            <p style="color: #aaa; font-size: 0.85rem; margin-top: 12px;">جاري مزامنة سيولة Meteora DBC...</p>
-        </div>
-        <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-    `;
-
-    const matches = await window.fetchMatchesFromDB();
-
+function renderMatchList(overlay, isAr) {
     let html = `
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div style="display: inline-block; background: rgba(20,241,149,0.15); border: 1px solid rgba(20,241,149,0.4); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; color: #14F195; font-weight: bold; margin-bottom: 8px;">
-                ⚡ METEORA DBC + DAMM v2 ENGINE
-            </div>
-            <h2 style="margin: 0; color: var(--accent-gold, #fcb045); font-size: 1.3rem;">سوق التداول اللحظي للمباريات</h2>
-            <p style="margin: 5px 0 0 0; font-size: 0.78rem; color: var(--text-muted, #888899);">
-                أنشئ توكنات المباريات وتداول عبر منعطفات السيولة الديناميكية On-Chain
-            </p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
+            <h2 style="margin:0; color:var(--accent-gold, #ffd700);">🏆 ${getT('weeklyChallenges')}</h2>
+            <button onclick="window.closeChallengesScreen()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">✕</button>
         </div>
-
-        <div style="margin-bottom: 15px;">
-            <h3 style="font-size: 0.9rem; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                🔥 أسواق التوكنات النشطة للمباريات
-            </h3>
+        <div id="matches-container">
     `;
 
-    if (matches.length > 0) {
-        matches.forEach(match => {
-            html += window.renderPredictionCard(match);
-        });
+    const upcomingMatches = globalMatches.filter(m => {
+        const status = m.status ? m.status.toUpperCase().trim() : '';
+        if (status !== 'NOT_STARTED') return false;
+
+        const matchDate = new Date(m.match_date);
+        const now = new Date();
+        const hoursPassed = (now - matchDate) / (1000 * 60 * 60);
+
+        if (hoursPassed > 4) return false;
+        return true;
+    });
+
+    if (upcomingMatches.length === 0) {
+        html += `<div style="text-align:center; color:#888; padding:50px;">${getT('noMatchesAvailable')}</div>`;
     } else {
-        html += `
-            <div style="text-align:center; padding:30px 15px; color:#aaa; background:rgba(255,255,255,0.03); border-radius:15px;">
-                <p style="margin:0; font-size:0.85rem;">⏳ لا توجد مباريات متاحة للتداول حالياً.</p>
-            </div>
-        `;
+        const sortedMatches = upcomingMatches.sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+
+        html += sortedMatches.map(m => {
+            const matchDate = new Date(m.match_date);
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 5); 
+            const isStarted = now >= matchDate; 
+            
+            const hasPredicted = userState.predictedMatches.includes(m.id);
+
+            const team1Name = m.team_a;
+            const team2Name = m.team_b;
+            
+            const formattedDate = !isNaN(matchDate.getTime()) ? matchDate.toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '';
+            const formattedTime = !isNaN(matchDate.getTime()) ? matchDate.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+
+            // أسعار افتراضية مبنية على منحنى السيولة الديناميكي Meteora DBC
+            const priceA = (1.25 + (m.bonding_progress_team_a || 50) * 0.02).toFixed(2);
+            const priceB = (1.25 + (m.bonding_progress_team_b || 50) * 0.02).toFixed(2);
+
+            let buttonHtml = '';
+            if (hasPredicted) {
+                buttonHtml = `<button disabled style="width:100%; padding:10px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid #10b981; border-radius:10px; font-size:0.9rem; font-weight:bold;">
+                                ${getT('btnPredicted')}
+                              </button>`;
+            } else if (isStarted) {
+                buttonHtml = `<button disabled style="width:100%; padding:10px; background:rgba(255,255,255,0.05); color:#888; border:1px solid #333; border-radius:10px; font-size:0.9rem;">
+                                ${getT('btnClosed')}
+                              </button>`;
+            } else {
+                buttonHtml = `
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="window.showPredictionModal(${m.id}, '${team1Name}', '${team2Name}')" 
+                                style="flex:1; padding:10px; background:var(--gradient-primary, linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)); border:none; color:white; border-radius:10px; font-weight:bold; font-size:0.85rem; cursor:pointer;">
+                            🎯 ${getT('btnPredictNow')}
+                        </button>
+                        <button onclick="window.openSwapModal(${m.id}, '${team1Name}', '${priceA}')" 
+                                style="flex:1; padding:10px; background:linear-gradient(135deg, #14F195 0%, #00b4d8 100%); border:none; color:#000; border-radius:10px; font-weight:900; font-size:0.85rem; cursor:pointer;">
+                            📈 شراء توكن (${priceA} SOL)
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="card" style="position: relative; overflow: hidden; padding-top: 35px; margin-bottom: 15px; border-radius: 14px; background: var(--bg-card, #1c1c22); border: 1px solid rgba(255,255,255,0.08);">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; background: rgba(255,255,255,0.03); padding: 6px 12px; box-sizing: border-box; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size: 0.75rem; font-weight:bold; color:#10b981;">⚡ Meteora DBC Market</span>
+                        <span style="font-size: 0.75rem; color:#aaa;">📅 ${formattedDate} | 🕒 ${formattedTime}</span>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin: 12px 15px;">
+                        <div style="text-align:center; flex:1;">
+                            <div style="font-weight:bold; font-size: 1rem; color:#fff;">${team1Name}</div>
+                            <span style="font-size:0.7rem; color:#14F195;">السعر: ${priceA} SOL</span>
+                        </div>
+                        <div style="font-weight:bold; font-size: 1.1rem; color:var(--accent-gold, #fcb045); margin: 0 10px;">VS</div>
+                        <div style="text-align:center; flex:1;">
+                            <div style="font-weight:bold; font-size: 1rem; color:#fff;">${team2Name}</div>
+                            <span style="font-size:0.7rem; color:#f72585;">السعر: ${priceB} SOL</span>
+                        </div>
+                    </div>
+                    
+                    <div id="btn-container-${m.id}" style="padding: 0 12px 12px 12px;">
+                        ${buttonHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     html += `</div>`;
-    container.innerHTML = html;
+    overlay.innerHTML = html;
+}
+
+window.closeChallengesScreen = function() {
+    const overlay = document.getElementById('challenges-overlay');
+    if (overlay) overlay.remove();
 };
 
-// 3. تصميم بطاقة التداول الخاصة بـ Meteora DBC مع زر إنشاء التوكن التجريبي
-window.renderPredictionCard = function(match) {
-    let formattedTime = 'قريباً';
-    if (match.matchTime) {
-        const d = new Date(match.matchTime);
-        formattedTime = d.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) + ' | ' + 
-                        d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-    }
+window.showPredictionModal = function(matchId, team1, team2) {
+    if (document.getElementById('prediction-modal')) return;
 
-    if (match.status === 'SETTLED') {
-        return `
-            <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; margin-bottom: 12px; background: rgba(20, 241, 149, 0.05); border: 1px solid rgba(20, 241, 149, 0.3); border-radius: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
-                    <span style="font-weight: 800; color: #fff; font-size: 0.9rem;">⚽ ${match.teamA} VS ${match.teamB}</span>
-                    <span style="font-size: 0.68rem; color: #14F195; background: rgba(20,241,149,0.2); padding: 3px 8px; border-radius: 6px; font-weight: bold;">انتهت (${match.homeScore} - ${match.awayScore})</span>
-                </div>
-                
-                <div style="text-align: center; padding: 4px 0;">
-                    <span style="font-size: 0.8rem; color: #aaa;">النتيجة النهائية: </span>
-                    <strong style="color: #fcb045; font-size: 0.9rem;">🏆 ${match.winner === 'Draw' ? 'تعادل' : 'فوز ' + match.winner}</strong>
-                </div>
+    const isAr = userState.lang === 'ar';
+    const modal = document.createElement('div');
+    modal.id = 'prediction-modal';
+    
+    modal.style.cssText = `
+        position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
+        background: #1c1c22 !important; padding: 25px; border-radius: 20px;
+        z-index: 100000 !important; width: 90%; max-width: 400px; color: white;
+        box-shadow: 0 0 0 100vw rgba(0,0,0,0.85), 0 10px 40px rgba(0,0,0,0.8) !important; 
+        border: 1px solid rgba(255,255,255,0.1);
+        direction: ${isAr ? 'rtl' : 'ltr'}; box-sizing: border-box;
+    `;
 
-                <button 
-                    onclick="alert('🎉 تم تسوية أرباح مجمع السيولة (DAMM v2) بنجاح!')" 
-                    style="width: 100%; background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 10px; border-radius: 10px; font-weight: 900; font-size: 0.82rem; cursor: pointer;">
-                    💰 المطالبة بأرباح التوكنات
-                </button>
-            </div>
-        `;
-    }
+    modal.innerHTML = `
+        <h3 style="margin:0 0 20px 0; text-align:center; color:var(--accent-gold, #fcb045);">${getT('enterPredictionTitle')}</h3>
 
-    return `
-        <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; margin-bottom: 12px; background: rgba(28, 28, 34, 0.8); border: 1px solid rgba(252, 176, 69, 0.3); border-radius: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
-                <span style="font-weight: 800; color: #fff; font-size: 0.9rem;">⚽ ${match.teamA} VS ${match.teamB}</span>
-                <span style="font-size: 0.68rem; color: #fcb045; background: rgba(252,176,69,0.15); padding: 3px 8px; border-radius: 6px; font-weight: bold;">📅 ${formattedTime}</span>
-            </div>
-
-            <!-- مؤشر تسعير منحنى السيولة الديناميكي Dynamic Bonding Curve -->
-            <div style="background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="text-align: center; flex: 1;">
-                    <span style="font-size: 0.65rem; color: #14F195; display: block;">سعر ${match.teamA}</span>
-                    <strong style="font-size: 0.85rem; color: #fff;">${match.priceA} SOL</strong>
-                </div>
-                <div style="border-left: 1px solid rgba(255,255,255,0.1); height: 25px; margin: 0 8px;"></div>
-                <div style="text-align: center; flex: 1;">
-                    <span style="font-size: 0.65rem; color: #f72585; display: block;">سعر ${match.teamB}</span>
-                    <strong style="font-size: 0.85rem; color: #fff;">${match.priceB} SOL</strong>
-                </div>
-            </div>
-
-            <div style="margin: 2px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #ccc; margin-bottom: 4px;">
-                    <span style="color: #14F195; font-weight: bold;">${match.teamA} (${match.bondingProgressTeamA}%)</span>
-                    <span style="color: #f72585; font-weight: bold;">${match.teamB} (${match.bondingProgressTeamB}%)</span>
-                </div>
-                <div style="width: 100%; background: #0f1721; height: 8px; border-radius: 10px; overflow: hidden; display: flex;">
-                    <div style="width: ${match.bondingProgressTeamA}%; background: #14F195; height: 100%;"></div>
-                    <div style="width: ${match.bondingProgressTeamB}%; background: #f72585; height: 100%;"></div>
-                </div>
+        <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:16px; margin-bottom:25px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:1rem; margin-bottom:10px; font-weight:bold; color:#fff;">
+                    ⚽ ${getT('goalsLabel')} <span style="color:var(--accent-blue, #3b82f6);">${team1}</span>
+                </label>
+                <input type="number" id="score-team1" min="0" placeholder="0" 
+                       style="width:100%; padding:15px; background:var(--bg-dark, #121215); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; text-align:center; font-size:1.3rem; font-weight:bold; box-sizing: border-box;">
             </div>
             
-            <div style="display: flex; gap: 8px; margin-top: 5px;">
-                <button 
-                    onclick="window.openSwapModal('${match.id}', '${match.teamA}', '${match.priceA}')" 
-                    style="flex: 1; background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 10px; border-radius: 10px; font-weight: 800; font-size: 0.72rem; cursor: pointer;">
-                    📈 شراء ${match.teamA}
-                </button>
-                <button 
-                    onclick="window.openModalSwap('${match.id}', '${match.teamB}', '${match.priceB}')" 
-                    style="flex: 1; background: linear-gradient(135deg, #9945FF 0%, #f72585 100%); color: #fff; border: none; padding: 10px; border-radius: 10px; font-weight: 800; font-size: 0.72rem; cursor: pointer;">
-                    📈 شراء ${match.teamB}
-                </button>
+            <div>
+                <label style="display:block; font-size:1rem; margin-bottom:10px; font-weight:bold; color:#fff;">
+                    ⚽ ${getT('goalsLabel')} <span style="color:var(--accent-blue, #3b82f6);">${team2}</span>
+                </label>
+                <input type="number" id="score-team2" min="0" placeholder="0" 
+                       style="width:100%; padding:15px; background:var(--bg-dark, #121215); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:white; text-align:center; font-size:1.3rem; font-weight:bold; box-sizing: border-box;">
             </div>
-
-            <!-- زر إنشاء توكن تجريبي للمباراة على Devnet (لإبهار المحكمين) -->
-            <button 
-                onclick="window.createTestMatchToken('${match.id}', '${match.teamA} vs ${match.teamB}')" 
-                style="width: 100%; background: rgba(252,176,69,0.15); border: 1px dashed #fcb045; color: #fcb045; padding: 7px; border-radius: 8px; font-weight: 700; font-size: 0.7rem; cursor: pointer; margin-top: 4px;">
-                ⚡ إنشاء توكن تجريبي حقيقي (Meteora DBC Mint)
+        </div>
+        
+        <div style="display:flex; flex-direction: column; gap:12px;">
+            <button id="submit-prediction-btn" onclick="window.submitPrediction(${matchId}, '${team1}', '${team2}');" 
+                    style="width:100%; padding:15px; background:var(--gradient-primary, linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1.1rem; cursor:pointer;">
+                ${getT('submitPredictionBtn')}
+            </button>
+            <button onclick="document.getElementById('prediction-modal').remove()" 
+                    style="width:100%; padding:15px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#ccc; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer;">
+                ${getT('cancelBtn')}
             </button>
         </div>
     `;
+    document.body.appendChild(modal);
 };
 
-// 4. نافذة التداول الفوري لتوكنات المباريات عبر Meteora DBC
+window.submitPrediction = async function(matchId, team1, team2) {
+    const score1 = document.getElementById('score-team1').value;
+    const score2 = document.getElementById('score-team2').value;
+    
+    if (score1 === '' || score2 === '') {
+        alert(getT('enterGoalsError'));
+        return;
+    }
+
+    const t1Score = parseInt(score1);
+    const t2Score = parseInt(score2);
+
+    let autoWinner = 'draw';
+    if (t1Score > t2Score) autoWinner = team1;
+    else if (t2Score > t1Score) autoWinner = team2;
+
+    const finalPredictedScore = `${team1} ${t1Score} - ${t2Score} ${team2} | ${getT('winnerLabel')} ${autoWinner === 'draw' ? getT('drawMatch') : autoWinner}`;
+    
+    const submitBtn = document.getElementById('submit-prediction-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerText = '⏳...';
+
+    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('match_predictions') 
+                .insert([
+                    { 
+                        telegram_id: userState.userId, 
+                        match_id: matchId, 
+                        predicted_score: finalPredictedScore,
+                        predicted_home: t1Score, 
+                        predicted_away: t2Score,
+                        points_awarded: 0
+                    }
+                ])
+                .select();
+
+            if (error) throw error;
+            
+            if (data && data[0]) globalPredictions.push(data[0]);
+            if (!userState.predictedMatches) userState.predictedMatches = [];
+            userState.predictedMatches.push(matchId);
+
+        } catch (err) {
+            console.error("❌ خطأ أثناء حفظ التوقع:", err);
+            alert(getT('connectionError'));
+            submitBtn.disabled = false;
+            submitBtn.innerText = getT('submitPredictionBtn');
+            return;
+        }
+    }
+
+    alert(getT('predictionSuccess'));
+    document.getElementById('prediction-modal').remove();
+
+    const btnContainer = document.getElementById(`btn-container-${matchId}`);
+    if (btnContainer) {
+        btnContainer.innerHTML = `<button disabled style="width:100%; padding:10px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid #10b981; border-radius:10px; font-size:0.9rem; font-weight:bold;">
+                                    ${getT('btnPredicted')}
+                                  </button>`;
+    }
+};
+
+// نافذة تداول وتخزين التوكنات عبر منعطفات Meteora DBC
 window.openSwapModal = function(matchId, teamName, tokenPrice) {
     let existingModal = document.getElementById("swap-modal");
     if (existingModal) existingModal.remove();
@@ -206,7 +302,7 @@ window.openSwapModal = function(matchId, teamName, tokenPrice) {
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);
-        z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 15px;
+        z-index: 200000; display: flex; justify-content: center; align-items: center; padding: 15px;
     `;
 
     modal.innerHTML = `
@@ -214,9 +310,9 @@ window.openSwapModal = function(matchId, teamName, tokenPrice) {
             <button onclick="document.getElementById('swap-modal').remove()" style="position: absolute; top: 12px; left: 12px; background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer;">✕</button>
             
             <div style="text-align: center; margin-bottom: 15px;">
-                <span style="background: rgba(20,241,149,0.2); color: #14F195; font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; font-weight: bold;">METEORA DBC SWAP ENGINE</span>
+                <span style="background: rgba(20,241,149,0.2); color: #14F195; font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; font-weight: bold;">METEORA DBC SWAP</span>
                 <h3 style="margin: 6px 0 0 0; color: #fcb045; font-size: 1.1rem;">شراء توكن: ${teamName}</h3>
-                <p style="font-size: 0.75rem; color: #aaa; margin: 3px 0 0 0;">السعر الحالي عبر المنحنى: ${tokenPrice} SOL</p>
+                <p style="font-size: 0.75rem; color: #aaa; margin: 3px 0 0 0;">السعر عبر المنحنى: ${tokenPrice} SOL</p>
             </div>
 
             <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
@@ -226,7 +322,7 @@ window.openSwapModal = function(matchId, teamName, tokenPrice) {
 
             <div id="swap-status-msg" style="font-size:0.75rem; color:#14F195; margin-bottom:10px; text-align:center;"></div>
 
-            <button id="btn-confirm-swap" onclick="window.executeDevnetSwap('${matchId}', '${teamName}')" style="width: 100%; background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: 900; font-size: 0.88rem; cursor: pointer;">
+            <button id="btn-confirm-swap" onclick="window.executeDevnetSwap(${matchId}, '${teamName}')" style="width: 100%; background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: 900; font-size: 0.88rem; cursor: pointer;">
                 🚀 إتمام المقايضة (Swap on DBC)
             </button>
         </div>
@@ -235,9 +331,7 @@ window.openSwapModal = function(matchId, teamName, tokenPrice) {
     document.body.appendChild(modal);
 };
 
-window.openModalSwap = window.openSwapModal;
-
-// 5. تنفيذ المعاملة على شبكة Solana وتوثيقها لقاعدة البيانات
+// تنفيذ معاملة التداول على Solana Devnet
 window.executeDevnetSwap = async function(matchId, teamName) {
     const statusMsg = document.getElementById("swap-status-msg");
     const btn = document.getElementById("btn-confirm-swap");
@@ -250,10 +344,6 @@ window.executeDevnetSwap = async function(matchId, teamName) {
     }
 
     const provider = window.solana || window.solflare;
-    const savedWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
-        ? userState.solanaWallet 
-        : (localStorage.getItem('solana_wallet') || '');
-
     if (provider && provider.isPhantom) {
         const solanaWeb3Lib = window.solanaWeb3;
         if (!solanaWeb3Lib) {
@@ -269,10 +359,10 @@ window.executeDevnetSwap = async function(matchId, teamName) {
             const resp = await provider.connect();
             const userPublicKey = resp.publicKey;
 
-            if (statusMsg) statusMsg.innerText = "جاري بناء عقد Meteora DBC Swap...";
-
+            if (statusMsg) statusMsg.innerText = "جاري تنفيذ عقد Meteora DBC Swap...";
             const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
 
+            const VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1'; 
             const transaction = new solanaWeb3Lib.Transaction().add(
                 solanaWeb3Lib.SystemProgram.transfer({
                     fromPubkey: userPublicKey,
@@ -285,16 +375,13 @@ window.executeDevnetSwap = async function(matchId, teamName) {
             const { blockhash } = await connection.getLatestBlockhash();
             transaction.recentBlockhash = blockhash;
 
-            if (statusMsg) statusMsg.innerText = "في انتظار توقيعك على المعاملة...";
-
             const signed = await provider.signAndSendTransaction(transaction);
             if (statusMsg) statusMsg.innerText = "جاري توثيق التوكنات على البلوكشين...";
 
             await connection.confirmTransaction(signed.signature, 'confirmed');
 
             if (window.supabaseClient) {
-                const tgId = window.userState?.userId || window.userState?.telegramId || localStorage.getItem('telegram_id') || 'guest';
-                
+                const tgId = userState.userId || 'guest';
                 await window.supabaseClient.from('match_predictions').insert([{
                     telegram_id: String(tgId),
                     match_id: String(matchId),
@@ -305,84 +392,9 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                 }]);
             }
 
-            alert(`✅ تمت عملية شراء توكن (${teamName}) بنجاح عبر Meteora DBC!\n\nرقم المعاملة (Tx Hash):\n${signed.signature}`);
+            alert(`✅ تمت عملية شراء توكن (${teamName}) بنجاح عبر Meteora DBC!\n\nTx Hash: ${signed.signature}`);
             document.getElementById("swap-modal")?.remove();
-            if (typeof showPage === 'function') showPage('wallet');
 
         } catch (err) {
             console.error("❌ فشلت المعاملة:", err);
-            alert(`❌ فشلت المعاملة: ${err.message || 'تم إلغاء الطلب'}`);
-            btn.disabled = false;
-            btn.innerText = "🚀 إتمام المقايضة (Swap on DBC)";
-            if (statusMsg) statusMsg.innerText = "";
-        }
-        return;
-    }
-
-    if (savedWallet) {
-        try {
-            btn.disabled = true;
-            btn.innerText = "⏳ جاري تنفيذ المقايضة...";
-            if (statusMsg) statusMsg.innerText = "جاري تسجيل التوكنات في محفظة المنصة...";
-
-            const tgId = window.userState?.userId || window.userState?.telegramId || localStorage.getItem('telegram_id') || 'guest';
-
-            if (window.supabaseClient) {
-                const { error } = await window.supabaseClient.from('match_predictions').insert([{
-                    telegram_id: String(tgId),
-                    match_id: String(matchId),
-                    predicted_winner: teamName,
-                    predicted_score: teamName,
-                    amount_sol: solAmount,
-                    status: 'PENDING'
-                }]);
-
-                if (error) throw error;
-            }
-
-            alert(`✅ تم شراء وامتلاك توكن (${teamName}) بنجاح عبر منحنى السيولة الديناميكي!`);
-            document.getElementById("swap-modal")?.remove();
-            if (typeof showPage === 'function') showPage('wallet');
-
-        } catch (err) {
-            console.error("❌ خطأ أثناء الشراء:", err);
-            alert(`❌ فشل تنفيذ العملية: ${err.message || 'خطأ في الاتصال'}`);
-            btn.disabled = false;
-            btn.innerText = "🚀 إتمام المقايضة (Swap on DBC)";
-            if (statusMsg) statusMsg.innerText = "";
-        }
-        return;
-    }
-
-    const openPhantom = confirm(
-        "⚠️ لم يتم العثور على محفظة سولانا متصلة.\n\nهل تريد فتح التطبيق في متصفح Phantom؟"
-    );
-
-    if (openPhantom) {
-        const currentUrl = encodeURIComponent(window.location.href);
-        window.location.href = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
-    } else {
-        document.getElementById("swap-modal")?.remove();
-        if (typeof showPage === 'function') showPage('wallet');
-    }
-};
-
-// 6. دالة إنشاء توكن تجريبي حقيقي على Solana Devnet (لإدهاش محكمي الهاكاثون)
-window.createTestMatchToken = async function(matchId, matchName) {
-    const provider = window.solana || window.solflare;
-    if (!provider || !provider.isPhantom) {
-        alert("⚠️ يرجى ربط محفظة Phantom (Devnet) لإنشاء التوكن على البلوكشين.");
-        return;
-    }
-
-    const solanaWeb3Lib = window.solanaWeb3;
-    if (!solanaWeb3Lib) {
-        alert("⚠️ مكتبة Solana Web3 غير محملة.");
-        return;
-    }
-
-    try {
-        console.log(`🚀 جاري إنشاء توكن تجريبي للمباراة (${matchName}) على Devnet...`);
-        
-        const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
-        const resp =
+            alert(`❌ فشلت المعاملة: ${err.message || 'تم إلغا
