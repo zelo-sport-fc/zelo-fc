@@ -1,29 +1,17 @@
-/* ==========================================
-   🏟️ تطبيق زيلو إف سي (Zelo Sport) - نسخة الـ VIP الفاخرة المحدثة
-   ========================================== */
-
 :root {
-  /* الألوان الأساسية الداكنة (للفخامة وراحة العين) */
-  --bg-dark: #0b0b0e;        /* أسود عميق جداً للخلفية */
-  --bg-card: #16161c;        /* رمادي داكن للبطاقات */
-  --text-main: #f8fafc;      /* أبيض ناصع للنصوص */
-  --text-muted: #888899;     /* نصوص ثانوية */
-  
-  /* ألوان الهوية البصرية (الطاقة والحماس) */
+  --bg-dark: #0b0b0e;
+  --bg-card: #16161c;
+  --text-main: #f8fafc;
+  --text-muted: #888899;
   --accent-gold: #fcb045;
   --accent-red: #fd1d1d;
   --accent-purple: #833ab4;
-  
-  /* التدرجات اللونية والتوهج */
   --gradient-primary: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
   --glow-primary: rgba(253, 29, 29, 0.25);
-  
-  /* تأثير الزجاج (Glassmorphism) */
   --glass-bg: rgba(22, 22, 28, 0.7);
   --glass-border: rgba(255, 255, 255, 0.04);
 }
 
-/* 🌟 إعدادات التطبيق الأساسية (لإعطاء إحساس التطبيق الحقيقي Native) */
 body {
   margin: 0;
   padding: 0;
@@ -31,15 +19,14 @@ body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
-  user-select: none; /* منع تحديد النصوص */
+  user-select: none;
   -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent; /* إزالة الوميض الأزرق عند اللمس */
-  -webkit-font-smoothing: antialiased; /* تنعيم الخطوط لتبدو احترافية */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
   direction: rtl;
   overflow-x: hidden;
 }
 
-/* إخفاء شريط التمرير (Scrollbar) ليبدو كتطبيق جوال أصلي */
 ::-webkit-scrollbar {
   display: none;
 }
@@ -47,10 +34,9 @@ body {
 .container {
   padding: 15px;
   padding-bottom: 100px;
-  animation: fadeUp 0.5s ease-out forwards; /* تأثير دخول سلس عند فتح التطبيق */
+  animation: fadeUp 0.5s ease-out forwards;
 }
 
-/* 👑 الهيدر العلوي */
 .app-header, .top-bar {
   display: flex;
   justify-content: space-between;
@@ -71,11 +57,10 @@ body {
   border-radius: 50%;
   border: 2px solid transparent;
   background: var(--gradient-primary);
-  padding: 2px; /* تأثير الإطار المتدرج حول الصورة */
+  padding: 2px;
   object-fit: cover;
 }
 
-/* 📊 شريط الرصيد والنادي */
 .user-bar {
   display: flex;
   justify-content: space-between;
@@ -101,7 +86,6 @@ body {
   color: var(--accent-gold);
 }
 
-/* 📱 شريط التنقل السفلي الفخم (طائر بتأثير زجاجي متقدم) */
 .bottom-nav {
   position: fixed;
   bottom: 20px;
@@ -152,20 +136,18 @@ body {
   transform: scale(0.85);
 }
 
-/* 🚀 (تعديل جديد) حالة الزر النشط في الشريط السفلي مع تأثير خرافي */
 .nav-item.active {
   background: rgba(252, 176, 69, 0.15);
   color: var(--accent-gold);
   border-radius: 50%;
-  animation: pulseGlow 2s infinite; /* نبض متوهج مستمر */
+  animation: pulseGlow 2s infinite;
 }
 
 .nav-item.active .icon-wrapper {
-  animation: float 3s ease-in-out infinite; /* طفو الأيقونة */
+  animation: float 3s ease-in-out infinite;
   text-shadow: 0 0 20px var(--accent-gold), 0 0 10px var(--accent-red);
 }
 
-/* 🃏 (تعديل جديد) تفاعل البطاقات عند اللمس والتمرير */
 .card {
   background: var(--bg-card);
   padding: 20px;
@@ -184,7 +166,6 @@ body {
   box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 15px rgba(252, 176, 69, 0.1);
 }
 
-/* 🔘 (تعديل جديد) الأزرار الرئيسية بتأثير الـ VIP والتدرج المتحرك */
 .btn-action {
   position: relative;
   width: 100%;
@@ -207,7 +188,6 @@ body {
   z-index: 1;
 }
 
-/* تأثير اللمعان السريع (Shimmer) على الزر الرئيسي */
 .btn-action::before {
   content: '';
   position: absolute;
@@ -226,7 +206,6 @@ body {
   box-shadow: 0 4px 15px rgba(253, 29, 29, 0.6);
 }
 
-/* زر ثانوي (لإلغاء أو التراجع) */
 .btn-secondary {
   width: 100%;
   background: transparent;
@@ -244,7 +223,6 @@ body {
   background: rgba(255,255,255,0.05);
 }
 
-/* ✨ تأثيرات حركية (Animations - الميزة الخرافية الجديدة) */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
