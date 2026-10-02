@@ -2,12 +2,10 @@
 // ⚽ Meteora Devnet Launchpad & Trading Engine
 // ==========================================
 
-// 1. تعريف المتغيرات والثوابت العالمية
 if (typeof window.VAULT_PUBLIC_KEY === 'undefined') {
     window.VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1';
 }
 
-// 2. دالة جلب المباريات مع دعم البيانات الاحتياطية
 window.fetchMatchesForMeteora = async function() {
     const fallbackMatches = [
         { id: 101, teamA: 'São Paulo FC', teamB: 'Santos FC', matchTime: new Date().toISOString(), priceA: '2.25', priceB: '2.25', bondingProgressA: 50, bondingProgressB: 50 },
@@ -47,7 +45,6 @@ window.fetchMatchesForMeteora = async function() {
     return fallbackMatches;
 };
 
-// 3. دالة بناء وعرض الواجهة الرئيسية لصفحة Meteora
 window.renderMeteoraPage = async function(container) {
     if (!container) return;
 
@@ -121,7 +118,6 @@ window.renderMeteoraPage = async function(container) {
     }
 };
 
-// 4. دالة فتح نافذة التداول (Swap Modal)
 window.openSwapModal = function(matchId, teamName, priceSol) {
     const oldModal = document.getElementById("swap-modal");
     if (oldModal) oldModal.remove();
@@ -162,7 +158,6 @@ window.openSwapModal = function(matchId, teamName, priceSol) {
     document.body.appendChild(modal);
 };
 
-// 5. دالة تنفيذ العملية المباشرة مع الخصم الفعلي
 window.executeDevnetSwap = async function(matchId, teamName) {
     const statusMsg = document.getElementById("swap-status-msg");
     const btn = document.getElementById("btn-confirm-swap");
@@ -187,22 +182,23 @@ window.executeDevnetSwap = async function(matchId, teamName) {
     try {
         if (btn) btn.disabled = true;
 
-        // 1. إذا وُجد provider خارجي (Phantom Plugin)
+        // 1. إذا كان متصفح ويب عالي وبدعم إضافة Phantom مباشرة
         if (provider && provider.isConnected && typeof provider.signAndSendTransaction === 'function') {
-            if (statusMsg) statusMsg.innerText = "⏳ جاري فحص الرصيد وإعداد المعاملة...";
+            if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد المعاملة والتوقيع...";
             
             const resp = await provider.connect();
             const userPublicKey = resp.publicKey;
 
             if (solanaWeb3Lib) {
                 const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
+                
                 const balanceLamports = await connection.getBalance(userPublicKey);
                 const balanceSol = balanceLamports / solanaWeb3Lib.LAMPORTS_PER_SOL;
 
                 if (balanceSol < solAmount) {
                     alert(`❌ رصيد غير كافٍ!\n\nرصيدك: ${balanceSol.toFixed(4)} SOL\nالمطلوب: ${solAmount} SOL`);
                     if (btn) btn.disabled = false;
-                    if (statusMsg) statusMsg.innerText = "❌ رصيد غير كافٍ";
+                    if (statusMsg) statusMsg.innerText = "";
                     return;
                 }
 
@@ -220,12 +216,12 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                 const signed = await provider.signAndSendTransaction(transaction);
                 await connection.confirmTransaction(signed.signature, 'confirmed');
 
-                alert(`✅ تمت المعاملة واستُقطع الرصيد بنجاح!\n\nTx Hash:\n${signed.signature}`);
+                alert(`✅ تمت المعاملة واقتطاع الرصيد بنجاح!\n\nTx Hash:\n${signed.signature}`);
             }
         } 
-        // 2. إذا كان التنفيذ من داخل محفظة تلغرام (In-App Wallet)
+        // 2. إذا كان داخل تلغرام mini app: إما الخصم الداخلي أو التوجيه للمحفظة للتوقيع
         else {
-            if (statusMsg) statusMsg.innerText = "⏳ جاري فحص الرصيد وإرسال طلب الخصم للشبكة...";
+            if (statusMsg) statusMsg.innerText = "⏳ جاري الفحص والتوجيه لتأكيد الخصم...";
 
             if (solanaWeb3Lib) {
                 const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
@@ -240,25 +236,18 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                     if (statusMsg) statusMsg.innerText = "❌ رصيد غير كافٍ";
                     return;
                 }
-
-                // تنفيذ خصم عبر الخادم (Supabase Edge Function) إذا كانت المحفظة مدارة من التطبيق
-                if (window.supabaseClient) {
-                    const { data, error } = await window.supabaseClient.functions.invoke('solana-swap-devnet', {
-                        body: { userWallet: savedSolanaAddress, amountSol: solAmount, teamName: teamName, matchId: matchId }
-                    });
-
-                    if (error || (data && !data.success)) {
-                        throw new Error(data?.message || "فشلت عملية الخصم On-Chain من الخادم.");
-                    }
-                } else {
-                    alert(`⚠️ تعذر إجراء الخصم الفعلي لأن المحفظة تحتاج إلى توقيع حي عبر تطبيق المحفظة (Phantom/Solflare).`);
-                    if (btn) btn.disabled = false;
-                    if (statusMsg) statusMsg.innerText = "";
-                    return;
-                }
             }
 
-            alert(`✅ تم الخصم بنجاح من محفظتك على الشبكة!\n\nالمبلغ: ${solAmount} SOL`);
+            // خيار التوجيه المباشر لتطبيق Phantom لتأكيد تحويل SOL الحقيقي
+            const recipient = window.VAULT_PUBLIC_KEY;
+            const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}?ref=${encodeURIComponent(window.location.href)}`;
+            
+            // تنبيه المستخدم بالتوجه لتوقيع المعاملة
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.openLink(phantomDeepLink);
+            } else {
+                window.location.href = phantomDeepLink;
+            }
         }
 
         const modal = document.getElementById("swap-modal");
@@ -266,11 +255,11 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
     } catch (err) {
         console.error("❌ فشلت المعاملة:", err);
-        alert("❌ فشلت المعاملة: " + (err.message || "تعذر إتمام العملية على البلوكشين"));
+        alert("❌ فشلت المعاملة: " + (err.message || "تعذر إتمام العملية"));
         if (btn) btn.disabled = false;
         if (statusMsg) statusMsg.innerText = "";
     }
 };
 
 console.log("✅ [Meteora Engine] matchesTrade.js loaded successfully.");
-    
+            
