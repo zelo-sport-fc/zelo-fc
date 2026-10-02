@@ -2,56 +2,11 @@
 // ⚽ Meteora Devnet Launchpad & Trading Engine
 // ==========================================
 
-// 🛡️ [حل جذر للخطأ]: إنشاء دالة تحويل Lamports إلى Uint8Array بطول 8 بايت مع Buffer Polyfill متوافق
-(function() {
-    if (typeof window.Buffer === 'undefined' || !window.Buffer.alloc) {
-        if (typeof buffer !== 'undefined' && buffer.Buffer) {
-            window.Buffer = buffer.Buffer;
-        } else {
-            // Polyfill متوافق تماماً مع متطلبات Solana web3.js
-            window.Buffer = class Buffer extends Uint8Array {
-                constructor(arg, encoding) {
-                    if (typeof arg === 'number') {
-                        super(arg);
-                    } else if (typeof arg === 'string') {
-                        const encoded = new TextEncoder().encode(arg);
-                        super(encoded);
-                    } else {
-                        super(arg);
-                    }
-                }
-                static alloc(size) {
-                    return new Uint8Array(size);
-                }
-                static from(data, encoding) {
-                    if (typeof data === 'string') {
-                        return new TextEncoder().encode(data);
-                    }
-                    return new Uint8Array(data);
-                }
-            };
-        }
-    }
-})();
-
-if (typeof window.VAULT_PUBLIC_KEY === 'undefined') {
-    window.VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1';
-}
-
-// دالة تحويل الأرقام إلى 8 Bytes Little-Endian المتوافقة تماماً مع Solana SystemProgram
-function numberTo8ByteUint8Array(value) {
-    const buffer = new ArrayBuffer(8);
-    const view = new DataView(buffer);
-    const bigIntValue = BigInt(Math.round(value));
-    view.setBigUint64(0, bigIntValue, true); // true = Little Endian
-    return new Uint8Array(buffer);
-}
-
+// 1. جلب المباريات والعناوين الحقيقية للتوكنات من Supabase
 window.fetchMatchesForMeteora = async function() {
     const fallbackMatches = [
-        { id: 101, teamA: 'São Paulo FC', teamB: 'Santos FC', matchTime: new Date().toISOString(), priceA: '2.25', priceB: '2.25', bondingProgressA: 50, bondingProgressB: 50 },
-        { id: 102, teamA: 'CA Mineiro', teamB: 'RB Bragantino', matchTime: new Date().toISOString(), priceA: '2.25', priceB: '2.25', bondingProgressA: 50, bondingProgressB: 50 },
-        { id: 103, teamA: 'RB Bragantino', teamB: 'Mirassol FC', matchTime: new Date().toISOString(), priceA: '2.25', priceB: '2.25', bondingProgressA: 50, bondingProgressB: 50 }
+        { id: 101, teamA: 'São Paulo FC', teamB: 'Santos FC', mintA: null, mintB: null, matchTime: new Date().toISOString(), priceA: '2.25', priceB: '2.25', bondingProgressA: 50, bondingProgressB: 50 },
+        { id: 102, teamA: 'CA Mineiro', teamB: 'RB Bragantino', mintA: null, mintB: null, matchTime: new Date().toISOString(), priceA: '2.25', priceB: '2.25', bondingProgressA: 50, bondingProgressB: 50 }
     ];
 
     if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient !== null) {
@@ -71,6 +26,11 @@ window.fetchMatchesForMeteora = async function() {
                         id: m.id,
                         teamA: m.team_a || 'Team A',
                         teamB: m.team_b || 'Team B',
+                        // قراءة عناوين التوكنات المولدة تلقائياً
+                        mintA: m.token_a_mint || null,
+                        mintB: m.token_b_mint || null,
+                        symbolA: m.token_a_symbol || 'TKN',
+                        symbolB: m.token_b_symbol || 'TKN',
                         matchTime: m.match_date || new Date().toISOString(),
                         priceA: priceA,
                         priceB: priceB,
@@ -86,6 +46,7 @@ window.fetchMatchesForMeteora = async function() {
     return fallbackMatches;
 };
 
+// 2. عرض الواجهة وربط الأزرار بالتوكنات
 window.renderMeteoraPage = async function(container) {
     if (!container) return;
 
@@ -138,10 +99,10 @@ window.renderMeteoraPage = async function(container) {
                         </div>
 
                         <div style="display: flex; gap: 8px;">
-                            <button onclick="window.openSwapModal('${m.id}', '${safeTeamA}', '${m.priceA}')" style="flex: 1; background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
+                            <button onclick="window.openSwapModal('${m.id}', '${safeTeamA}', '${m.priceA}', '${m.mintA}')" style="flex: 1; background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
                                 شراء ${m.teamA}
                             </button>
-                            <button onclick="window.openSwapModal('${m.id}', '${safeTeamB}', '${m.priceB}')" style="flex: 1; background: linear-gradient(135deg, #9945FF 0%, #f72585 100%); color: #fff; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
+                            <button onclick="window.openSwapModal('${m.id}', '${safeTeamB}', '${m.priceB}', '${m.mintB}')" style="flex: 1; background: linear-gradient(135deg, #9945FF 0%, #f72585 100%); color: #fff; border: none; padding: 10px 4px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
                                 شراء ${m.teamB}
                             </button>
                         </div>
@@ -159,11 +120,13 @@ window.renderMeteoraPage = async function(container) {
     }
 };
 
-window.openSwapModal = function(matchId, teamName, priceSol) {
+// 3. تعديل النافذة المنبثقة لتعرض عنوان الـ Mint الخاص بالتوكن
+window.openSwapModal = function(matchId, teamName, priceSol, tokenMint) {
     const oldModal = document.getElementById("swap-modal");
     if (oldModal) oldModal.remove();
 
     const safeTeamName = String(teamName).replace(/'/g, "\\'");
+    const displayMint = tokenMint && tokenMint !== 'null' ? `${tokenMint.slice(0, 6)}...${tokenMint.slice(-4)}` : 'جاري توليد التوكن...';
 
     const modal = document.createElement("div");
     modal.id = "swap-modal";
@@ -181,6 +144,10 @@ window.openSwapModal = function(matchId, teamName, priceSol) {
                 <button onclick="document.getElementById('swap-modal').remove()" style="background:none; border:none; color:#aaa; font-size:1.2rem; cursor:pointer;">✕</button>
             </div>
 
+            <div style="margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-size: 0.7rem; color: #bbb;">
+                📌 Mint Address: <strong style="color: #fcb045;">${displayMint}</strong>
+            </div>
+
             <div style="margin-bottom: 15px;">
                 <label style="color:#aaa; font-size:0.75rem; display:block; margin-bottom:5px;">المبلغ بـ SOL:</label>
                 <input type="number" id="swap-amount" value="${priceSol}" step="0.001" style="width: 100%; padding: 10px; background: #0d0d12; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.9rem; box-sizing: border-box;">
@@ -189,7 +156,7 @@ window.openSwapModal = function(matchId, teamName, priceSol) {
             <div id="swap-status-msg" style="color: #fcb045; font-size: 0.75rem; margin-bottom: 12px; text-align: center; min-height: 18px;"></div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button id="btn-confirm-swap" onclick="window.executeDevnetSwap('${matchId}', '${safeTeamName}')" style="background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.85rem; cursor: pointer;">
+                <button id="btn-confirm-swap" onclick="window.executeDevnetSwap('${matchId}', '${safeTeamName}', '${tokenMint}')" style="background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.85rem; cursor: pointer;">
                     🚀 إتمام المقايضة (Swap on DBC)
                 </button>
             </div>
@@ -198,105 +165,3 @@ window.openSwapModal = function(matchId, teamName, priceSol) {
 
     document.body.appendChild(modal);
 };
-
-window.executeDevnetSwap = async function(matchId, teamName) {
-    const statusMsg = document.getElementById("swap-status-msg");
-    const btn = document.getElementById("btn-confirm-swap");
-    const amountInput = document.getElementById("swap-amount");
-    const solAmount = parseFloat(amountInput ? amountInput.value : "0.1");
-
-    if (isNaN(solAmount) || solAmount <= 0) {
-        alert("⚠️ يرجى إدخال قيمة صحيحة بـ SOL.");
-        return;
-    }
-
-    try {
-        if (btn) btn.disabled = true;
-        if (statusMsg) statusMsg.innerText = "⏳ جاري الإتصال بالشبكة ومعالجة المعاملة...";
-
-        const provider = window.phantom?.solana || window.solana || window.solflare;
-
-        if (!provider) {
-            if (window.Telegram?.WebApp?.openLink) {
-                const currentUrl = window.location.href;
-                const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
-                window.Telegram.WebApp.openLink(phantomUrl);
-                if (statusMsg) statusMsg.innerText = "📱 جاري التوجيه إلى Phantom...";
-                return;
-            } else {
-                throw new Error("لم يتم العثور على محفظة Solana.");
-            }
-        }
-
-        const resp = await provider.connect();
-        const userPublicKey = resp.publicKey || provider.publicKey;
-
-        if (!userPublicKey) {
-            throw new Error("تعذر الحصول على العنوان المباشر للمحفظة.");
-        }
-
-        const solanaWeb3Lib = window.solanaWeb3;
-        if (!solanaWeb3Lib) {
-            throw new Error("مكتبة Solana Web3 غير متوفرة.");
-        }
-
-        const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
-
-        // حساب الـ Lamports وتأمين التنسيق بأسلوب مباشر لا يعتمد على Buffer.encode
-        const lamportsCount = Math.round(solAmount * solanaWeb3Lib.LAMPORTS_PER_SOL);
-
-        // إنشائ العملية بأسلوب Instruction المباشر لتفادي مشاكل Blob.encode
-        const transferInstruction = new solanaWeb3Lib.TransactionInstruction({
-            keys: [
-                { pubkey: userPublicKey, isSigner: true, isWritable: true },
-                { pubkey: new solanaWeb3Lib.PublicKey(window.VAULT_PUBLIC_KEY), isSigner: false, isWritable: true }
-            ],
-            programId: solanaWeb3Lib.SystemProgram.programId,
-            data: (() => {
-                // SystemProgram Transfer Instruction Index = 2 (4-byte LE) + 8-byte LE Lamports
-                const dataArray = new Uint8Array(12);
-                const view = new DataView(dataArray.buffer);
-                view.setUint32(0, 2, true); // Index 2 = Transfer
-                view.setBigUint64(4, BigInt(lamportsCount), true); // Lamports
-                return dataArray;
-            })()
-        });
-
-        const transaction = new solanaWeb3Lib.Transaction().add(transferInstruction);
-
-        transaction.feePayer = userPublicKey;
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-
-        if (statusMsg) statusMsg.innerText = "🔐 يرجى تأكيد العملية من نافذة Phantom...";
-
-        const result = await provider.signAndSendTransaction(transaction);
-        const signature = result.signature || result;
-
-        if (statusMsg) statusMsg.innerText = "⏳ جاري التأكيد المباشر عبر Solana Devnet...";
-        await connection.confirmTransaction(signature, 'confirmed');
-
-        alert(`✅ تمت المعاملة بنجاح!\n\nرقم التوقيع:\n${signature}`);
-
-        const modal = document.getElementById("swap-modal");
-        if (modal) modal.remove();
-
-    } catch (err) {
-        console.error("❌ تفاصيل الخطأ في المعاملة:", err);
-
-        let errorMsg = "تم إلغاء العملية أو رفض التوقيع.";
-        if (err && typeof err === 'object') {
-            if (err.message) errorMsg = err.message;
-        } else if (typeof err === 'string') {
-            errorMsg = err;
-        }
-
-        alert("❌ تعذر إتمام العملية:\n" + errorMsg);
-
-        if (btn) btn.disabled = false;
-        if (statusMsg) statusMsg.innerText = "";
-    }
-};
-
-console.log("✅ [Meteora Engine] matchesTrade.js Blob/Buffer Encoded Fix Applied.");
-        
