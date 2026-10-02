@@ -1,7 +1,3 @@
-// ==========================================
-// ZELO FC - Core Application (app.js)
-// ==========================================
-
 const supabaseUrl = 'https://ttyfcwtlasvphkariqhw.supabase.co'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eWZjd3RsYXN2cGhrYXJpcWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODk1MjYsImV4cCI6MjA5ODc2NTUyNn0.m3wFMEASM3K63nm3bsIlrEOXhRvMQhUZqvpXyFq7NEg'; 
 
@@ -32,7 +28,6 @@ let userState = {
 let tonConnectUI = null;
 const tg = window.Telegram?.WebApp;
 
-// Safe Translation Helper
 function safeT(key, fallback) {
     try {
         if (typeof window.t === 'function') {
@@ -40,7 +35,6 @@ function safeT(key, fallback) {
             if (res && res !== key) return res;
         }
     } catch (e) {
-        console.warn("Translation function error:", e);
     }
     return fallback;
 }
@@ -69,12 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const referrerId = tg.initDataUnsafe.start_param.replace('ref_', '');
                 if (String(referrerId) !== String(userState.userId)) {
                     userState.pendingReferrer = referrerId;
-                    console.log("🔗 Referral link used from referrer ID:", referrerId);
                 }
             }
 
         } else {
-            console.warn("⚠️ No real Telegram data found. Using dummy test data...");
             userState.username = "Local Tester";
             userState.userId = "123456789"; 
             userState.userParam = "123456789";
@@ -106,11 +98,9 @@ function initTonConnect() {
                     if (typeof window.saveWalletAddressToDB === "function") {
                         await window.saveWalletAddressToDB(userFriendlyAddress);
                     } else if (supabaseClient && userState.userId) {
-                        const { error } = await supabaseClient.from('users')
+                        await supabaseClient.from('users')
                             .update({ wallet_address: userFriendlyAddress })
                             .eq('telegram_id', userState.userId);
-                        if (error) console.error("❌ Wallet save error:", error);
-                        else console.log("✅ TON Wallet saved successfully!");
                     }
                 } else {
                     userState.walletConnected = false;
@@ -132,21 +122,16 @@ function initTonConnect() {
             });
         }
     } catch (error) {
-        console.error("TON Connect Error: ", error);
     }
 }
 
 async function fetchDataAndRoute() {
-    console.log("🔄 [1] Fetching data...");
-
     if (!supabaseClient) {
-        console.warn("⚠️ [2] Supabase client is not initialized.");
         triggerLoginScreen();
         return;
     }
 
     try {
-        console.log(`🔍 [3] Fetching user data (${userState.userId})...`);
         const { data, error } = await supabaseClient
             .from('users')
             .select('*')
@@ -154,12 +139,10 @@ async function fetchDataAndRoute() {
             .maybeSingle();
 
         if (error) {
-            console.error("❌ Supabase error:", error);
             throw error;
         }
 
         if (data) {
-            console.log("✅ [4] Existing user found.");
             userState.points = data.points || 0;
             userState.coins = data.points || 0;
             userState.selectedClubs = data.selected_clubs || [];
@@ -175,24 +158,20 @@ async function fetchDataAndRoute() {
             }
 
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
-                console.log("⚙️ Processing pending referral for:", userState.pendingReferrer);
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
                 userState.pendingReferrer = null; 
             }
 
         } else {
-            console.log("🆕 [4] New user (unregistered).");
             userState.hasLoggedIn = false;
         }
     } catch (error) {
-        console.error("❌ [Error] Failed to fetch data:", error);
         userState.hasLoggedIn = false; 
     }
 
     if (!userState.hasLoggedIn || !userState.selectedClubs || userState.selectedClubs.length === 0) {
         triggerLoginScreen();
     } else {
-        console.log("🏠 [6] Routing to Home Screen...");
         userState.hasLoggedIn = true;
         await updateTopBar();
         showPage('home'); 
@@ -200,8 +179,6 @@ async function fetchDataAndRoute() {
 }
 
 function triggerLoginScreen() {
-    console.log("🚪 [Routing] Opening login screen...");
-    
     const topBar = document.getElementById('top-bar');
     const bottomNav = document.getElementById('bottom-nav');
     if(topBar) topBar.style.display = 'none';
@@ -210,7 +187,6 @@ function triggerLoginScreen() {
     if (typeof renderLoginScreen === 'function') {
         renderLoginScreen();
     } else {
-        console.error("⛔ [Error] renderLoginScreen function missing!");
         const contentDiv = document.getElementById("main-content");
         if (contentDiv) {
             contentDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: red;">
@@ -245,18 +221,12 @@ async function updateTopBar() {
                 }
             }
         } catch(error) {
-            console.error("❌ Error fetching points from ranking table:", error);
         }
     }
     
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
-        // 🟢 التعديل هنا: تحديد كود اللغة بناءً على خيار لغة المستخدم داخل التطبيق
         const localeLang = (userState.lang === 'ar') ? 'ar-EG' : 'en-US';
-        
-        // إذا كنت ترغب في إظهار الأرقام الإنجليزية (400) دائماً لجميع اللغات، يمكنك استخدام 'en-US' مباشرة:
-        // pointsEl.innerText = `🪙 ${displayPoints.toLocaleString('en-US')} ZELOFC`;
-        
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ZELOFC`;
     }
     
@@ -307,7 +277,6 @@ function showPage(pageId) {
             if (typeof renderWalletPage === "function") {
                 renderWalletPage(contentDiv);
             } else {
-                console.warn("⚠️ renderWalletPage not found yet, retrying in 200ms...");
                 contentDiv.innerHTML = `<div style="color:white; text-align:center; padding:30px;">Loading Wallet...</div>`;
                 setTimeout(() => {
                     if (typeof renderWalletPage === "function") {
@@ -323,7 +292,6 @@ function showPage(pageId) {
 
 if (typeof window.openChallengesScreen !== 'function') {
     window.openChallengesScreen = function() {
-        console.log("⚽ [Fallback] Weekly challenges screen requested");
         const contentDiv = document.getElementById("main-content");
         if (contentDiv) {
             if (typeof renderChallengesScreen === "function") {
@@ -342,3 +310,4 @@ if (typeof window.openChallengesScreen !== 'function') {
         }
     };
         }
+        
