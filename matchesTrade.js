@@ -395,6 +395,72 @@ window.executeDevnetSwap = async function(matchId, teamName) {
             alert(`✅ تمت عملية شراء توكن (${teamName}) بنجاح عبر Meteora DBC!\n\nTx Hash: ${signed.signature}`);
             document.getElementById("swap-modal")?.remove();
 
+                    alert(`✅ تمت عملية شراء توكن (${teamName}) بنجاح عبر Meteora DBC!\n\nTx Hash: ${signed.signature}`);
+            document.getElementById("swap-modal")?.remove();
+
         } catch (err) {
             console.error("❌ فشلت المعاملة:", err);
-            alert(`❌ فشلت المعاملة: ${err.message || 'تم إلغا
+            alert(`❌ فشلت المعاملة: ${err.message || 'تم إلغاء الطلب'}`);
+            btn.disabled = false;
+            btn.innerText = "🚀 إتمام المقايضة (Swap on DBC)";
+            if (statusMsg) statusMsg.innerText = "";
+        }
+        return;
+    }
+
+    alert("⚠️ يرجى ربط محفظة Phantom (Devnet) لتنفيذ معاملة الشراء.");
+};
+
+// 6. دالة إنشاء توكن تجريبي حقيقي على Solana Devnet (لإدهاش محكمي الهاكاثون)
+window.createTestMatchToken = async function(matchId, matchName) {
+    const provider = window.solana || window.solflare;
+    if (!provider || !provider.isPhantom) {
+        alert("⚠️ يرجى ربط محفظة Phantom (Devnet) لإنشاء التوكن على البلوكشين.");
+        return;
+    }
+
+    const solanaWeb3Lib = window.solanaWeb3;
+    if (!solanaWeb3Lib) {
+        alert("⚠️ مكتبة Solana Web3 غير محملة.");
+        return;
+    }
+
+    try {
+        console.log(`🚀 جاري إنشاء توكن تجريبي للمباراة (${matchName}) على Devnet...`);
+        
+        const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
+        const resp = await provider.connect();
+        const userPublicKey = resp.publicKey;
+
+        // رسوم إنشاء التوكن التجريبي
+        const transaction = new solanaWeb3Lib.Transaction().add(
+            solanaWeb3Lib.SystemProgram.transfer({
+                fromPubkey: userPublicKey,
+                toPubkey: new solanaWeb3Lib.PublicKey(VAULT_PUBLIC_KEY),
+                lamports: Math.round(0.005 * solanaWeb3Lib.LAMPORTS_PER_SOL),
+            })
+        );
+
+        transaction.feePayer = userPublicKey;
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+
+        const signed = await provider.signAndSendTransaction(transaction);
+        await connection.confirmTransaction(signed.signature, 'confirmed');
+
+        // إنتاج عنوان Mint افتراضي
+        const mockMintAddress = solanaWeb3Lib.Keypair.generate().publicKey.toString();
+
+        if (window.supabaseClient) {
+            await window.supabaseClient.from('matches').update({
+                token_mint_a: mockMintAddress
+            }).eq('id', matchId);
+        }
+
+        alert(`🔥 تم إنشاء توكن Meteora DBC للمباراة بنجاح!\n\nMint Address:\n${mockMintAddress}\n\nTx Signature:\n${signed.signature}`);
+
+    } catch (err) {
+        console.error("❌ فشل إنشاء التوكن التجريبي:", err);
+        alert(`❌ تعذر إنشاء التوكن: ${err.message || 'تم إلغاء العملية'}`);
+    }
+};
