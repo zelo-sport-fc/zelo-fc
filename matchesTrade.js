@@ -165,3 +165,77 @@ window.openSwapModal = function(matchId, teamName, priceSol, tokenMint) {
 
     document.body.appendChild(modal);
 };
+
+// 4. دالة إدراج وتنفيذ المقايضة الفعلية على Solana Devnet
+window.executeDevnetSwap = async function(matchId, teamName, tokenMint) {
+    const statusMsg = document.getElementById("swap-status-msg");
+    const btnConfirm = document.getElementById("btn-confirm-swap");
+    const amountInput = document.getElementById("swap-amount");
+
+    if (!amountInput || !statusMsg || !btnConfirm) return;
+
+    const amount = parseFloat(amountInput.value);
+    if (!amount || amount <= 0) {
+        statusMsg.style.color = "#ff4d4d";
+        statusMsg.innerText = "❌ يُرجى إدخال مبلغ صحيح بالـ SOL";
+        return;
+    }
+
+    try {
+        btnConfirm.disabled = true;
+        btnConfirm.style.opacity = "0.6";
+        statusMsg.style.color = "#fcb045";
+        statusMsg.innerText = "⏳ جاري التحقق من ربط محفظة Solana...";
+
+        // التأكد من توفر محفظة Phantom أو محفظة مماثلة
+        const provider = window.solana || window.phantom?.solana;
+        if (!provider || !provider.isPhantom) {
+            throw new Error("لم يتم العثور على محفظة Phantom. يرجى تثبيتها أو فتح التطبيق داخل المحفظة.");
+        }
+
+        // إجبار الاتصال بالمحفظة والحصول على العنوان
+        const resp = await provider.connect();
+        const userWalletAddress = resp.publicKey.toString();
+
+        statusMsg.innerText = "⚡ جاري إرسال الطلب لـ Edge Function والسك على Devnet...";
+
+        // استدعاء الـ Edge Function المحدثة من Supabase
+        if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+            throw new Error("عميل Supabase غير معرف بشكل صحيح.");
+        }
+
+        const { data, error } = await window.supabaseClient.functions.invoke('auto-mint-tokens', {
+            body: {
+                recipientAddress: userWalletAddress,
+                mintAddress: tokenMint !== 'null' ? tokenMint : undefined,
+                amount: Math.floor(amount * 1000000000) // تحويل SOL إلى Lamports
+            }
+        });
+
+        if (error) throw new Error(error.message || "حدث خطأ أثناء الاتصال بالخادم.");
+
+        if (data && data.success) {
+            statusMsg.style.color = "#14F195";
+            const txSig = data.transactionSignature;
+            const shortTx = txSig ? `${txSig.slice(0, 8)}...${txSig.slice(-8)}` : '';
+            
+            statusMsg.innerHTML = `
+                ✅ تم السك والمقايضة بنجاح! <br>
+                <a href="https://explorer.solana.com/tx/${txSig}?cluster=devnet" target="_blank" style="color: #14F195; text-decoration: underline; margin-top: 5px; display: inline-block;">
+                    🔍 عرض المعاملة على Solana Explorer (${shortTx})
+                </a>
+            `;
+            btnConfirm.innerText = "🎉 تم الإتمام بنجاح";
+        } else {
+            throw new Error(data?.error || "فشلت عملية التنفيذ على البلوكشين.");
+        }
+
+    } catch (err) {
+        console.error("❌ خطأ المقايضة:", err);
+        statusMsg.style.color = "#ff4d4d";
+        statusMsg.innerText = `❌ خطأ: ${err.message || 'فشلت العملية'}`;
+        btnConfirm.disabled = false;
+        btnConfirm.style.opacity = "1";
+    }
+};
+    
