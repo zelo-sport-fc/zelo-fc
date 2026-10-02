@@ -1,8 +1,3 @@
-// ==========================================
-// 💎 Zelo Sport - TON Wallet & Core UI Module (wallet-ton.js)
-// ==========================================
-
-// 1. حقن تنسيقات الزجاج والبطاقات الأساسية لصفحة المحفظة
 (function injectWalletStyles() {
     if (document.getElementById('wallet-core-styles')) return;
     const style = document.createElement('style');
@@ -67,7 +62,6 @@
     document.head.appendChild(style);
 })();
 
-// 2. تحميل مكتبة TON Connect UI
 if (!window.TON_CONNECT_UI && !document.getElementById('ton-connect-script')) {
     const script = document.createElement('script');
     script.id = 'ton-connect-script';
