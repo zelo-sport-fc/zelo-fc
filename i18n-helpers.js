@@ -1,10 +1,25 @@
 window.i18n = {
     ar: {
+        // Navigation (الشريط السفلي)
         navHome: "الرئيسية",
         navTasks: "المهام",
         navFriends: "الأصدقاء",
         navLeaderboard: "الترتيب",
         navWallet: "المحفظة",
+
+        // Home Screen (الرئيسية)
+        officialSite: "الموقع الرسمي",
+        marketFeed: "بث السوق المباشر",
+        liveMarket: "السوق المباشر",
+        liveSolPrice: "سعر $SOL المباشر",
+        bidAskSpread: "فارق البيع/الشراء",
+        weeklyChallenges: "تحديات الأسبوع",
+        cupsSub: "🇪🇺 الكؤوس الأوروبية • 🇪🇸 الكؤوس الإسبانية",
+        challengesRanking: "ترتيب التحديات",
+        rankingSub: "اكتشف أفضل اللاعبين وترتيبك ⭐️",
+        supportedClubs: "الأندية المدعومة",
+        activeCount: "نشط 1",
+        fansCount: "3 مشجعين",
 
         welcome: "مرحباً بك",
         welcomeUser: "مرحباً، {name}!",
@@ -18,6 +33,7 @@ window.i18n = {
         maxEnergy: "أقصى طاقة",
         booster: "تعزيز",
 
+        // Tasks Screen (المهام والمكافآت)
         rewardsCenter: "مركز المكافآت",
         rewardsSub: "أكمل المهام اليومية لزيادة ثروتك من نقاط زيلو!",
         dailyReward: "المكافأة اليومية",
@@ -37,6 +53,7 @@ window.i18n = {
         xConnectedSuccess: "تم ربط الحساب وإضافة النقاط بنجاح:",
         xConnectError: "حدث خطأ أثناء الاتصال بـ X.",
 
+        // Task Titles (عناوين المهام)
         task_connect_x: "ربط حسابك في منصة X (مهمة خاصة)",
         task_pump_fun: "دعم وشراء عملة ZELO FC على Pump.fun",
         task_x_follow: "متابعة حساب Zelo Sport على X",
@@ -45,6 +62,7 @@ window.i18n = {
         task_tg_group_ar: "الانضمام للمجموعة العربية",
         task_tg_group_en: "الانضمام للمجموعة الأجنبية",
 
+        // Friends Screen (الأصدقاء والإحالة)
         inviteTitle: "دعوة الأصدقاء",
         inviteSub: "ادعُ أصدقاءك واحصل على %10 من أرباحهم للأبد!",
         referralLink: "رابط الدعوة الخاص بك",
@@ -54,6 +72,7 @@ window.i18n = {
         noFriendsYet: "لم تقم بدعوة أصدقاء بعد. ابدأ الآن!",
         referralBonus: "مكافأة الدعوة",
 
+        // Leaderboard Screen (قائمة المتصدرين)
         leaderboardTitle: "لائحة المتصدرين",
         topFans: "أفضل المشجعين",
         topClubs: "أفضل الأندية",
@@ -62,6 +81,7 @@ window.i18n = {
         members: "الأعضاء",
         myRank: "ترتيبي الحالي",
 
+        // Wallet Screen (المحفظة)
         walletTitle: "محفظتك",
         connectWallet: "ربط المحفظة",
         disconnectWallet: "قطع الاتصال",
@@ -73,6 +93,37 @@ window.i18n = {
         balance: "الرصيد",
         transactions: "المعاملات",
 
+        // Wallet Advanced & Claiming (تفاصيل المحفظة والمطالبة)
+        txtTonWallet: "محفظة TON",
+        txtSolanaWallet: "محفظة Solana (شبكة التطوير)",
+        txtConnected: "● متصل",
+        txtConnectTon: "ربط محفظة التليجرام 💎",
+        txtCopy: "📋 نسخ",
+        txtDisconnect: "🔌 قطع الاتصال",
+        txtOnChainSol: "رصيد SOL على الشبكة:",
+        txtChecking: "⏳ جاري التحقق...",
+        txtAutoConnectPhantom: "اتصال تلقائي عبر Phantom",
+        txtPlaceholderSol: "أو ألصق عنوان سولاّنا هنا...",
+        txtSaveAddress: "💾 حفظ العنوان",
+        txtBalanceTitle: "رصيد {tokenName}",
+        txtTotalEarned: "إجمالي المكتسب:",
+        txtClaimBtnActive: "مطالبة برموز {tokenName} ⚡",
+        txtClaimBtnLocked: "الحد الأدنى للمطالبة: {min} (تحتاج {needed} إضافية) 🔒",
+        txtSaving: "⏳ جاري الحفظ...",
+        msgWalletSaveSuccess: "✅ تم حفظ المحفظة بنجاح!",
+        msgWalletSaveFail: "فشل حفظ العنوان في السيرفر",
+        msgPhantomNotice: "يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الحقل.",
+        msgInvalidSolanaAddress: "⚠️ يرجى إدخال عنوان محفظة Solana صحيح.",
+        msgMinClaimAlert: "⚠️ الحد الأدنى للمطالبة هو {min} نقطة. رصيدك الحالي لا يكفي.",
+        msgConnectSolanaFirst: "⚠️️ يرجى ربط أو حفظ محفظة Solana أولاً!",
+        msgClaimConfirm: "هل تؤكد خصم {coins} نقطة للحصول على {tokens} من عملة {tokenName}؟",
+        txtProcessingTransfer: "⏳ جاري تحويل الرموز...",
+        msgClaimSuccess: "✅ نجاح! تم تحويل الرموز على الشبكة!\n\nرمز المعاملة (Tx Hash):\n{txHash}",
+        msgClaimFailed: "❌ فشل التحويل:\n{details}",
+        msgServerError: "❌ خطأ في الاتصال بالسيرفر:\n{error}",
+        msgCopied: "تم نسخ العنوان إلى الحافظة!",
+
+        // General (عام والإعدادات)
         loading: "جاري التحميل...",
         error: "حدث خطأ غير متوقع",
         confirm: "تأكيد",
@@ -82,17 +133,32 @@ window.i18n = {
         settings: "الإعدادات",
         language: "اللغة",
         arabic: "العربية",
-        english: "الإسبانية / الإنجليزية",
+        english: "الإنجليزية",
         status: "الحالة",
         success: "نجاح",
         failed: "فشل"
     },
     en: {
+        // Navigation
         navHome: "Home",
         navTasks: "Tasks",
         navFriends: "Friends",
         navLeaderboard: "Rankings",
         navWallet: "Wallet",
+
+        // Home Screen
+        officialSite: "Official Site",
+        marketFeed: "Real-Time Market Feed",
+        liveMarket: "LIVE MARKET",
+        liveSolPrice: "Live $SOL Price",
+        bidAskSpread: "Bid/Ask Spread",
+        weeklyChallenges: "Weekly Challenges",
+        cupsSub: "🇪🇺 European Cups • 🇪🇸 Spanish Cups",
+        challengesRanking: "Challenges Ranking",
+        rankingSub: "⭐ Discover top players and your rank",
+        supportedClubs: "Supported Clubs",
+        activeCount: "1 Active",
+        fansCount: "3 Fans",
 
         welcome: "Welcome",
         welcomeUser: "Welcome, {name}!",
@@ -106,6 +172,7 @@ window.i18n = {
         maxEnergy: "Max Energy",
         booster: "Booster",
 
+        // Tasks Screen
         rewardsCenter: "Rewards Center",
         rewardsSub: "Complete daily tasks to boost your ZELO points!",
         dailyReward: "Daily Reward",
@@ -125,6 +192,7 @@ window.i18n = {
         xConnectedSuccess: "X Account connected successfully:",
         xConnectError: "An error occurred with X verification.",
 
+        // Task Titles
         task_connect_x: "Connect X Account (VIP)",
         task_pump_fun: "Support & Buy ZELO FC on Pump.fun",
         task_x_follow: "Follow Zelo Sport on X",
@@ -133,6 +201,7 @@ window.i18n = {
         task_tg_group_ar: "Join Arabic Group",
         task_tg_group_en: "Join Global Group",
 
+        // Friends Screen
         inviteTitle: "Invite Friends",
         inviteSub: "Invite your friends and earn 10% of their rewards forever!",
         referralLink: "Your Referral Link",
@@ -142,6 +211,7 @@ window.i18n = {
         noFriendsYet: "No friends invited yet. Start sharing now!",
         referralBonus: "Referral Bonus",
 
+        // Leaderboard Screen
         leaderboardTitle: "Leaderboard",
         topFans: "Top Fans",
         topClubs: "Top Clubs",
@@ -150,6 +220,7 @@ window.i18n = {
         members: "Members",
         myRank: "My Rank",
 
+        // Wallet Screen
         walletTitle: "Your Wallet",
         connectWallet: "Connect Wallet",
         disconnectWallet: "Disconnect",
@@ -161,6 +232,37 @@ window.i18n = {
         balance: "Balance",
         transactions: "Transactions",
 
+        // Wallet Advanced & Claiming
+        txtTonWallet: "TON Wallet",
+        txtSolanaWallet: "Solana Wallet (Devnet)",
+        txtConnected: "● Connected",
+        txtConnectTon: "Connect Telegram Wallet 💎",
+        txtCopy: "📋 Copy",
+        txtDisconnect: "🔌 Disconnect",
+        txtOnChainSol: "On-Chain SOL (Devnet):",
+        txtChecking: "⏳ Checking...",
+        txtAutoConnectPhantom: "Auto Connect Phantom",
+        txtPlaceholderSol: "Or paste Solana address...",
+        txtSaveAddress: "💾 Save Address",
+        txtBalanceTitle: "{tokenName} Balance",
+        txtTotalEarned: "Total Earned:",
+        txtClaimBtnActive: "Claim {tokenName} Tokens ⚡",
+        txtClaimBtnLocked: "Min Claim: {min} (Need {needed} more) 🔒",
+        txtSaving: "⏳ Saving...",
+        msgWalletSaveSuccess: "✅ Wallet saved successfully!",
+        msgWalletSaveFail: "Failed to save address to server",
+        msgPhantomNotice: "Please copy your wallet address from the Phantom app and paste it in the field.",
+        msgInvalidSolanaAddress: "⚠️ Please enter a valid Solana wallet address.",
+        msgMinClaimAlert: "⚠️ Minimum claim limit is {min} points. Your current balance is not enough.",
+        msgConnectSolanaFirst: "⚠️ Please connect or save your Solana Wallet first!",
+        msgClaimConfirm: "Confirm deducting {coins} to receive {tokens} {tokenName} tokens?",
+        txtProcessingTransfer: "⏳ Processing transfer...",
+        msgClaimSuccess: "✅ Success! Tokens transferred On-Chain!\n\nTx Hash:\n{txHash}",
+        msgClaimFailed: "❌ Transfer failed:\n{details}",
+        msgServerError: "❌ Server connection error:\n{error}",
+        msgCopied: "Address copied to clipboard!",
+
+        // General
         loading: "Loading...",
         error: "An unexpected error occurred",
         confirm: "Confirm",
@@ -177,6 +279,7 @@ window.i18n = {
     }
 };
 
+// الدالة الرئيسية للترجمة وتمرير المتغيرات الديناميكية
 function t(key, params = {}) {
     const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
     let text = key;
@@ -190,12 +293,19 @@ function t(key, params = {}) {
         }
     }
 
-    Object.keys(params).forEach(paramKey => {
-        text = text.replace(new RegExp(`{${paramKey}}`, 'g'), params[paramKey]);
-    });
+    if (typeof params === 'object' && params !== null) {
+        Object.keys(params).forEach(paramKey => {
+            text = text.replace(new RegExp(`{${paramKey}}`, 'g'), params[paramKey]);
+        });
+    }
 
     return text;
 }
+
+// دالة getT للتوافق
+window.getT = function(key) {
+    return t(key);
+};
 
 function getClubName(club) {
     if (!club) return '';
