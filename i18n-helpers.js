@@ -1,29 +1,29 @@
-// ==========================================
-// 🌍 دوال مساعدة للترجمة واسترجاع الأسماء (i18n-helpers.js)
-// ==========================================
-
 function t(key) {
-    return typeof i18n !== 'undefined' && i18n[userState.lang] && i18n[userState.lang][key] ? i18n[userState.lang][key] : key;
+    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    return (typeof i18n !== 'undefined' && i18n[lang]?.[key]) || key;
 }
 
 function getClubName(club) {
-    return userState.lang === 'ar' ? club.nameAr : club.nameEn;
+    if (!club) return '';
+    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    return lang === 'ar' ? (club.nameAr || club.nameEn || '') : (club.nameEn || club.nameAr || '');
 }
 
 function getTaskName(task) {
-    return userState.lang === 'ar' ? task.textAr : task.textEn;
+    if (!task) return '';
+    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    return lang === 'ar' ? (task.textAr || task.textEn || '') : (task.textEn || task.textAr || '');
 }
 
 function applyLanguageSettings() {
-    document.documentElement.dir = userState.lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = userState.lang;
+    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
     
     const navItems = document.querySelectorAll('.nav-item span:not(.icon)');
     if (navItems.length >= 5) {
-        navItems[0].innerText = t('navHome');
-        navItems[1].innerText = t('navTasks');
-        navItems[2].innerText = t('navFriends');
-        navItems[3].innerText = t('navLeaderboard');
-        navItems[4].innerText = t('navWallet');
+        ['navHome', 'navTasks', 'navFriends', 'navLeaderboard', 'navWallet'].forEach((key, i) => {
+            navItems[i].innerText = t(key);
+        });
     }
 }
