@@ -2,6 +2,11 @@
 // ⚽ Meteora Devnet Launchpad & Trading Engine
 // ==========================================
 
+// تأكيد تعريف Buffer لتجنب ReferenceError
+if (typeof window.Buffer === 'undefined' && typeof buffer !== 'undefined') {
+    window.Buffer = buffer.Buffer;
+}
+
 if (typeof window.VAULT_PUBLIC_KEY === 'undefined') {
     window.VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1';
 }
@@ -169,38 +174,33 @@ window.executeDevnetSwap = async function(matchId, teamName) {
         return;
     }
 
-    const savedSolanaAddress = window.solanaWalletAddress || window.userState?.solanaWallet || localStorage.getItem('solana_wallet');
-    const provider = window.solana || window.solflare;
-
-    if (!provider && !savedSolanaAddress) {
-        alert("⚠️ لم يتم العثور على محفظة مربوطة.");
-        return;
-    }
-
-    const solanaWeb3Lib = window.solanaWeb3;
-
     try {
         if (btn) btn.disabled = true;
+        if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد المعاملة...";
 
-        // 1. إذا كان متصفح ويب عالي وبدعم إضافة Phantom مباشرة
+        // تحميل Buffer تلقائياً إذا كان مفقوداً
+        if (typeof window.Buffer === 'undefined') {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js';
+                script.onload = () => {
+                    if (typeof buffer !== 'undefined') window.Buffer = buffer.Buffer;
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        const provider = window.solana || window.solflare;
+
         if (provider && provider.isConnected && typeof provider.signAndSendTransaction === 'function') {
-            if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد المعاملة والتوقيع...";
-            
             const resp = await provider.connect();
             const userPublicKey = resp.publicKey;
+            const solanaWeb3Lib = window.solanaWeb3;
 
             if (solanaWeb3Lib) {
                 const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
-                
-                const balanceLamports = await connection.getBalance(userPublicKey);
-                const balanceSol = balanceLamports / solanaWeb3Lib.LAMPORTS_PER_SOL;
-
-                if (balanceSol < solAmount) {
-                    alert(`❌ رصيد غير كافٍ!\n\nرصيدك: ${balanceSol.toFixed(4)} SOL\nالمطلوب: ${solAmount} SOL`);
-                    if (btn) btn.disabled = false;
-                    if (statusMsg) statusMsg.innerText = "";
-                    return;
-                }
 
                 const transaction = new solanaWeb3Lib.Transaction().add(
                     solanaWeb3Lib.SystemProgram.transfer({
@@ -218,35 +218,15 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
                 alert(`✅ تمت المعاملة واقتطاع الرصيد بنجاح!\n\nTx Hash:\n${signed.signature}`);
             }
-        } 
-        // 2. إذا كان داخل تلغرام mini app: إما الخصم الداخلي أو التوجيه للمحفظة للتوقيع
-        else {
-            if (statusMsg) statusMsg.innerText = "⏳ جاري الفحص والتوجيه لتأكيد الخصم...";
+        } else {
+            // التوجيه لـ Phantom App لتوقيع المعاملة عند الفتح داخل التلغرام
+            const currentUrl = window.location.href;
+            const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
 
-            if (solanaWeb3Lib) {
-                const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
-                const userPubKey = new solanaWeb3Lib.PublicKey(savedSolanaAddress);
-
-                const balanceLamports = await connection.getBalance(userPubKey);
-                const balanceSol = balanceLamports / solanaWeb3Lib.LAMPORTS_PER_SOL;
-
-                if (balanceSol < solAmount) {
-                    alert(`❌ رصيد غير كافٍ!\n\nرصيدك الحالي: ${balanceSol.toFixed(4)} SOL\nالمبلغ المطلوب: ${solAmount} SOL`);
-                    if (btn) btn.disabled = false;
-                    if (statusMsg) statusMsg.innerText = "❌ رصيد غير كافٍ";
-                    return;
-                }
-            }
-
-            // خيار التوجيه المباشر لتطبيق Phantom لتأكيد تحويل SOL الحقيقي
-            const recipient = window.VAULT_PUBLIC_KEY;
-            const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}?ref=${encodeURIComponent(window.location.href)}`;
-            
-            // تنبيه المستخدم بالتوجه لتوقيع المعاملة
             if (window.Telegram?.WebApp) {
-                window.Telegram.WebApp.openLink(phantomDeepLink);
+                window.Telegram.WebApp.openLink(phantomUrl);
             } else {
-                window.location.href = phantomDeepLink;
+                window.location.href = phantomUrl;
             }
         }
 
@@ -262,4 +242,4 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 };
 
 console.log("✅ [Meteora Engine] matchesTrade.js loaded successfully.");
-            
+                                                                                                                     
