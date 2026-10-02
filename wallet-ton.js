@@ -1,3 +1,22 @@
+
+function t(key, fallback = '', params = {}) {
+    let text = fallback || key;
+    if (typeof window.t === 'function') {
+        const res = window.t(key, params);
+        if (res && res !== key) text = res;
+    } else if (typeof window.getT === 'function') {
+        const res = window.getT(key);
+        if (res && res !== key) text = res;
+    }
+    
+    if (params && typeof params === 'object') {
+        Object.keys(params).forEach(p => {
+            text = text.replace(new RegExp(`{${p}}`, 'g'), params[p]);
+        });
+    }
+    return text;
+}
+
 (function injectWalletStyles() {
     if (document.getElementById('wallet-core-styles')) return;
     const style = document.createElement('style');
@@ -75,10 +94,15 @@ if (!window.TON_CONNECT_UI && !document.getElementById('ton-connect-script')) {
 function initTonConnectUI() {
     if (window.TON_CONNECT_UI && !window.tonConnectUI) {
         try {
+            const currentLang = (typeof userState !== 'undefined' && userState?.lang) ? userState.lang : 'en';
+
             window.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
                 manifestUrl: 'https://starlingcoin.github.io/starling-app/tonconnect-manifest.json?v=9.0',
                 twaReturnUrl: 'https://t.me/zelosportbot/app',
-                buttonRootId: null
+                buttonRootId: null,
+                uiPreferences: {
+                    language: currentLang === 'ar' ? 'ar' : 'en'
+                }
             });
 
             window.tonConnectUI.onStatusChange((wallet) => {
@@ -86,12 +110,14 @@ function initTonConnectUI() {
                     const rawAddress = wallet.account.address;
                     if (typeof userState !== 'undefined') {
                         userState.walletAddress = rawAddress;
+                        userState.tonWallet = rawAddress;
                         userState.walletConnected = true;
                     }
                     localStorage.setItem('ton_wallet_address', rawAddress);
                 } else {
                     if (typeof userState !== 'undefined') {
                         userState.walletAddress = '';
+                        userState.tonWallet = '';
                         userState.walletConnected = false;
                     }
                     localStorage.removeItem('ton_wallet_address');
@@ -110,11 +136,16 @@ window.triggerConnect = async function() {
             await window.tonConnectUI.openModal();
         } catch (e) {
             console.error("Open TON Modal Error:", e);
+            alert(t('msgTonConnectError', '⚠️ تعذر فتح نافذة الاتصال بمحفظة TON.'));
         }
     } else {
         initTonConnectUI();
         setTimeout(() => {
-            if (window.tonConnectUI) window.tonConnectUI.openModal();
+            if (window.tonConnectUI) {
+                window.tonConnectUI.openModal();
+            } else {
+                alert(t('msgTonScriptLoading', '⏳ جاري تحميل مكتبة المحفظة، يرجى المحاولة بعد لحظات.'));
+            }
         }, 500);
     }
 };
@@ -130,7 +161,9 @@ window.triggerDisconnect = async function() {
     localStorage.removeItem('ton_wallet_address');
     if (typeof userState !== 'undefined') {
         userState.walletAddress = '';
+        userState.tonWallet = '';
         userState.walletConnected = false;
     }
     if (typeof showPage === 'function') showPage('wallet');
 };
+                    
