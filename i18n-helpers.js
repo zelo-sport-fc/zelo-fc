@@ -115,7 +115,7 @@ window.i18n = {
         msgWalletSaveSuccess: "✅ تم حفظ المحفظة بنجاح!",
         msgWalletSaveFail: "فشل حفظ العنوان في السيرفر",
         msgPhantomNotice: "يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الحقل.",
-        msgInvalidSolanaAddress: "⚠️ يرجى إدخال عنوان محفظة Solana صحيح.",
+        msgInvalidSolanaAddress: "⚠️️ يرجى إدخال عنوان محفظة Solana صحيح.",
         msgMinClaimAlert: "⚠️ الحد الأدنى للمطالبة هو {min} نقطة. رصيدك الحالي لا يكفي.",
         msgConnectSolanaFirst: "⚠ يرجى ربط أو حفظ محفظة Solana أولاً!",
         msgClaimConfirm: "هل تؤكد خصم {coins} نقطة للحصول على {tokens} من عملة {tokenName}؟",
@@ -283,20 +283,36 @@ window.i18n = {
     }
 };
 
-// الدالة الرئيسية للترجمة وتمرير المتغيرات الديناميكية
+// ==========================================
+// 🛠️ الدوال الرئيسية للتحكم باللغات
+// ==========================================
+
+// 1. جلب اللغة الحالية المعتمدة في التطبيق
+function getCurrentLang() {
+    // الأولوية لـ LocalStorage ثم حالة المستخدم ثم كائن تليجرام ثم الافتراضي (ar)
+    return localStorage.getItem('app_lang') || 
+           (typeof userState !== 'undefined' && userState?.lang) || 
+           window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
+           'ar';
+}
+
+// 2. الدالة الرئيسية لجلب النص المترجم وتمرير المتغيرات
 function t(key, params = {}) {
-    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    const lang = getCurrentLang();
     let text = key;
 
+    // البحث في اللغة الحالية
     if (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key] !== undefined) {
         text = i18n[lang][key];
     } else {
+        // Fallback للغة الاحتياطية في حال عدم وجود المفتاح
         const fallbackLang = lang === 'ar' ? 'en' : 'ar';
         if (typeof i18n !== 'undefined' && i18n[fallbackLang] && i18n[fallbackLang][key] !== undefined) {
             text = i18n[fallbackLang][key];
         }
     }
 
+    // استبدال المتغيرات الديناميكية مثل {name} أو {count}
     if (typeof params === 'object' && params !== null) {
         Object.keys(params).forEach(paramKey => {
             text = text.replace(new RegExp(`{${paramKey}}`, 'g'), params[paramKey]);
@@ -306,40 +322,62 @@ function t(key, params = {}) {
     return text;
 }
 
-// دالة getT للتوافق
+// 3. دالة getT للتوافق مع الأكواد القديمة
 window.getT = function(key) {
     return t(key);
 };
 
-// جلب اسم النادي حسب اللغة
+// 4. جلب اسم النادي حسب اللغة
 function getClubName(club) {
     if (!club) return '';
-    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    const lang = getCurrentLang();
     if (lang === 'ar') {
         return club.nameAr || club.name_ar || club.nameEn || club.name_en || club.name || '';
     }
     return club.nameEn || club.name_en || club.nameAr || club.name_ar || club.name || '';
 }
 
-// جلب اسم المهمة حسب اللغة
+// 5. جلب اسم المهمة حسب اللغة (تم تصحيح خطأ title_en هنا)
 function getTaskName(task) {
     if (!task) return '';
     if (task.titleKey) {
         return t(task.titleKey);
     }
-    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    const lang = getCurrentLang();
     if (lang === 'ar') {
         return task.textAr || task.text_ar || task.titleAr || task.title_ar || task.textEn || task.text_en || task.title || '';
     }
-    return task.textEn || task.text_en || task.titleEn || task.title_ar || task.title || '';
+    // ✅ تصحيح: الاعتماد على title_en وتجاهل title_ar في المسار الإنجليزي
+    return task.textEn || task.text_en || task.titleEn || task.title_en || task.textAr || task.text_ar || task.titleAr || task.title_ar || task.title || '';
 }
 
-// تطبيق إعدادات الاتجاه والتنسيق والترجمة على عناصر الصفحة
+// 6. تغيير اللغة وتحديث التطبيق كاملاً
+function switchLanguage(newLang) {
+    if (typeof userState !== 'undefined') {
+        userState.lang = newLang;
+    }
+    localStorage.setItem('app_lang', newLang);
+    
+    // تطبيق الاتجاه والنصوص الثابتة
+    applyLanguageSettings();
+
+    // إعادة رسم الواجهات الديناميكية إذا كانت الدوال معرفة لديك
+    if (typeof renderCurrentPage === 'function') {
+        renderCurrentPage();
+    } else {
+        if (typeof renderHome === 'function') renderHome();
+        if (typeof renderTasks === 'function') renderTasks();
+        if (typeof renderWallet === 'function') renderWallet();
+    }
+}
+
+// 7. تطبيق إعدادات الاتجاه والترجمة على الواجهة (HTML)
 function applyLanguageSettings() {
-    const lang = (typeof userState !== 'undefined' && userState?.lang) || 'ar';
+    const lang = getCurrentLang();
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
     
+    // أ) ترجمة القائمة السفلى (Navbar)
     const navKeys = ['navHome', 'navTasks', 'navFriends', 'navLeaderboard', 'navWallet'];
     const navItems = document.querySelectorAll('.nav-item span:not(.icon)');
     
@@ -349,6 +387,7 @@ function applyLanguageSettings() {
         }
     });
 
+    // ب) ترجمة أي عنصر يحتوي على data-i18n
     const translatableElements = document.querySelectorAll('[data-i18n]');
     translatableElements.forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -356,4 +395,18 @@ function applyLanguageSettings() {
             el.innerText = t(key);
         }
     });
+
+    // ج) ترجمة النصوص التوضيحية للمدخلات (Placeholder)
+    const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+    placeholderElements.forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (key) {
+            el.setAttribute('placeholder', t(key));
+        }
+    });
 }
+
+// تشغيل الترجـمة تلقائياً فور تحميل الملف
+document.addEventListener('DOMContentLoaded', () => {
+    applyLanguageSettings();
+});
