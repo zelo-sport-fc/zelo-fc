@@ -1,10 +1,21 @@
 // ==========================================
+// 0. الثوابت العامة وإعدادات الشبكة
+// ==========================================
+if (typeof window.VAULT_PUBLIC_KEY === 'undefined') {
+    window.VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1';
+}
+const VAULT_PUBLIC_KEY = window.VAULT_PUBLIC_KEY;
+
+// ==========================================
 // 1. دالة فتح نافذة المقايضة (Swap Modal)
 // ==========================================
 window.openSwapModal = function(matchId, teamName, priceSol) {
     // إزالة أي modal سابق إن وجد
     const oldModal = document.getElementById("swap-modal");
     if (oldModal) oldModal.remove();
+
+    // حماية النصوص من الكسر داخل الأحداث
+    const safeTeamName = String(teamName).replace(/'/g, "\\'");
 
     const modal = document.createElement("div");
     modal.id = "swap-modal";
@@ -30,10 +41,10 @@ window.openSwapModal = function(matchId, teamName, priceSol) {
             <div id="swap-status-msg" style="color: #fcb045; font-size: 0.75rem; margin-bottom: 12px; text-align: center; min-height: 18px;"></div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button id="btn-confirm-swap" onclick="window.executeDevnetSwap(${matchId}, '${teamName}')" style="background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.85rem; cursor: pointer;">
+                <button id="btn-confirm-swap" onclick="window.executeDevnetSwap('${matchId}', '${safeTeamName}')" style="background: linear-gradient(135deg, #14F195 0%, #00b4d8 100%); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.85rem; cursor: pointer;">
                     🚀 إتمام المقايضة (Swap on DBC)
                 </button>
-                <button onclick="window.createTestMatchToken(${matchId}, '${teamName}')" style="background: rgba(153, 69, 255, 0.2); border: 1px solid #9945FF; color: #9945FF; padding: 8px; border-radius: 8px; font-size: 0.72rem; cursor: pointer;">
+                <button onclick="window.createTestMatchToken('${matchId}', '${safeTeamName}')" style="background: rgba(153, 69, 255, 0.2); border: 1px solid #9945FF; color: #9945FF; padding: 8px; border-radius: 8px; font-size: 0.72rem; cursor: pointer;">
                     ⚡ توليد Mint Token تجريبي لهذه المباراة
                 </button>
             </div>
@@ -65,7 +76,7 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
     const solanaWeb3Lib = window.solanaWeb3;
     if (!solanaWeb3Lib) {
-        alert("⚠️️ مكتبة Solana Web3 غير محملة.");
+        alert("⚠ مكتبة Solana Web3 غير محملة.");
         return;
     }
 
@@ -172,3 +183,4 @@ window.createTestMatchToken = async function(matchId, matchName) {
         alert(`❌ تعذر إنشاء التوكن: ${err.message || 'تم إلغاء العملية'}`);
     }
 };
+    
