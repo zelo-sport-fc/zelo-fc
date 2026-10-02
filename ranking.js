@@ -1,50 +1,41 @@
-// ==========================================
-// 🏆 دالة جلب وعرض شاشة الترتيب الشاملة VIP (ranking.js)
-// ==========================================
+function getT(key) {
+    const lang = userState.lang || 'ar';
+    return typeof i18n !== 'undefined' && i18n[lang][key] ? i18n[lang][key] : key;
+}
 
 const generateAvatar = (name, photoUrl, size = '50px') => {
     if (photoUrl) {
         return `<img src="${photoUrl}" style="width:${size}; height:${size}; border-radius:50%; object-fit:cover; border:2px solid var(--accent-gold, #fcb045); margin: 0 auto; display: block;">`;
-    } else {
-        const initial = name ? String(name).charAt(0).toUpperCase() : '👤';
-        return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #833ab4, #fd1d1d); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #fcb045);">${initial}</div>`;
     }
+    const initial = name ? String(name).charAt(0).toUpperCase() : '👤';
+    return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #833ab4, #fd1d1d); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #fcb045);">${initial}</div>`;
 };
 
 window.renderRankingScreen = async function(container) {
     const isAr = userState.lang === 'ar'; 
     const currentUserId = userState.userId;
 
-    container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">
-        <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
-        ${isAr ? 'جاري تجهيز واجهة التحديات...' : 'Preparing challenges dashboard...'}
-    </div>`;
+    container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;"><div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>${getT('loadingMatches')}</div>`;
 
     try {
-        // سحب الترتيب (نكتفي بأول 3 فقط للمنصة الشرفية)
-        const { data: rankings, error } = await supabaseClient
+        const { data: rankings } = await supabaseClient
             .from('weekly_match_rankings')
             .select('*')
             .eq('category', 'weekly')
             .order('points_earned', { ascending: false })
             .limit(3);
 
-        if (error) throw error;
-
-        // جلب ترتيب المستخدم الحالي
         const { data: myRank } = await supabaseClient.rpc('get_user_rank', {
             p_telegram_id: currentUserId,
             p_category: 'weekly'
         });
 
-        // سحب سجل التوقعات للمستخدم لحساب النقاط الدقيقة
         const { data: predictions } = await supabaseClient
             .from('match_predictions')
             .select('*')
             .eq('telegram_id', currentUserId)
             .order('created_at', { ascending: false });
 
-        // المعالجة الذكية للنقاط والمباريات
         let myExactPoints = 0;
         let errorCount = 0;
         let matches = [];
@@ -66,11 +57,9 @@ window.renderRankingScreen = async function(container) {
             matches = matchesData || [];
         }
 
-        // معالجة شكل الترتيب ليكون رقم أو "غير مصنف" وتصغير الخط إن لزم
-        let displayRank = myRank ? `#${myRank}` : (isAr ? 'غير مصنف' : 'Unranked');
-        let rankFontSize = myRank ? '2.5rem' : '1.2rem'; 
+        const displayRank = myRank ? `#${myRank}` : getT('unranked');
+        const rankFontSize = myRank ? '2.5rem' : '1.2rem'; 
 
-        // بناء الواجهة الاحترافية (VIP)
         let html = `
             <style>
                 .podium-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; margin-top: 20px; gap: 10px; }
@@ -85,16 +74,13 @@ window.renderRankingScreen = async function(container) {
             
             <div style="padding: 20px; padding-bottom: 80px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                    <h2 style="color: white; margin: 0; font-size: 1.5rem;">🏆 ${isAr ? 'ترتيب المتصدرين' : 'Leaderboard'}</h2>
+                    <h2 style="color: white; margin: 0; font-size: 1.5rem;">🏆 ${getT('leaderboard')}</h2>
                     <button onclick="showPage('home')" style="background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer;">✖</button>
                 </div>
         `;
 
-        // -- المنصة Top 3 --
         if (rankings && rankings.length > 0) {
-            const firstPlace = rankings[0];
-            const secondPlace = rankings[1];
-            const thirdPlace = rankings[2];
+            const [firstPlace, secondPlace, thirdPlace] = rankings;
 
             html += `<div class="podium-container">`;
             
@@ -133,33 +119,26 @@ window.renderRankingScreen = async function(container) {
 
             html += `</div>`;
         } else {
-             html += `<div style="text-align:center; color:#666; padding: 20px;">${isAr ? 'لم يتم تحديد المتصدرين بعد.' : 'No leaderboard data yet.'}</div>`;
+             html += `<div style="text-align:center; color:#666; padding: 20px;">${getT('noLeaderboardData')}</div>`;
         }
 
-        // -- بطاقتك الخاصة بالنقاط الدقيقة --
         html += `
             <div class="my-rank-card">
-                <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: rgba(255,255,255,0.9);">
-                    ${isAr ? 'ترتيبك الحالي في التحديات' : 'Your Current Rank'}
-                </p>
+                <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: rgba(255,255,255,0.9);">${getT('yourCurrentRank')}</p>
                 <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
-                    <div style="font-size: ${rankFontSize}; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                        ${displayRank}
-                    </div>
+                    <div style="font-size: ${rankFontSize}; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${displayRank}</div>
                     ${generateAvatar(userState.username, userState.photoUrl, '60px')}
                     <div style="text-align: ${isAr ? 'right' : 'left'};">
                         <div style="font-weight: bold; font-size: 1.2rem;">${userState.username || 'User'}</div>
                         <div style="color: #fff; font-weight: bold; font-size: 1.1rem; margin-top: 3px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 8px; display: inline-block;">
-                            ${myExactPoints} ${isAr ? 'نقطة' : 'Pts'}
+                            ${myExactPoints} ${getT('pts')}
                         </div>
                     </div>
                 </div>
             </div>
         `;
 
-        // -- سجل التوقعات --
         let historyHtml = '';
-
         if (predictions && predictions.length > 0) {
             historyHtml = predictions.map(pred => {
                 const match = matches.find(m => m.id === pred.match_id);
@@ -169,13 +148,13 @@ window.renderRankingScreen = async function(container) {
                 let resultUi = '';
 
                 if (pred.prediction_status === 'correct') {
-                    statusUi = `<span style="background:rgba(16, 185, 129, 0.2); color:#10b981; padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;">+${pred.points_awarded || 3} ${isAr ? 'نقاط' : 'Pts'} ✅</span>`;
-                    resultUi = `<div style="color:#10b981; font-size:0.85rem; margin-top:8px;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
+                    statusUi = `<span style="background:rgba(16, 185, 129, 0.2); color:#10b981; padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;">+${pred.points_awarded || 3} ${getT('pts')} ✅</span>`;
+                    resultUi = `<div style="color:#10b981; font-size:0.85rem; margin-top:8px;">${getT('finalScore')} ${match.home_score} - ${match.away_score}</div>`;
                 } else if (pred.prediction_status === 'wrong') {
-                    statusUi = `<span style="background:rgba(253, 29, 29, 0.2); color:var(--accent-red, #fd1d1d); padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;">${isAr ? 'خطأ' : 'Wrong'} ❌</span>`;
-                    resultUi = `<div style="color:var(--accent-red, #fd1d1d); font-size:0.85rem; margin-top:8px;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
+                    statusUi = `<span style="background:rgba(253, 29, 29, 0.2); color:var(--accent-red, #fd1d1d); padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;">${getT('wrong')} ❌</span>`;
+                    resultUi = `<div style="color:var(--accent-red, #fd1d1d); font-size:0.85rem; margin-top:8px;">${getT('finalScore')} ${match.home_score} - ${match.away_score}</div>`;
                 } else {
-                    statusUi = `<span style="background:rgba(252, 176, 69, 0.2); color:var(--accent-gold, #fcb045); padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;">${isAr ? 'قيد الانتظار' : 'Pending'} ⏳</span>`;
+                    statusUi = `<span style="background:rgba(252, 176, 69, 0.2); color:var(--accent-gold, #fcb045); padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.85rem;">${getT('pending')} ⏳</span>`;
                 }
 
                 return `
@@ -183,7 +162,7 @@ window.renderRankingScreen = async function(container) {
                         <div>
                             <div style="font-weight:bold; font-size:1rem; margin-bottom:5px; color:#fff;">${match.team_a} vs ${match.team_b}</div>
                             <div style="color:#aaa; font-size:0.9rem;">
-                                ${isAr ? 'توقعك:' : 'Prediction:'} <b style="color:#fff;">${pred.predicted_home} - ${pred.predicted_away}</b>
+                                ${getT('yourPrediction')} <b style="color:#fff;">${pred.predicted_home} - ${pred.predicted_away}</b>
                             </div>
                             ${resultUi}
                         </div>
@@ -192,15 +171,15 @@ window.renderRankingScreen = async function(container) {
                 `;
             }).join('');
         } else {
-            historyHtml = `<div style="text-align:center; color:#888; padding:30px; background:var(--bg-card, #1c1c22); border-radius:12px; border: 1px solid rgba(255,255,255,0.05);">${isAr ? 'لم تقم بأي توقعات بعد.' : 'No predictions yet.'}</div>`;
+            historyHtml = `<div style="text-align:center; color:#888; padding:30px; background:var(--bg-card, #1c1c22); border-radius:12px; border: 1px solid rgba(255,255,255,0.05);">${getT('noPredictionsYet')}</div>`;
         }
 
         html += `
             <div style="margin-top: 35px; margin-bottom: 25px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="margin:0; color:#fff;">📜 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}</h3>
+                    <h3 style="margin:0; color:#fff;">📜 ${getT('myPredictions')}</h3>
                     <div style="background:var(--bg-card, #1c1c22); padding:5px 12px; border-radius:20px; font-size:0.85rem; border:1px solid rgba(255,255,255,0.1);">
-                        <span style="color:#aaa;">${isAr ? 'الأخطاء:' : 'Errors:'}</span> 
+                        <span style="color:#aaa;">${getT('errors')}</span> 
                         <span style="font-weight:bold; color:${errorCount > 0 ? 'var(--accent-red, #fd1d1d)' : '#10b981'};">${errorCount}</span>
                     </div>
                 </div>
@@ -211,22 +190,17 @@ window.renderRankingScreen = async function(container) {
         container.innerHTML = html;
 
     } catch (err) {
-        console.error("❌ خطأ في جلب بيانات الترتيب:", err);
+        console.error("Error fetching leaderboard data:", err);
         container.innerHTML = `
             <div style="text-align:center; padding:50px; color:#ff4d4d;">
-                <h3>${isAr ? 'حدث خطأ!' : 'Error!'}</h3>
-                <p>${isAr ? 'لم نتمكن من جلب الترتيب، يرجى المحاولة لاحقاً.' : 'Could not fetch rankings, please try again later.'}</p>
-                <button onclick="showPage('home')" class="btn-secondary" style="margin-top: 20px;">
-                    ${isAr ? 'عودة' : 'Back'}
-                </button>
+                <h3>${getT('errorTitle')}</h3>
+                <p>${getT('connectionError')}</p>
+                <button onclick="showPage('home')" class="btn-secondary" style="margin-top: 20px;">${getT('backBtn')}</button>
             </div>`;
     }
 };
 
 window.openRankingScreen = function() {
-    console.log("🏆 تم طلب فتح شاشة ترتيب التحديات");
     const contentDiv = document.getElementById("main-content");
-    if (contentDiv) {
-        renderRankingScreen(contentDiv);
-    }
+    if (contentDiv) renderRankingScreen(contentDiv);
 };
