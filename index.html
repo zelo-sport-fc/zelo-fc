@@ -297,7 +297,7 @@
 
         .btn-back:active {
             background: rgba(253, 29, 29, 0.2);
-            transform: translateX(5px); 
+            transform: translateX(-5px); 
         }
 
         @keyframes fadeUp {
@@ -347,26 +347,28 @@
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text">Home</span>
+            <span class="nav-text" data-i18n="navHome"></span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
-            <span class="icon icon-wrapper">🛠️️</span>
-            <span class="nav-text">Tasks</span>
+            <span class="icon icon-wrapper">🛠</span>
+            <span class="nav-text" data-i18n="navTasks"></span>
         </button>
         <button class="nav-item" onclick="showPage('friends')">
             <span class="icon icon-wrapper">👥</span>
-            <span class="nav-text">Friends</span>
+            <span class="nav-text" data-i18n="navFriends"></span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text">Ranking</span>
+            <span class="nav-text" data-i18n="navLeaderboard"></span>
         </button>
         <button class="nav-item" onclick="showPage('wallet')">
             <span class="icon icon-wrapper">👛</span>
-            <span class="nav-text">Wallet</span>
+            <span class="nav-text" data-i18n="navWallet"></span>
         </button>
     </nav>
 
+    <!-- JS Scripts -->
+    <script src="i18n.js"></script>
     <script src="clubsData.js"></script>
     <script src="data.js"></script> 
     <script src="countries.js"></script>
