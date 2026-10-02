@@ -321,32 +321,33 @@ function showPage(pageId) {
             }
             break;
         case 'meteora':
-            // 🚀 عرض سوق التداول والتخمين المربوط بـ Solana Devnet والمباريات الحقيقية
+            // 🚀 عرض سوق Meteora فوراً دون تعليق
             if (typeof window.renderMeteoraPage === "function") {
                 window.renderMeteoraPage(contentDiv);
             } else {
-                const isAr = userState.lang === 'ar';
+                let attempts = 0;
                 contentDiv.innerHTML = `
-                    <div class="card" style="text-align: center; padding: 30px 15px;">
-                        <div style="font-size: 3.5rem; margin-bottom: 10px;">☄️</div>
-                        <h2 style="font-size: 1.4rem; color: var(--accent-gold); margin-bottom: 8px;">
-                            ${isAr ? 'منصة Meteora Devnet Launchpad' : 'Meteora Devnet Launchpad'}
-                        </h2>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
-                            ${isAr 
-                                ? 'جاري تحميل سوق التداول المباشر بالـ Devnet SOL...' 
-                                : 'Loading live Devnet SOL trading market...'}
-                        </p>
-                        <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(252,176,69,0.2); border-radius: 50%; border-top-color: var(--accent-gold); animation: spin 0.8s linear infinite;"></div>
+                    <div style="text-align: center; padding: 40px 15px;">
+                        <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(252,176,69,0.2); border-radius: 50%; border-top-color: #fcb045; animation: spin 0.8s linear infinite;"></div>
+                        <p style="color: #aaa; font-size: 0.85rem; margin-top: 15px;">جاري فتح سوق Meteora...</p>
                     </div>
                     <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
                 `;
 
-                setTimeout(() => {
+                const interval = setInterval(() => {
+                    attempts++;
                     if (typeof window.renderMeteoraPage === "function") {
+                        clearInterval(interval);
                         window.renderMeteoraPage(contentDiv);
+                    } else if (attempts >= 10) { // توقف بعد 2 ثانية في حال غياب الملف
+                        clearInterval(interval);
+                        contentDiv.innerHTML = `
+                            <div style="text-align: center; padding: 30px; color: #ff4d4d; direction: rtl;">
+                                ⚠️ تعذر تحميل ملف Meteora (matchesTrade.js). يرجى التأكد من إضافة السكربت في ملف index.html.
+                            </div>
+                        `;
                     }
-                }, 300);
+                }, 200);
             }
             break;
     }
@@ -372,5 +373,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                }
+                            }
         
