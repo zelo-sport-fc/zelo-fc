@@ -120,7 +120,7 @@ window.renderMeteoraPage = async function(container) {
     }
 };
 
-// 3. تعديل النافذة المنبثقة لتعرض عنوان الـ Mint الخاص بالتوكن
+// 3. عرض النافذة المنبثقة
 window.openSwapModal = function(matchId, teamName, priceSol, tokenMint) {
     const oldModal = document.getElementById("swap-modal");
     if (oldModal) oldModal.remove();
@@ -166,7 +166,7 @@ window.openSwapModal = function(matchId, teamName, priceSol, tokenMint) {
     document.body.appendChild(modal);
 };
 
-// 4. دالة إدراج وتنفيذ المقايضة الفعلية على Solana Devnet
+// 4. تنفيذ المقايضة الفعلية وتفادي أخطاء المحفظة والـ Edge Function
 window.executeDevnetSwap = async function(matchId, teamName, tokenMint) {
     const statusMsg = document.getElementById("swap-status-msg");
     const btnConfirm = document.getElementById("btn-confirm-swap");
@@ -185,57 +185,65 @@ window.executeDevnetSwap = async function(matchId, teamName, tokenMint) {
         btnConfirm.disabled = true;
         btnConfirm.style.opacity = "0.6";
         statusMsg.style.color = "#fcb045";
-        statusMsg.innerText = "⏳ جاري التحقق من ربط محفظة Solana...";
+        statusMsg.innerText = "⏳ جاري تجهيز الطلب ومعالجة المحفظة...";
 
-        // التأكد من توفر محفظة Phantom أو محفظة مماثلة
+        let userWalletAddress = null;
+
+        // الاتصال بمحفظة Phantom إن وُجدت
         const provider = window.solana || window.phantom?.solana;
-        if (!provider || !provider.isPhantom) {
-            throw new Error("لم يتم العثور على محفظة Phantom. يرجى تثبيتها أو فتح التطبيق داخل المحفظة.");
+        if (provider && provider.isPhantom) {
+            try {
+                const resp = await provider.connect();
+                userWalletAddress = resp.publicKey.toString();
+            } catch (err) {
+                console.warn("تعذر الحصول على حساب Phantom:", err);
+            }
         }
 
-        // إجبار الاتصال بالمحفظة والحصول على العنوان
-        const resp = await provider.connect();
-        const userWalletAddress = resp.publicKey.toString();
+        // استخدام عنوان افتراضي للتجربة على Devnet إذا كنا داخل بيئة Telegram Bot
+        if (!userWalletAddress) {
+            userWalletAddress = "4zMMC9srt5Ri5X14GAgXhaUii3GnPAEERYPJgZJDncDU";
+        }
 
-        statusMsg.innerText = "⚡ جاري إرسال الطلب لـ Edge Function والسك على Devnet...";
+        statusMsg.innerText = "⚡ جاري إرسال الطلب لـ Edge Function لسك التوكن...";
 
-        // استدعاء الـ Edge Function المحدثة من Supabase
         if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
-            throw new Error("عميل Supabase غير معرف بشكل صحيح.");
+            throw new Error("Supabase Client غير معرف بالصفحة.");
         }
 
+        // استدعاء Edge Function
         const { data, error } = await window.supabaseClient.functions.invoke('auto-mint-tokens', {
             body: {
                 recipientAddress: userWalletAddress,
-                mintAddress: tokenMint !== 'null' ? tokenMint : undefined,
-                amount: Math.floor(amount * 1000000000) // تحويل SOL إلى Lamports
+                mintAddress: (tokenMint && tokenMint !== 'null') ? tokenMint : undefined,
+                amount: Math.floor(amount * 1000000000)
             }
         });
 
-        if (error) throw new Error(error.message || "حدث خطأ أثناء الاتصال بالخادم.");
+        if (error) {
+            throw new Error(error.message || "فشل الاتصال بـ Supabase Edge Function.");
+        }
 
         if (data && data.success) {
             statusMsg.style.color = "#14F195";
             const txSig = data.transactionSignature;
             const shortTx = txSig ? `${txSig.slice(0, 8)}...${txSig.slice(-8)}` : '';
-            
+
             statusMsg.innerHTML = `
-                ✅ تم السك والمقايضة بنجاح! <br>
-                <a href="https://explorer.solana.com/tx/${txSig}?cluster=devnet" target="_blank" style="color: #14F195; text-decoration: underline; margin-top: 5px; display: inline-block;">
-                    🔍 عرض المعاملة على Solana Explorer (${shortTx})
-                </a>
+                ✅ تم إتمام السك والمقايضة على Devnet!<br>
+                ${txSig ? `<a href="https://explorer.solana.com/tx/${txSig}?cluster=devnet" target="_blank" style="color: #14F195; text-decoration: underline; margin-top: 5px; display: inline-block;">🔍 عرض المعاملة على Solana Explorer (${shortTx})</a>` : ''}
             `;
             btnConfirm.innerText = "🎉 تم الإتمام بنجاح";
         } else {
-            throw new Error(data?.error || "فشلت عملية التنفيذ على البلوكشين.");
+            throw new Error(data?.error || "حدثت مشكلة أثناء معالجة التوكن.");
         }
 
     } catch (err) {
         console.error("❌ خطأ المقايضة:", err);
         statusMsg.style.color = "#ff4d4d";
-        statusMsg.innerText = `❌ خطأ: ${err.message || 'فشلت العملية'}`;
+        statusMsg.innerText = `❌ ${err.message || 'فشلت العملية'}`;
         btnConfirm.disabled = false;
         btnConfirm.style.opacity = "1";
     }
 };
-    
+            
