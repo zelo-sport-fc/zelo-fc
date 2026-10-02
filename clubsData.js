@@ -1,7 +1,5 @@
 const allWorldCupCountriesClubs = {
-    // ==========================================
-    // 1. إنجلترا وفرنسا (القوائم الشاملة السابقة)
-    // ==========================================
+    
     england: [
         { id: "man_united", nameAr: "مانشستر يونايتد", nameEn: "Manchester United", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8650.png", members: 0, points: 0, color: "linear-gradient(135deg, #da291c, #000000)" },
         { id: "man_city", nameAr: "مانشستر سيتي", nameEn: "Manchester City", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8456.png", members: 0, points: 0, color: "linear-gradient(135deg, #6cabdd, #ffffff)" },
@@ -22,9 +20,7 @@ const allWorldCupCountriesClubs = {
         { id: "lens", nameAr: "لانس", nameEn: "RC Lens", countryFlag: "🇫🇷", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8586.png", members: 0, points: 0, color: "linear-gradient(135deg, #ffe200, #cc0000)" }
     ],
 
-    // ==========================================
-    // 2. الدوريات الكبرى (تمت إضافة جميع أندية الدرجة الأولى)
-    // ==========================================
+
 
     spain: [
         { id: "real_madrid", nameAr: "ريال مدريد", nameEn: "Real Madrid", countryFlag: "🇪🇸", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8633.png", members: 0, points: 0, color: "linear-gradient(135deg, #ffffff, #febe10)" },
@@ -181,9 +177,7 @@ const allWorldCupCountriesClubs = {
         { id: "colon", nameAr: "كولون", nameEn: "Colon", countryFlag: "🇦🇷", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10097.png", members: 0, points: 0, color: "linear-gradient(135deg, #ff0000, #000000)" }
     ],
 
-    // ==========================================
-    // 3. باقي الدول والأندية المختارة
-    // ==========================================
+
 
     saudiArabia: [
         { id: "alhilal", nameAr: "الهلال", nameEn: "Al-Hilal", countryFlag: "🇸🇦", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10216.png", members: 0, points: 0, color: "linear-gradient(135deg, #0053a0, #ffffff)" },
