@@ -1,9 +1,25 @@
-
-
 const COINS_PER_ZELO_TOKEN = 100;
 const MIN_CLAIM_LIMIT = 1000;
 const BACKEND_URL = "https://zelo-fc.onrender.com";
 const TOKEN_NAME = "ZELOFC";
+
+function t(key, fallback = '', params = {}) {
+    let text = fallback || key;
+    if (typeof window.t === 'function') {
+        const res = window.t(key, params);
+        if (res && res !== key) text = res;
+    } else if (typeof window.getT === 'function') {
+        const res = window.getT(key);
+        if (res && res !== key) text = res;
+    }
+    
+    if (params && typeof params === 'object') {
+        Object.keys(params).forEach(p => {
+            text = text.replace(new RegExp(`{${p}}`, 'g'), params[p]);
+        });
+    }
+    return text;
+}
 
 if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     const script = document.createElement('script');
@@ -45,27 +61,28 @@ function renderWalletPage(container) {
     const canClaim = userCoins >= MIN_CLAIM_LIMIT;
     const neededCoins = MIN_CLAIM_LIMIT - userCoins;
 
-    const txtTonWallet = typeof t === 'function' ? t('txtTonWallet') : 'TON Wallet';
-    const txtSolanaWallet = typeof t === 'function' ? t('txtSolanaWallet') : 'Solana Wallet (Devnet)';
-    const txtConnected = typeof t === 'function' ? t('txtConnected') : '● Connected';
-    const txtConnectTon = typeof t === 'function' ? t('txtConnectTon') : 'Connect Telegram Wallet 💎';
-    const txtCopy = typeof t === 'function' ? t('txtCopy') : '📋 Copy';
-    const txtDisconnect = typeof t === 'function' ? t('txtDisconnect') : '🔌 Disconnect';
-    const txtOnChainSol = typeof t === 'function' ? t('txtOnChainSol') : 'On-Chain SOL (Devnet):';
-    const txtChecking = typeof t === 'function' ? t('txtChecking') : '⏳ Checking...';
-    const txtAutoConnectPhantom = typeof t === 'function' ? t('txtAutoConnectPhantom') : 'Auto Connect Phantom';
-    const txtPlaceholderSol = typeof t === 'function' ? t('txtPlaceholderSol') : 'Or paste Solana address...';
-    const txtSaveAddress = typeof t === 'function' ? t('txtSaveAddress') : '💾 Save Address';
-    const txtBalanceTitle = typeof t === 'function' ? t('txtBalanceTitle', { tokenName: TOKEN_NAME }) : `${TOKEN_NAME} Balance`;
-    const txtTotalEarned = typeof t === 'function' ? t('txtTotalEarned') : 'Total Earned:';
+    const txtTonWallet = t('txtTonWallet', 'TON Wallet');
+    const txtSolanaWallet = t('txtSolanaWallet', 'Solana Wallet (Devnet)');
+    const txtConnected = t('txtConnected', '● Connected');
+    const txtConnectTon = t('txtConnectTon', 'Connect Telegram Wallet 💎');
+    const txtCopy = t('txtCopy', '📋 Copy');
+    const txtDisconnect = t('txtDisconnect', '🔌 Disconnect');
+    const txtOnChainSol = t('txtOnChainSol', 'On-Chain SOL (Devnet):');
+    const txtChecking = t('txtChecking', '⏳ Checking...');
+    const txtAutoConnectPhantom = t('txtAutoConnectPhantom', 'Auto Connect Phantom');
+    const txtPlaceholderSol = t('txtPlaceholderSol', 'Or paste Solana address...');
+    const txtSaveAddress = t('txtSaveAddress', '💾 Save Address');
+    const txtBalanceTitle = t('txtBalanceTitle', `${TOKEN_NAME} Balance`, { tokenName: TOKEN_NAME });
+    const txtTotalEarned = t('txtTotalEarned', 'Total Earned:');
 
     let txtClaimBtn = '';
     if (canClaim) {
-        txtClaimBtn = typeof t === 'function' ? t('txtClaimBtnActive', { tokenName: TOKEN_NAME }) : `Claim ${TOKEN_NAME} Tokens ⚡`;
+        txtClaimBtn = t('txtClaimBtnActive', `Claim ${TOKEN_NAME} Tokens ⚡`, { tokenName: TOKEN_NAME });
     } else {
-        txtClaimBtn = typeof t === 'function' 
-            ? t('txtClaimBtnLocked', { min: MIN_CLAIM_LIMIT.toLocaleString('en-US'), needed: neededCoins.toLocaleString('en-US') })
-            : `Min Claim: ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} (Need ${neededCoins.toLocaleString('en-US')} more) 🔒`;
+        txtClaimBtn = t('txtClaimBtnLocked', `Min Claim: ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} (Need ${neededCoins.toLocaleString('en-US')} more) 🔒`, { 
+            min: MIN_CLAIM_LIMIT.toLocaleString('en-US'), 
+            needed: neededCoins.toLocaleString('en-US') 
+        });
     }
 
     const solanaWallet = (typeof userState !== 'undefined' && userState.solanaWallet) 
@@ -126,9 +143,9 @@ function renderWalletPage(container) {
                     <div class="wallet-logo-sm">
                         <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
                     </div>
-                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">${txtTonWallet}</span>
+                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;" data-i18n="txtTonWallet">${txtTonWallet}</span>
                 </div>
-                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">${txtConnected}</span>` : ''}
+                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;" data-i18n="txtConnected">${txtConnected}</span>` : ''}
             </div>
 
             ${isTonConnected ? `
@@ -136,12 +153,12 @@ function renderWalletPage(container) {
                     ${tonWallet ? tonWallet.slice(0, 8) + '...' + tonWallet.slice(-8) : 'Connected'}
                 </div>
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">${txtCopy}</button>
-                    <button class="btn-danger-sm" onclick="triggerDisconnect()">${txtDisconnect}</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')" data-i18n="txtCopy">${txtCopy}</button>
+                    <button class="btn-danger-sm" onclick="triggerDisconnect()" data-i18n="txtDisconnect">${txtDisconnect}</button>
                 </div>
             ` : `
                 <button class="btn-glass-ton" onclick="triggerConnect()">
-                    <span>💎</span> ${txtConnectTon}
+                    <span>💎</span> <span data-i18n="txtConnectTon">${txtConnectTon}</span>
                 </button>
             `}
         </div>
@@ -152,7 +169,7 @@ function renderWalletPage(container) {
                     <div class="wallet-logo-sm" style="border-color: rgba(171, 159, 242, 0.4);">
                         <img src="https://cryptologos.cc/logos/solana-sol-logo.png" style="width:18px;height:18px;" alt="Solana">
                     </div>
-                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">${txtSolanaWallet}</span>
+                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;" data-i18n="txtSolanaWallet">${txtSolanaWallet}</span>
                 </div>
             </div>
 
@@ -162,23 +179,23 @@ function renderWalletPage(container) {
                 </div>
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:8px; margin-bottom:10px;">
-                    <span style="color:#8e8e93; font-size:0.8rem;">${txtOnChainSol}</span>
-                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;">${txtChecking}</span>
+                    <span style="color:#8e8e93; font-size:0.8rem;" data-i18n="txtOnChainSol">${txtOnChainSol}</span>
+                    <span id="real-solana-balance" style="color:#14F195; font-weight:bold; font-size:0.95rem;" data-i18n="txtChecking">${txtChecking}</span>
                 </div>
 
                 <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')">${txtCopy}</button>
-                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()">${txtDisconnect}</button>
+                    <button class="btn-action-sm" onclick="copyToClipboard('${solanaWallet}')" data-i18n="txtCopy">${txtCopy}</button>
+                    <button class="btn-danger-sm" onclick="disconnectSolanaWallet()" data-i18n="txtDisconnect">${txtDisconnect}</button>
                 </div>
             ` : `
                 <button class="btn-glass-solana" onclick="connectPhantomWallet()">
                     <img src="https://phantom.app/img/phantom-logo.svg" style="width:16px; height:16px;" alt="Phantom">
-                    ${txtAutoConnectPhantom}
+                    <span data-i18n="txtAutoConnectPhantom">${txtAutoConnectPhantom}</span>
                 </button>
 
                 <input type="text" id="solana-address-input" class="solana-input-sm" placeholder="${txtPlaceholderSol}">
 
-                <button id="btn-save-sol-addr" class="btn-action-sm" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()">
+                <button id="btn-save-sol-addr" class="btn-action-sm" style="width: 100%; border-color: rgba(171, 159, 242, 0.4); background: rgba(171, 159, 242, 0.15);" onclick="saveSolanaWalletAddress()" data-i18n="txtSaveAddress">
                     ${txtSaveAddress}
                 </button>
             `}
@@ -195,7 +212,7 @@ function renderWalletPage(container) {
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.35); padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(250, 204, 21, 0.2);">
-                <span style="color: #aaa; font-size: 0.85rem;">${txtTotalEarned}</span>
+                <span style="color: #aaa; font-size: 0.85rem;" data-i18n="txtTotalEarned">${txtTotalEarned}</span>
                 <span style="color: #facc15; font-weight: 900; font-size: 1.2rem; font-family: monospace;">
                     ${userCoins.toLocaleString('en-US')} ${TOKEN_NAME}
                 </span>
@@ -239,7 +256,7 @@ async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') 
     try {
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerText = typeof t === 'function' ? t('txtSaving') : '⏳ Saving...';
+            saveBtn.innerText = t('txtSaving', '⏳ Saving...');
         }
 
         const telegramId = getTelegramId();
@@ -270,9 +287,9 @@ async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') 
             }
 
             if (typeof showPage === 'function') showPage('wallet');
-            alert(typeof t === 'function' ? t('msgWalletSaveSuccess') : '✅ Wallet saved successfully!');
+            alert(t('msgWalletSaveSuccess', '✅ Wallet saved successfully!'));
         } else {
-            const failMsg = typeof t === 'function' ? t('msgWalletSaveFail') : 'Failed to save address to server';
+            const failMsg = t('msgWalletSaveFail', 'Failed to save address to server');
             throw new Error(resData.error || resData.message || failMsg);
         }
     } catch (err) {
@@ -281,7 +298,7 @@ async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') 
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.innerText = typeof t === 'function' ? t('txtSaveAddress') : '💾 Save Address';
+            saveBtn.innerText = t('txtSaveAddress', '💾 Save Address');
         }
     }
 }
@@ -292,7 +309,7 @@ window.connectPhantomWallet = function() {
             saveSolanaAddressToStateAndDB(res.publicKey.toString(), 'solana');
         }).catch((err) => console.error(err));
     } else {
-        alert(typeof t === 'function' ? t('msgPhantomNotice') : 'Please copy your wallet address from the Phantom app and paste it in the field.');
+        alert(t('msgPhantomNotice', 'Please copy your wallet address from the Phantom app and paste it in the field.'));
     }
 };
 
@@ -306,7 +323,7 @@ window.saveSolanaWalletAddress = function() {
     if (solanaRegex.test(solAddress)) {
         saveSolanaAddressToStateAndDB(solAddress, 'solana');
     } else {
-        alert(typeof t === 'function' ? t('msgInvalidSolanaAddress') : '⚠️ Please enter a valid Solana wallet address.');
+        alert(t('msgInvalidSolanaAddress', '⚠️️ Please enter a valid Solana wallet address.'));
     }
 };
 
@@ -320,9 +337,9 @@ window.claimCoinsToSolanaWallet = async function() {
         : Number(localStorage.getItem('user_coins') || 0);
 
     if (userCoins < MIN_CLAIM_LIMIT) {
-        alert(typeof t === 'function' 
-            ? t('msgMinClaimAlert', { min: MIN_CLAIM_LIMIT.toLocaleString('en-US') }) 
-            : `⚠️ Minimum claim limit is ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} points. Your current balance is not enough.`);
+        alert(t('msgMinClaimAlert', `⚠️ Minimum claim limit is ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} points. Your current balance is not enough.`, { 
+            min: MIN_CLAIM_LIMIT.toLocaleString('en-US') 
+        }));
         return;
     }
 
@@ -330,16 +347,18 @@ window.claimCoinsToSolanaWallet = async function() {
     const claimBtn = document.getElementById('btn-claim-action');
 
     if (!solWallet) {
-        alert(typeof t === 'function' ? t('msgConnectSolanaFirst') : '⚠️ Please connect or save your Solana Wallet first!');
+        alert(t('msgConnectSolanaFirst', '⚠️ Please connect or save your Solana Wallet first!'));
         return;
     }
 
     const tokenAmountToReceive = (userCoins / COINS_PER_ZELO_TOKEN).toFixed(2);
 
     const confirmClaim = confirm(
-        typeof t === 'function' 
-            ? t('msgClaimConfirm', { coins: userCoins.toLocaleString('en-US'), tokens: tokenAmountToReceive, tokenName: TOKEN_NAME })
-            : `Confirm deducting ${userCoins.toLocaleString('en-US')} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`
+        t('msgClaimConfirm', `Confirm deducting ${userCoins.toLocaleString('en-US')} to receive ${tokenAmountToReceive} ${TOKEN_NAME} tokens?`, { 
+            coins: userCoins.toLocaleString('en-US'), 
+            tokens: tokenAmountToReceive, 
+            tokenName: TOKEN_NAME 
+        })
     );
 
     if (!confirmClaim) return;
@@ -347,7 +366,7 @@ window.claimCoinsToSolanaWallet = async function() {
     try {
         if (claimBtn) {
             claimBtn.disabled = true;
-            claimBtn.innerText = typeof t === 'function' ? t('txtProcessingTransfer') : '⏳ Processing transfer...';
+            claimBtn.innerText = t('txtProcessingTransfer', '⏳ Processing transfer...');
         }
 
         const response = await fetch(`${BACKEND_URL}/api/claim`, {
@@ -371,25 +390,25 @@ window.claimCoinsToSolanaWallet = async function() {
 
             if (typeof showPage === 'function') showPage('wallet');
 
-            alert(typeof t === 'function' 
-                ? t('msgClaimSuccess', { txHash: result.txHash }) 
-                : `✅ Success! Tokens transferred On-Chain!\n\nTx Hash:\n${result.txHash}`);
+            alert(t('msgClaimSuccess', `✅ Success! Tokens transferred On-Chain!\n\nTx Hash:\n${result.txHash}`, { 
+                txHash: result.txHash 
+            }));
         } else {
             let errorDetails = result?.error || result?.message || `HTTP ${response.status}`;
-            alert(typeof t === 'function' 
-                ? t('msgClaimFailed', { details: errorDetails }) 
-                : `❌ Transfer failed:\n${errorDetails}`);
+            alert(t('msgClaimFailed', `❌ Transfer failed:\n${errorDetails}`, { 
+                details: errorDetails 
+            }));
         }
 
     } catch (error) {
         console.error("Claim Error:", error);
-        alert(typeof t === 'function' 
-            ? t('msgServerError', { error: error.message }) 
-            : `❌ Server connection error:\n${error.message}`);
+        alert(t('msgServerError', `❌ Server connection error:\n${error.message}`, { 
+            error: error.message 
+        }));
     } finally {
         if (claimBtn) {
             claimBtn.disabled = false;
-            claimBtn.innerText = typeof t === 'function' ? t('txtClaimBtnActive', { tokenName: TOKEN_NAME }) : `Claim ${TOKEN_NAME} Tokens ⚡`;
+            claimBtn.innerText = t('txtClaimBtnActive', `Claim ${TOKEN_NAME} Tokens ⚡`, { tokenName: TOKEN_NAME });
         }
     }
 };
@@ -403,7 +422,7 @@ window.disconnectSolanaWallet = function() {
 };
 
 window.copyToClipboard = function(text) {
-    const msg = typeof t === 'function' ? t('msgCopied') : 'Address copied to clipboard!';
+    const msg = t('msgCopied', 'Address copied to clipboard!');
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => alert(msg));
     } else {
@@ -416,4 +435,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-        
+                      
