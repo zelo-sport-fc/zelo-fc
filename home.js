@@ -1,31 +1,34 @@
 window.solPriceHistory = window.solPriceHistory || [];
 
-// دالة الترجمة المساعدة للـ Component
+// 1. دالة جلب اللغة الحالية مع فحص جميع مفاتيح التخزين المحتملة
+function getCurrentLang() {
+    return localStorage.getItem('app_lang') || 
+           localStorage.getItem('lang') || 
+           localStorage.getItem('language') || 
+           (typeof userState !== 'undefined' && userState?.lang) || 
+           window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
+           'ar';
+}
+
+// 2. دالة الترجمة المساعدة مع نصوص افتراضية بالإنجليزية لتجنب خلط اللغات
 function t(key, fallback = '', params = {}) {
+    const currentLang = getCurrentLang();
     let text = fallback || key;
-    if (typeof window.getT === 'function') {
+
+    // البحث في قاموس i18n المباشر أولاً
+    if (window.i18n && window.i18n[currentLang] && window.i18n[currentLang][key] !== undefined) {
+        text = window.i18n[currentLang][key];
+    } else if (typeof window.getT === 'function') {
         const res = window.getT(key);
         if (res && res !== key) text = res;
-    } else if (window.i18n && typeof window.i18n[getCurrentLang()] !== 'undefined') {
-        const lang = getCurrentLang();
-        if (window.i18n[lang] && window.i18n[lang][key] !== undefined) {
-            text = window.i18n[lang][key];
-        }
     }
+
     if (params && typeof params === 'object') {
         Object.keys(params).forEach(p => {
             text = text.replace(new RegExp(`{${p}}`, 'g'), params[p]);
         });
     }
     return text;
-}
-
-// دالة جلب اللغة الحالية
-function getCurrentLang() {
-    return localStorage.getItem('app_lang') || 
-           (typeof userState !== 'undefined' && userState?.lang) || 
-           window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
-           'ar';
 }
 
 // فتح الموقع الرسمي
@@ -52,7 +55,6 @@ window.updateHomeSolPrice = async function() {
     let realPrice = 0;
     let realSpread = "0.0100";
 
-    // 1. Fetch live real price and spread from Binance Orderbook
     try {
         const res = await fetch('https://api.binance.com/api/v3/ticker/bookTicker?symbol=SOLUSDT');
         if (res.ok) {
@@ -68,7 +70,6 @@ window.updateHomeSolPrice = async function() {
         console.warn("Binance API fetch warning, trying backup...", err);
     }
 
-    // 2. Backup source (CoinGecko) if primary fails
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         try {
             const resBackup = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
@@ -84,7 +85,6 @@ window.updateHomeSolPrice = async function() {
         }
     }
 
-    // If fetching price fails, keep previous price
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
         if (window.solPriceHistory.length > 0) {
             realPrice = window.solPriceHistory[window.solPriceHistory.length - 1];
@@ -95,13 +95,11 @@ window.updateHomeSolPrice = async function() {
 
     const finalPriceStr = `$${realPrice.toFixed(2)}`;
     
-    // Add real price to history array
     window.solPriceHistory.push(realPrice);
     if (window.solPriceHistory.length > 20) {
         window.solPriceHistory.shift();
     }
 
-    // Update UI elements
     if (elPriceHeader) elPriceHeader.innerText = finalPriceStr;
     if (elPriceOracle) elPriceOracle.innerText = finalPriceStr;
     if (elLivePrice) elLivePrice.innerText = finalPriceStr;
@@ -116,7 +114,6 @@ window.updateHomeSolPrice = async function() {
     if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
-    // Draw sparkline graph based on price movements
     if (svgPath && history.length > 1) {
         const range = (maxP - minP) || 0.05;
         const width = 200;
@@ -137,7 +134,7 @@ window.updateHomeSolPrice = async function() {
     }
 };
 
-// رسم الصفحة الرئيسية
+// 3. رسم الصفحة الرئيسية مع مطابقة الترجمات
 window.renderHomePage = function(container) {
     let target = container || document.getElementById('app') || document.getElementById('main-content') || document.body;
     if (!target) return;
@@ -148,7 +145,7 @@ window.renderHomePage = function(container) {
 
     try {
         const currentLang = getCurrentLang();
-        const isRtl = currentLang === 'ar';
+        const isRtl = currentLang.startsWith('ar');
         const dir = isRtl ? 'rtl' : 'ltr';
         const textAlign = isRtl ? 'right' : 'left';
         const arrowIcon = isRtl ? '👈' : '👉';
@@ -158,24 +155,24 @@ window.renderHomePage = function(container) {
             userId: '1654537339' 
         };
 
-        // ✅ تم تصحيح المفاتيح لتطابق ملف اللغات i18n
-        const txtOfficialSite = t('officialSite', 'الموقع الرسمي');
-        const txtMarketFeed = t('marketFeed', 'بث السوق المباشر');
-        const txtLiveMarket = t('liveMarket', 'السوق المباشر');
-        const txtLiveSolPrice = t('liveSolPrice', 'سعر $SOL المباشر');
-        const txtBidAskSpread = t('bidAskSpread', 'فارق البيع/الشراء');
-        const txtWeeklyChallenges = t('weeklyChallenges', 'التحديات الأسبوعية');
-        const txtCupsSub = t('cupsSub', '🇪🇺 الكؤوس الأوروبية • 🇪🇸 الكؤوس الإسبانية');
-        const txtChallengesRanking = t('challengesRanking', 'ترتيب التحديات');
-        const txtRankingSub = t('rankingSub', '⭐ اكتشف أفضل اللاعبين وترتيبك');
-        const txtSupportedClubs = t('supportedClubs', 'الأندية المدعومة');
-        const txtActive = t('activeCount', 'نشط 1');
-        const txtFans = t('fansCount', '3 مشجعين');
-        const txtLoading = t('loading', 'جاري التحميل...');
-        const txtTime1m = '-1د';
-        const txtTime30s = '-30ث';
-        const txtTimeNow = 'الآن';
-        const txtTimeHigh = 'الأعلى';
+        // استخدام نصوص إنجليزية افتراضية لمنع ظهور العربية عند اختيار لغات أخرى
+        const txtOfficialSite = t('officialSite', 'Official Website');
+        const txtMarketFeed = t('marketFeed', 'Live Market Feed');
+        const txtLiveMarket = t('liveMarket', 'Live Market');
+        const txtLiveSolPrice = t('liveSolPrice', 'Live $SOL Price');
+        const txtBidAskSpread = t('bidAskSpread', 'Bid/Ask Spread');
+        const txtWeeklyChallenges = t('weeklyChallenges', 'Weekly Challenges');
+        const txtCupsSub = t('cupsSub', '🇪🇺 European Cups • 🇪🇸 Spanish Cups');
+        const txtChallengesRanking = t('challengesRanking', 'Challenges Ranking');
+        const txtRankingSub = t('rankingSub', '⭐ Discover top players & your rank');
+        const txtSupportedClubs = t('supportedClubs', 'Supported Clubs');
+        const txtActive = t('activeCount', 'Active 1');
+        const txtFans = t('fansCount', '3 Fans');
+        const txtLoading = t('loading', 'Loading...');
+        const txtTime1m = '-1m';
+        const txtTime30s = '-30s';
+        const txtTimeNow = 'Now';
+        const txtTimeHigh = 'High';
 
         const username = state.username || '@Zelo_fc';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
@@ -424,10 +421,10 @@ window.renderHomePage = function(container) {
                 </div>
 
                 <div class="clubs-section" style="margin-top: 12px;">
-                    <div style="display:flex; align-items:center; justify-space-between; margin-bottom: 8px; padding: 0 4px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
-                                                 <span style="font-size: 0.9rem;">🛡️</span>
-                            <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
+                            <span style="font-size: 0.9rem;">🛡️</span>
+                                                        <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
                         </div>
                         <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${txtActive}</span>
                     </div>
@@ -448,7 +445,7 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // تشغيل تحديث سعر SOL المباشر وتفعيله كل 5 ثوانٍ
+        // تشغيل تحديث سعر SOL المباشر وتكراره كل 5 ثوانٍ
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
