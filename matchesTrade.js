@@ -175,70 +175,71 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
     try {
         if (btn) btn.disabled = true;
-        if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد العملية...";
+        if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد وتأكيد المعاملة...";
 
-        const provider = window.solana || window.solflare;
+        // كشف مزود الخدمة مباشرة (سواء كان Phantom أو Solflare أو مزود متصفح مدمج)
+        const provider = window.phantom?.solana || window.solana || window.solflare;
 
-        // 1. التفاعل المباشر إذا كان المزود موجوداً ومتصلاً
-        if (provider && provider.isConnected) {
-            const resp = await provider.connect();
-            const userPublicKey = resp.publicKey;
-            const solanaWeb3Lib = window.solanaWeb3;
-
-            if (solanaWeb3Lib) {
-                const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
-
-                const transaction = new solanaWeb3Lib.Transaction().add(
-                    solanaWeb3Lib.SystemProgram.transfer({
-                        fromPubkey: userPublicKey,
-                        toPubkey: new solanaWeb3Lib.PublicKey(window.VAULT_PUBLIC_KEY),
-                        lamports: Math.round(solAmount * solanaWeb3Lib.LAMPORTS_PER_SOL)
-                    })
-                );
-                transaction.feePayer = userPublicKey;
-                const { blockhash } = await connection.getLatestBlockhash();
-                transaction.recentBlockhash = blockhash;
-
-                const signed = await provider.signAndSendTransaction(transaction);
-                await connection.confirmTransaction(signed.signature, 'confirmed');
-
-                alert(`✅ تمت عملية الشراء بنجاح!\n\nرقم المعاملة:\n${signed.signature}`);
-                const modal = document.getElementById("swap-modal");
-                if (modal) modal.remove();
+        if (!provider) {
+            // في حال فتح التطبيق من متصفح تلغرام الخارجي وبدون محفظة مدمجة
+            if (window.Telegram?.WebApp?.openLink) {
+                const currentUrl = window.location.href;
+                const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
+                window.Telegram.WebApp.openLink(phantomUrl);
+                if (statusMsg) statusMsg.innerText = "📱 جاري التحويل لتطبيق Phantom...";
                 return;
+            } else {
+                throw new Error("لم يتم العثور على محفظة Solana مثبتة.");
             }
-        } 
-        
-        // 2. التحويل السلس لروابط Deep Links دون التسبب في خطأ Event
-        if (window.Telegram?.WebApp?.openLink) {
-            const currentUrl = window.location.href;
-            const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
-            
-            window.Telegram.WebApp.openLink(phantomUrl);
-            if (statusMsg) statusMsg.innerText = "📱 جاري التوجيه إلى محفظة Phantom...";
-        } else {
-            alert(`✅ تمت المحاكاة بنجاح لشراء ${teamName} بمبلغ ${solAmount} SOL`);
-            const modal = document.getElementById("swap-modal");
-            if (modal) modal.remove();
         }
 
-    } catch (err) {
-        console.error("❌ تفاصيل الخطأ الأصلية:", err);
+        // 1. الاتصال بالمحفظة فوراً
+        const resp = await provider.connect();
+        const userPublicKey = resp.publicKey || provider.publicKey;
 
-        // استخراج رسالة الخطأ ومنع طباعة "Event {isTrusted: true}"
-        let errorMsg = "تم إلغاء العملية أو لم يتم منح الإذن من المحفظة.";
+        if (!userPublicKey) {
+            throw new Error("تعذر الحصول على العنوان المباشر للمحفظة.");
+        }
+
+        const solanaWeb3Lib = window.solanaWeb3;
+        if (!solanaWeb3Lib) {
+            throw new Error("مكتبة Solana Web3 غير محملة.");
+        }
+
+        // 2. إنشاء المعاملة وتوقيعها داخلياً
+        const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
+
+        const transaction = new solanaWeb3Lib.Transaction().add(
+            solanaWeb3Lib.SystemProgram.transfer({
+                fromPubkey: userPublicKey,
+                toPubkey: new solanaWeb3Lib.PublicKey(window.VAULT_PUBLIC_KEY),
+                lamports: Math.round(solAmount * solanaWeb3Lib.LAMPORTS_PER_SOL)
+            })
+        );
         
+        transaction.feePayer = userPublicKey;
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+
+        if (statusMsg) statusMsg.innerText = "🔐 يرجى تأكيد المعاملة في المحفظة...";
+
+        // 3. طلب توقيع وإرسال المعاملة من المحفظة الحالية مباشرة
+        const { signature } = await provider.signAndSendTransaction(transaction);
+        
+        if (statusMsg) statusMsg.innerText = "⏳ جاري التأكيد على شبكة Solana Devnet...";
+        await connection.confirmTransaction(signature, 'confirmed');
+
+        alert(`✅ تمت عملية الشراء بنجاح!\n\nرمز المعاملة:\n${signature}`);
+        
+        const modal = document.getElementById("swap-modal");
+        if (modal) modal.remove();
+
+    } catch (err) {
+        console.error("❌ تفاصيل خطأ المقايضة:", err);
+
+        let errorMsg = "تم إلغاء المعاملة أو رفض الإذن من المحفظة.";
         if (err && typeof err === 'object') {
-            if (err.message) {
-                errorMsg = err.message;
-            } else if (err.constructor && err.constructor.name === "Event") {
-                errorMsg = "تم حظر إتاحة النافذة المنبثقة من قبل المتصفح، يرجى إعادة المحاولة الضغط مباشرة.";
-            } else {
-                try {
-                    const parsed = JSON.stringify(err);
-                    if (parsed !== "{}" && parsed !== "[]") errorMsg = parsed;
-                } catch(e){}
-            }
+            if (err.message) errorMsg = err.message;
         } else if (typeof err === 'string') {
             errorMsg = err;
         }
@@ -250,5 +251,5 @@ window.executeDevnetSwap = async function(matchId, teamName) {
     }
 };
 
-console.log("✅ [Meteora Engine] matchesTrade.js loaded successfully.");
-            
+console.log("✅ [Meteora Engine] matchesTrade.js updated for direct Phantom in-app browser execution.");
+         
