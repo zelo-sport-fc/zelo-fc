@@ -2,9 +2,27 @@
 // ⚽ Meteora Devnet Launchpad & Trading Engine
 // ==========================================
 
-if (typeof window.Buffer === 'undefined' && typeof buffer !== 'undefined') {
-    window.Buffer = buffer.Buffer;
-}
+// 🛡️ [تأمين ذاتي 100%]: إنشاء وتأمين Polyfill لـ Buffer داخل الملف مباشرة
+(function() {
+    if (typeof window.Buffer === 'undefined') {
+        if (typeof buffer !== 'undefined' && buffer.Buffer) {
+            window.Buffer = buffer.Buffer;
+        } else {
+            // Polyfill مخصص خفيف الوزن في حال عدم تحميل CDN
+            window.Buffer = class Buffer extends Uint8Array {
+                static from(data, encoding) {
+                    if (typeof data === 'string') {
+                        return new TextEncoder().encode(data);
+                    }
+                    return new Uint8Array(data);
+                }
+                static alloc(size) {
+                    return new Uint8Array(size);
+                }
+            };
+        }
+    }
+})();
 
 if (typeof window.VAULT_PUBLIC_KEY === 'undefined') {
     window.VAULT_PUBLIC_KEY = 'G2zT2vK1y2426mKxT1p3zT2vK1y2426mKxT1p3zT2vK1';
@@ -175,25 +193,27 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
     try {
         if (btn) btn.disabled = true;
-        if (statusMsg) statusMsg.innerText = "⏳ جاري إعداد وتأكيد المعاملة...";
+        if (statusMsg) statusMsg.innerText = "⏳ جاري الإتصال بالشبكة ومعالجة المعاملة...";
 
-        // كشف مزود الخدمة مباشرة (سواء كان Phantom أو Solflare أو مزود متصفح مدمج)
+        // التأكد المباشر من وجود Buffer قبل بدء المعاملة
+        if (typeof window.Buffer === 'undefined' && typeof buffer !== 'undefined') {
+            window.Buffer = buffer.Buffer;
+        }
+
         const provider = window.phantom?.solana || window.solana || window.solflare;
 
         if (!provider) {
-            // في حال فتح التطبيق من متصفح تلغرام الخارجي وبدون محفظة مدمجة
             if (window.Telegram?.WebApp?.openLink) {
                 const currentUrl = window.location.href;
                 const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(currentUrl)}`;
                 window.Telegram.WebApp.openLink(phantomUrl);
-                if (statusMsg) statusMsg.innerText = "📱 جاري التحويل لتطبيق Phantom...";
+                if (statusMsg) statusMsg.innerText = "📱 جاري التوجيه إلى Phantom...";
                 return;
             } else {
-                throw new Error("لم يتم العثور على محفظة Solana مثبتة.");
+                throw new Error("لم يتم العثور على محفظة Solana.");
             }
         }
 
-        // 1. الاتصال بالمحفظة فوراً
         const resp = await provider.connect();
         const userPublicKey = resp.publicKey || provider.publicKey;
 
@@ -203,10 +223,9 @@ window.executeDevnetSwap = async function(matchId, teamName) {
 
         const solanaWeb3Lib = window.solanaWeb3;
         if (!solanaWeb3Lib) {
-            throw new Error("مكتبة Solana Web3 غير محملة.");
+            throw new Error("مكتبة Solana Web3 غير متوفرة.");
         }
 
-        // 2. إنشاء المعاملة وتوقيعها داخلياً
         const connection = new solanaWeb3Lib.Connection(solanaWeb3Lib.clusterApiUrl('devnet'), 'confirmed');
 
         const transaction = new solanaWeb3Lib.Transaction().add(
@@ -216,28 +235,28 @@ window.executeDevnetSwap = async function(matchId, teamName) {
                 lamports: Math.round(solAmount * solanaWeb3Lib.LAMPORTS_PER_SOL)
             })
         );
-        
+
         transaction.feePayer = userPublicKey;
         const { blockhash } = await connection.getLatestBlockhash();
         transaction.recentBlockhash = blockhash;
 
-        if (statusMsg) statusMsg.innerText = "🔐 يرجى تأكيد المعاملة في المحفظة...";
+        if (statusMsg) statusMsg.innerText = "🔐 يرجى تأكيد العملية من نافذة Phantom...";
 
-        // 3. طلب توقيع وإرسال المعاملة من المحفظة الحالية مباشرة
-        const { signature } = await provider.signAndSendTransaction(transaction);
-        
-        if (statusMsg) statusMsg.innerText = "⏳ جاري التأكيد على شبكة Solana Devnet...";
+        const result = await provider.signAndSendTransaction(transaction);
+        const signature = result.signature || result;
+
+        if (statusMsg) statusMsg.innerText = "⏳ جاري التأكيد المباشر عبر Solana Devnet...";
         await connection.confirmTransaction(signature, 'confirmed');
 
-        alert(`✅ تمت عملية الشراء بنجاح!\n\nرمز المعاملة:\n${signature}`);
-        
+        alert(`✅ تمت المعاملة بنجاح!\n\nرقم التوقيع:\n${signature}`);
+
         const modal = document.getElementById("swap-modal");
         if (modal) modal.remove();
 
     } catch (err) {
-        console.error("❌ تفاصيل خطأ المقايضة:", err);
+        console.error("❌ تفاصيل الخطأ في المعاملة:", err);
 
-        let errorMsg = "تم إلغاء المعاملة أو رفض الإذن من المحفظة.";
+        let errorMsg = "تم إلغاء العملية أو رفض التوقيع.";
         if (err && typeof err === 'object') {
             if (err.message) errorMsg = err.message;
         } else if (typeof err === 'string') {
@@ -251,5 +270,5 @@ window.executeDevnetSwap = async function(matchId, teamName) {
     }
 };
 
-console.log("✅ [Meteora Engine] matchesTrade.js updated for direct Phantom in-app browser execution.");
-         
+console.log("✅ [Meteora Engine] matchesTrade.js Buffer Fix Applied.");
+            
