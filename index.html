@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" id="app-html">
+<html lang="ar" dir="rtl" id="app-html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -14,7 +14,11 @@
     
     <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
+    <!-- Eruda Console للتنقيح وإظهار الأخطاء على الهاتف -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+
     <style>
         :root {
             --bg-dark: #121215;        
@@ -342,30 +346,62 @@
         <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); box-shadow: 0 0 10px rgba(252, 176, 69, 0.2);"></div>
     </header>
 
-    <main class="container" id="main-content"></main>
+    <main class="container" id="main-content">
+        <!-- شاشة انتظار احتياطية تجنباً للشاشة السوداء عند بدء التحميل -->
+        <div id="app-loading" style="text-align: center; padding-top: 50px;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">⚽</div>
+            <div style="color: var(--accent-gold); font-weight: bold;">جاري تحميل ZELO FC...</div>
+        </div>
+    </main>
 
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text" data-i18n="navHome"></span>
+            <span class="nav-text" data-i18n="navHome">الرئيسية</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">🛠</span>
-            <span class="nav-text" data-i18n="navTasks"></span>
+            <span class="nav-text" data-i18n="navTasks">المهام</span>
         </button>
         <button class="nav-item" onclick="showPage('friends')">
             <span class="icon icon-wrapper">👥</span>
-            <span class="nav-text" data-i18n="navFriends"></span>
+            <span class="nav-text" data-i18n="navFriends">الأصدقاء</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text" data-i18n="navLeaderboard"></span>
+            <span class="nav-text" data-i18n="navLeaderboard">الترتيب</span>
         </button>
         <button class="nav-item" onclick="showPage('wallet')">
             <span class="icon icon-wrapper">👛</span>
-            <span class="nav-text" data-i18n="navWallet"></span>
+            <span class="nav-text" data-i18n="navWallet">المحفظة</span>
         </button>
     </nav>
+
+    <!-- التهيئة الأولية وحماية التطبيق -->
+    <script>
+        window.userState = window.userState || {
+            userId: 'guest',
+            points: 0,
+            lang: 'ar',
+            walletConnected: false,
+            walletAddress: ''
+        };
+
+        // التقاط أي خطأ برمجي غير متوقع ومنع الشاشة السوداء
+        window.addEventListener('error', function(e) {
+            console.error("Global Error Caught:", e);
+            const container = document.getElementById('main-content');
+            if (container && container.querySelector('#app-loading')) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 30px; color: #ff4d4d;">
+                        <h3>⚠️ حدث خطأ أثناء تحميل التطبيق</h3>
+                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'خطأ في جافاسكربت'}</p>
+                        <button onclick="location.reload()" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">إعادة التحميل</button>
+                    </div>
+                `;
+            }
+        });
+    </script>
 
     <!-- JS Scripts -->
     <script src="i18n.js"></script>
@@ -383,6 +419,7 @@
     <script src="friends.js"></script>
     <script src="wallet.js"></script>
     <script src="wallet-solana.js"></script>
+    <script src="ton-connect.js"></script>
     <script src="app.js"></script>
 
 </body>
