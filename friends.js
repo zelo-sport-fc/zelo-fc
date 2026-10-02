@@ -1,24 +1,14 @@
-// ==========================================
-// 👥 Friends Module & Referral System - Zelo Dark Glass Theme
-// ==========================================
-
-// Generate dynamic referral link (استخدام ID تلجرام العددي دائماً)
 window.generateReferralLink = function() {
     let cleanUserId = "";
     if (typeof userState !== 'undefined' && userState.userId) {
         cleanUserId = String(userState.userId).replace(/[^\d]/g, '');
     }
-    
-    // في حال عدم توفر الآيدي يتم استخدام آيدي وهمي لمنع انهيار الرابط
     if (!cleanUserId) cleanUserId = "user";
-    
     return `https://t.me/Zelo_Sport_bot/app?startapp=ref_${cleanUserId}`;
 };
 
-// Fetch invited friends and their aggregated referral data from Supabase
 window.fetchFriendsFromDB = async function(userId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        console.error("Database client (supabaseClient) is not initialized.");
         return [];
     }
 
@@ -26,26 +16,22 @@ window.fetchFriendsFromDB = async function(userId) {
         const numericUserId = parseInt(String(userId).replace(/[^\d]/g, ''), 10);
         if (isNaN(numericUserId)) return [];
 
-        // 1. جلب قائمة الإحالات لهذا المستخدم
         const { data: referrals, error: refError } = await supabaseClient
             .from('referrals')
             .select('referred_id, reward_points') 
             .eq('referrer_id', numericUserId);
 
-        if (refError) throw refError;
-        if (!referrals || referrals.length === 0) return [];
+        if (refError || !referrals || referrals.length === 0) return [];
 
         const friendIds = referrals.map(r => parseInt(String(r.referred_id).replace(/[^\d]/g, ''), 10)).filter(id => !isNaN(id));
 
-        // 2. جلب معلومات الأصدقاء من جدول users
         const { data: users, error: usersError } = await supabaseClient
             .from('users')
             .select('telegram_id, username, first_name')
             .in('telegram_id', friendIds);
 
-        if (usersError) throw usersError;
+        if (usersError) return [];
 
-        // 3. جلب عدد الإحالات التي قام بها كل صديق (Sub-referrals)
         const { data: subReferrals, error: subRefError } = await supabaseClient
             .from('referrals')
             .select('referrer_id')
@@ -75,12 +61,10 @@ window.fetchFriendsFromDB = async function(userId) {
         });
 
     } catch (error) {
-        console.error("Error fetching friends from Supabase:", error);
         return [];
     }
 };
 
-// Render Friends Interface
 window.renderFriendsPage = async function(container) {
     if (window.initReferralCheck) {
         await window.initReferralCheck();
@@ -289,7 +273,6 @@ window.renderFriendsPage = async function(container) {
             `;
         }
     } catch (error) {
-        console.error("Error loading friends data:", error);
         friendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (0)`;
         friendsListContainer.innerHTML = `<div class="empty-state-glass"><span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">${getTranslation('dbConnectionError', isAr ? '❌ فشل الاتصال. يرجى المحاولة لاحقاً.' : "❌ Connection failed. Please try again.")}</span></div>`;
     }
@@ -326,12 +309,8 @@ window.shareOnTelegram = function(link) {
     }
 };
 
-// ==========================================
-// 🚀 Referral Processing & Auto-Check Logic
-// ==========================================
 window.apiProcessReferral = async function(referrerId, newUserId) {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        console.error("Supabase client not available.");
         return { success: false, message: "No database connection" };
     }
 
@@ -364,16 +343,13 @@ window.apiProcessReferral = async function(referrerId, newUserId) {
                 localStorage.removeItem('pending_referrer_id');
                 return { success: true, alreadyProcessed: true };
             } 
-            console.error("Supabase error inserting referral:", refError);
             return { success: false, error: refError };
         }
 
-        console.log("✅ تم تسجيل الإحالة بنجاح في قاعدة البيانات!");
         localStorage.removeItem('pending_referrer_id');
         return { success: true, message: "Referral recorded successfully" };
 
     } catch (error) {
-        console.error("Referral processing exception:", error);
         return { success: false };
     }
 };
@@ -383,7 +359,6 @@ window.initReferralCheck = async function() {
         let referrerId = null;
         let currentUserId = null;
 
-        // 1. قراءة المعطيات من Telegram WebApp SDK
         if (window.Telegram && window.Telegram.WebApp) {
             const webApp = window.Telegram.WebApp;
             webApp.ready();
@@ -399,13 +374,11 @@ window.initReferralCheck = async function() {
             }
         }
 
-        // 2. قراءة المعطيات من URL Direct
         if (!referrerId) {
             const urlParams = new URLSearchParams(window.location.search);
             referrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
         }
 
-        // تنظيف وإعداد كود الداعي
         if (referrerId && typeof referrerId === 'string') {
             referrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
             if (referrerId) {
@@ -415,7 +388,6 @@ window.initReferralCheck = async function() {
             referrerId = localStorage.getItem('pending_referrer_id');
         }
 
-        // 3. تحديد ID المستخدم الحالي
         if (!currentUserId && typeof userState !== 'undefined' && userState.userId) {
             currentUserId = userState.userId;
         }
@@ -428,9 +400,7 @@ window.initReferralCheck = async function() {
         if (referrerId && String(referrerId) !== String(currentUserId)) {
             await window.apiProcessReferral(referrerId, currentUserId);
         }
-    } catch (err) {
-        console.error("Auto referral initialization error:", err);
-    }
+    } catch (err) {}
 };
 
 (function() {
@@ -440,4 +410,4 @@ window.initReferralCheck = async function() {
         document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
-                
+    
