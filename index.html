@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" id="app-html">
+<html lang="en" dir="ltr" id="app-html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -16,6 +16,29 @@
 
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
+
+    <script>
+        // فحص وتحديد اللغة والاتجاه فوراً قبل تحميل الصفحة لمنع ظهور اللغة العربية بالخطأ
+        (function() {
+            var savedLang = localStorage.getItem('app_lang') || 
+                            localStorage.getItem('lang') || 
+                            localStorage.getItem('language') || 
+                            window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
+                            'en';
+            
+            var isAr = savedLang.startsWith('ar');
+            document.documentElement.lang = isAr ? 'ar' : 'en';
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+
+            window.userState = window.userState || {
+                userId: 'guest',
+                points: 0,
+                lang: savedLang,
+                walletConnected: false,
+                walletAddress: ''
+            };
+        })();
+    </script>
 
     <style>
         :root {
@@ -196,12 +219,9 @@
             align-items: center !important;
             justify-content: space-between !important;
             margin: 10px 0 !important;
-            direction: rtl !important;
         }
 
         .wallet-value {
-            direction: ltr !important;
-            unicode-bidi: embed !important;
             font-family: monospace !important;
             font-weight: bold !important;
             font-size: 0.95rem !important;
@@ -213,7 +233,6 @@
             background-color: transparent !important;
         }
 
-        /* Keyframes Animations */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -253,51 +272,43 @@
     <main class="container" id="main-content">
         <div id="app-loading" style="text-align: center; padding-top: 50px;">
             <div style="font-size: 2rem; margin-bottom: 10px;">⚽</div>
-            <div style="color: var(--accent-gold); font-weight: bold;">جاري تحميل ZELO FC v10.0...</div>
+            <div style="color: var(--accent-gold); font-weight: bold;">Loading ZELO FC...</div>
         </div>
     </main>
 
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text" data-i18n="navHome">الرئيسية</span>
+            <span class="nav-text" data-i18n="navHome">Home</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">🛠</span>
-            <span class="nav-text" data-i18n="navTasks">المهام</span>
+            <span class="nav-text" data-i18n="navTasks">Tasks</span>
         </button>
         <button class="nav-item" onclick="showPage('friends')">
             <span class="icon icon-wrapper">👥</span>
-            <span class="nav-text" data-i18n="navFriends">الأصدقاء</span>
+            <span class="nav-text" data-i18n="navFriends">Friends</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text" data-i18n="navLeaderboard">الترتيب</span>
+            <span class="nav-text" data-i18n="navLeaderboard">Leaderboard</span>
         </button>
         <button class="nav-item" onclick="showPage('wallet')">
             <span class="icon icon-wrapper">👛</span>
-            <span class="nav-text" data-i18n="navWallet">المحفظة</span>
+            <span class="nav-text" data-i18n="navWallet">Wallet</span>
         </button>
     </nav>
 
     <script>
-        window.userState = window.userState || {
-            userId: 'guest',
-            points: 0,
-            lang: 'ar',
-            walletConnected: false,
-            walletAddress: ''
-        };
-
         window.addEventListener('error', function(e) {
             console.error("Global Error Caught v10:", e);
             const container = document.getElementById('main-content');
             if (container && container.querySelector('#app-loading')) {
                 container.innerHTML = `
                     <div style="text-align:center; padding: 30px; color: #ff4d4d;">
-                        <h3>⚠️ حدث خطأ أثناء تحميل التطبيق (v10.0)</h3>
-                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'خطأ غير معروف'}</p>
-                        <button onclick="location.reload(true)" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">إعادة التحميل</button>
+                        <h3>⚠️ An error occurred while loading ZELO FC</h3>
+                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'Unknown error'}</p>
+                        <button onclick="location.reload(true)" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">Reload</button>
                     </div>
                 `;
             }
@@ -314,7 +325,7 @@
     <script src="login.js?v=10.0"></script>
     <script src="weekly_match_rankings.js?v=10.0"></script>
     <script src="predictions_ranking.js?v=10.0"></script> 
-    <script src="home.js?v=14.0"></script>
+    <script src="home.js?v=15.0"></script>
     <script src="tasks.js?v=13.0"></script>
     <script src="leaderboard.js?v=10.0"></script>
     <script src="friends.js?v=10.0"></script>
