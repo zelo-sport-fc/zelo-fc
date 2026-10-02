@@ -1,15 +1,9 @@
-/**
- * ملف: weekly_match_rankings.js
- * الوظيفة: شاشة الترتيب الكاملة (المنصة + البطاقة الأسطورية الشاملة + سجل التوقعات + الترتيب العام)
- */
-
 const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
     if (photoUrl) {
         return `<img src="${photoUrl}" style="width:${size}; height:${size}; border-radius:50%; object-fit:cover; border:2px solid var(--accent-gold, #fcb045); margin: 0 auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
-    } else {
-        const initial = name ? String(name).charAt(0).toUpperCase() : '👤';
-        return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #833ab4, #fd1d1d); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #fcb045); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">${initial}</div>`;
     }
+    const initial = name ? String(name).charAt(0).toUpperCase() : '👤';
+    return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #833ab4, #fd1d1d); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #fcb045); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">${initial}</div>`;
 };
 
 window.openLegendaryRankingScreen = function() {
@@ -22,7 +16,6 @@ window.openLegendaryRankingScreen = function() {
     const screen = document.createElement('div');
     screen.id = 'ranking-full-screen';
     
-    // تم التعديل هنا: منع التمرير في الشاشة الرئيسية لتقسيمها إلى ثابت ومتحرك
     screen.style.cssText = `
         position: fixed !important; 
         top: 0 !important; 
@@ -96,7 +89,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             .order('created_at', { ascending: false });
 
         let matches = [];
-        if (predictions && predictions.length > 0) {
+        if (predictions?.length > 0) {
             const matchIds = predictions.map(p => p.match_id);
             const { data: matchesData } = await supabaseClient
                 .from('matches')
@@ -105,9 +98,8 @@ window.renderHomeRankingWidget = async function(containerId) {
             matches = matchesData || [];
         }
 
-        // تم تنظيف الكود هنا بدمج الحلقات بحلقة واحدة أسرع
         let correctCount = 0, wrongCount = 0, pendingCount = 0;
-        if (predictions && predictions.length > 0) {
+        if (predictions?.length > 0) {
             predictions.forEach(p => {
                 if (p.prediction_status === 'correct') correctCount++;
                 else if (p.prediction_status === 'wrong') wrongCount++;
@@ -127,7 +119,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     50% { box-shadow: 0 0 30px rgba(253, 29, 29, 0.6), inset 0 0 20px rgba(253, 29, 29, 0.2); }
                     100% { box-shadow: 0 0 15px rgba(252, 176, 69, 0.4), inset 0 0 10px rgba(252, 176, 69, 0.1); }
                 }
-
                 .legendary-card {
                     position: relative;
                     background: rgba(22, 22, 30, 0.8);
@@ -142,7 +133,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     width: 100%;
                     box-sizing: border-box;
                 }
-                
                 .legendary-card::before {
                     content: '';
                     position: absolute;
@@ -152,7 +142,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     pointer-events: none;
                     z-index: 0;
                 }
-
                 .legendary-rank-badge {
                     position: absolute;
                     top: -10px;
@@ -171,38 +160,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                 }
                 .badge-top { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); box-shadow: 0 8px 25px rgba(253, 160, 133, 0.5); color: #fff; }
                 .badge-normal { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); box-shadow: 0 8px 25px rgba(255, 8, 68, 0.5); }
-
-                .legendary-avatar-wrapper {
-                    position: absolute;
-                    top: -35px; 
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 100px;
-                    height: 000px;
-                    border-radius: 50%;
-                    padding: 3px;
-                    background: linear-gradient(135deg, #fcb045, #fd1d1d, #833ab4);
-                    animation: floatAvatar 4s ease-in-out infinite, glowPulse 3s infinite;
-                    z-index: 2;
-                }
-
-                .legendary-avatar-inner {
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 50%;
-                    background: #111;
-                    overflow: hidden;
-                    border: 2px solid #16161e; 
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 1.5rem;
-                    font-weight: bold;
-                }
-
-                .legendary-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
-
                 .legendary-name {
                     position: relative;
                     z-index: 1;
@@ -212,7 +169,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     margin: 0;
                     text-shadow: 0 3px 15px rgba(0,0,0,0.8);
                 }
-
                 .legendary-points {
                     position: relative;
                     z-index: 1;
@@ -224,7 +180,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     border-radius: 10px;
                     border: 1px solid rgba(255, 215, 0, 0.3);
                 }
-
                 .legendary-stats-grid {
                     position: relative;
                     z-index: 1;
@@ -233,60 +188,35 @@ window.renderHomeRankingWidget = async function(containerId) {
                     gap: 8px;
                     margin-top: 6px;
                 }
-
                 .legendary-stat-box {
                     background: rgba(0, 0, 0, 0.3);
                     border-radius: 12px;
                     padding: 4px 2px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
                 }
-
                 .stat-correct { border-bottom: 3px solid #10b981; }
                 .stat-pending { border-bottom: 3px solid #fcb045; }
                 .stat-wrong   { border-bottom: 3px solid #fd1d1d; }
-
-                .btn-my-predictions {
-                    position: relative;
-                    z-index: 1;
-                    margin-top: 8px;
-                    background: linear-gradient(90deg, #fd1d1d, #fcb045);
-                    color: white;
-                    border: none;
-                    padding: 5px 14px;
-                    border-radius: 30px;
-                    font-size: 1.1rem;
-                    font-weight: 900;
-                    cursor: pointer;
-                    width: 85%;
-                    max-width: 280px;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                }
-
-                        .podium-container { display: flex; flex-direction: column; gap: 8px; margin: 22px 0; width: 100%; }
-        .podium-card { background: linear-gradient(135deg, rgba(30, 30, 38, 0.95), rgba(20, 20, 26, 0.95)); border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; direction: ltr; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .rank-1 { border: 1px solid rgba(252, 176, 69, 0.5); }
-        .rank-2 { border: 1px solid rgba(192, 192, 192, 0.4); }
-        .rank-3 { border: 1px solid rgba(205, 127, 50, 0.4); }
-        .podium-user-block { display: flex; align-items: center; gap: 10px; }
-        .podium-name { font-size: 0.9rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 5px; }
-        .podium-right-box { display: flex; align-items: center; gap: 12px; }
-        .podium-col { display: flex; flex-direction: column; align-items: center; }
-        .podium-sub-label { font-size: 0.6rem; color: rgba(255,255,255,0.5); font-weight: bold; margin-bottom: 2px; }
-        .podium-pts-pill { background: rgba(0, 0, 0, 0.4); padding: 2px 8px; border-radius: 6px; font-weight: 900; font-size: 0.85rem; }
-        
+                .podium-container { display: flex; flex-direction: column; gap: 8px; margin: 22px 0; width: 100%; }
+                .podium-card { background: linear-gradient(135deg, rgba(30, 30, 38, 0.95), rgba(20, 20, 26, 0.95)); border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; direction: ltr; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+                .rank-1 { border: 1px solid rgba(252, 176, 69, 0.5); }
+                .rank-2 { border: 1px solid rgba(192, 192, 192, 0.4); }
+                .rank-3 { border: 1px solid rgba(205, 127, 50, 0.4); }
+                .podium-user-block { display: flex; align-items: center; gap: 10px; }
+                .podium-name { font-size: 0.9rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 5px; }
+                .podium-right-box { display: flex; align-items: center; gap: 12px; }
+                .podium-col { display: flex; flex-direction: column; align-items: center; }
+                .podium-sub-label { font-size: 0.6rem; color: rgba(255,255,255,0.5); font-weight: bold; margin-bottom: 2px; }
+                .podium-pts-pill { background: rgba(0, 0, 0, 0.4); padding: 2px 8px; border-radius: 6px; font-weight: 900; font-size: 0.85rem; }
             </style>
         `;
 
-        // ================= القسم العلوي الثابت =================
         let topHtml = `<div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; width: 100%;">`;
         
-        if (rankings && rankings.length > 0) {
-            const firstPlace = rankings[0], secondPlace = rankings[1], thirdPlace = rankings[2];
+        if (rankings?.length > 0) {
+            const [firstPlace, secondPlace, thirdPlace] = rankings;
             topHtml += `<div class="podium-container">`;
-                                    // المركز الأول
+
             if (firstPlace) {
                 const name1 = firstPlace.username || firstPlace.telegram_id;
                 topHtml += `
@@ -308,7 +238,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     </div>`;
             }
 
-            // المركز الثاني
             if (secondPlace) {
                 const name2 = secondPlace.username || secondPlace.telegram_id;
                 topHtml += `
@@ -330,7 +259,6 @@ window.renderHomeRankingWidget = async function(containerId) {
                     </div>`;
             }
 
-            // المركز الثالث
             if (thirdPlace) {
                 const name3 = thirdPlace.username || thirdPlace.telegram_id;
                 topHtml += `
@@ -351,22 +279,16 @@ window.renderHomeRankingWidget = async function(containerId) {
                         </div>
                     </div>`;
             }
-            
-            
             topHtml += `</div>`;
-            
         } else {
-            // رفع نص "لا توجد بيانات ترتيب حالياً" للأعلى عبر تقليل المساحة
             topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${isAr ? 'لا توجد بيانات ترتيب حالياً' : 'No ranking data available'}</div>`;
         }
 
-        const userInitial = userState.username ? String(userState.username).charAt(0).toUpperCase() : '👤';
-        const userImageHtml = userState.photoUrl ? `<img src="${userState.photoUrl}" alt="User">` : `${userInitial}`;
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
 
-                topHtml += `
-                        <div class="legendary-card" style="margin-top: -10px; padding-top: 12px;">
+        topHtml += `
+            <div class="legendary-card" style="margin-top: -10px; padding-top: 12px;">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
                 
                 <div style="display: flex; justify-content: center; margin-bottom: 6px;">
@@ -382,8 +304,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     </div>
                 </div>
                 
-                
-                                                <div class="legendary-stats-grid" style="margin-top: 6px;">
+                <div class="legendary-stats-grid" style="margin-top: 6px;">
                     <div class="legendary-stat-box stat-correct" style="padding: 4px 2px;">
                         <div style="font-size: 0.9rem; margin-bottom: 1px;">✅</div>
                         <div style="color: #10b981; font-size: 0.95rem; font-weight: 900; line-height: 1;">${correctCount}</div>
@@ -400,97 +321,11 @@ window.renderHomeRankingWidget = async function(containerId) {
                         <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
                     </div>
                 </div>
-                <button class="btn-my-predictions" style="margin-top: 8px; padding: 6px 16px; font-size: 0.85rem;" onclick="document.getElementById('predictions-history-section').scrollIntoView({behavior: 'smooth'})">
-                    📝 ${isAr ? 'سجل توقعاتي' : 'My Predictions'}
-                </button>
             </div>
         </div>`;
-        
-        // إغلاق القسم العلوي
 
-        // ================= القسم السفلي القابل للتمرير =================
-        let bottomHtml = `<div style="flex-grow: 1; overflow-y: auto; width: 100%; padding-bottom: 30px; scroll-behavior: smooth;" id="scrollable-content">`;
-
-        let historyHtml = '';
-        if (predictions && predictions.length > 0) {
-            const recentPredictions = predictions.slice(0, 10); 
-            historyHtml = recentPredictions.map(pred => {
-                const match = matches.find(m => m.id === pred.match_id);
-                if (!match) return ''; 
-
-                let statusColor = '', statusBg = '', statusText = '', resultUi = '';
-                if (pred.prediction_status === 'correct') {
-                    statusColor = '#10b981'; statusBg = 'rgba(16, 185, 129, 0.05)'; statusText = `+3 ${isAr ? 'نقاط' : 'Pts'} ✅`;
-                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
-                } else if (pred.prediction_status === 'wrong') {
-                    statusColor = 'var(--accent-red, #fd1d1d)'; statusBg = 'rgba(253, 29, 29, 0.05)'; statusText = `${isAr ? 'خطأ' : 'Wrong'} ❌`;
-                    resultUi = `<div style="color:${statusColor}; font-size:0.85rem; margin-top:8px; font-weight:600;">${isAr ? 'النتيجة النهائية:' : 'Final Score:'} ${match.home_score} - ${match.away_score}</div>`;
-                } else {
-                    statusColor = 'var(--accent-gold, #fcb045)'; statusBg = 'rgba(252, 176, 69, 0.05)'; statusText = `${isAr ? 'بالانتظار' : 'Pending'} ⏳`;
-                }
-
-                return `
-                    <div style="background: linear-gradient(to ${isAr ? 'left' : 'right'}, var(--bg-card, #1c1c22), ${statusBg}); padding:18px; border-radius:16px; margin-bottom:15px; border: 1px solid rgba(255,255,255,0.03); border-${isAr ? 'right' : 'left'}: 4px solid ${statusColor}; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                        <div>
-                            <div style="font-weight:900; font-size:1.1rem; margin-bottom:8px; color:#fff; letter-spacing: 0.5px;">${match.team_a} <span style="color:#555; font-size:0.9rem; margin: 0 4px;">VS</span> ${match.team_b}</div>
-                            <div style="color:#ccc; font-size:0.95rem; background: rgba(0,0,0,0.3); display: inline-block; padding: 5px 12px; border-radius: 8px;">
-                                ${isAr ? 'توقعك:' : 'Prediction:'} <b style="color:#fff; font-size:1rem;">${pred.predicted_home} - ${pred.predicted_away}</b>
-                            </div>
-                            ${resultUi}
-                        </div>
-                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 12px;">
-                            <span style="color:${statusColor}; font-weight:bold; font-size:1rem; display:block;">${statusText}</span>
-                        </div>
-                    </div>`;
-            }).join('');
-
-            if (predictions.length > 10) {
-                historyHtml += `<div style="text-align:center; color:#888; font-size: 0.9rem; margin-top: 20px; padding-bottom: 10px;">${isAr ? 'يتم عرض أحدث 10 توقعات فقط' : 'Showing latest 10 predictions only'}</div>`;
-            }
-        } else {
-            historyHtml = `<div style="text-align:center; color:#888; padding:40px; background:rgba(255,255,255,0.02); border-radius:16px; border: 1px solid rgba(255,255,255,0.03); font-size:1.1rem;">${isAr ? 'لم تقم بأي توقعات بعد.' : 'No predictions yet.'}</div>`;
-        }
-
-        bottomHtml += `
-            <div id="predictions-history-section" style="margin-top: 10px; margin-bottom: 40px; scroll-margin-top: 25px;">
-                <h3 style="margin:0 0 20px 0; color:#fff; font-size: 1.3rem; font-weight: 800;">📜 ${isAr ? 'سجل التوقعات' : 'Prediction History'}</h3>
-                ${historyHtml}
-            </div>`;
-
-        let leaderboardHtml = '';
-        if (rankings && rankings.length > 3) {
-            const restOfRankings = rankings.slice(3); 
-            leaderboardHtml = restOfRankings.map((rank, index) => {
-                let actualRank = index + 4; 
-                let isMe = String(rank.telegram_id) === String(currentUserId);
-                let cardStyle = isMe ? 'background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(28, 28, 34, 1) 100%); border: 1px solid rgba(255, 215, 0, 0.3);' : 'background: #1c1c22; border: 1px solid rgba(255,255,255,0.03);';
-                const alias = rank.username || 'ID: ' + String(rank.telegram_id).slice(-4);
-
-                return `
-                    <div style="${cardStyle} border-radius: 14px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        <div style="display: flex; align-items: center; gap: 18px;">
-                            <div style="font-size: 1.2rem; font-weight: 900; color: ${isMe ? '#ffd700' : '#666'}; width: 35px; text-align: center;">#${actualRank}</div>
-                            <div style="color: #fff; font-weight: bold; font-size: 1.05rem;">${alias} ${isMe ? `<span style="color:#ffd700; font-size:0.8rem; margin-${isAr ? 'right' : 'left'}:8px; background: rgba(255,215,0,0.15); padding: 2px 8px; border-radius: 6px;">${isAr ? 'أنت' : 'You'}</span>` : ''}</div>
-                        </div>
-                        <div style="color: #ffd700; font-weight: 900; font-size: 1.2rem;">${rank.points_earned || 0} <span style="font-size:0.8rem; color:#888; font-weight: 600;">${isAr ? 'نقطة' : 'Pts'}</span></div>
-                    </div>`;
-            }).join('');
-
-            bottomHtml += `
-                <div>
-                    <h3 style="margin:0 0 20px 0; color:#fff; font-size: 1.3rem; font-weight: 800;">🌍 ${isAr ? 'الترتيب العام' : 'Global Ranking'}</h3>
-                    ${leaderboardHtml}
-                </div>`;
-        }
-        bottomHtml += `</div>`; // إغلاق القسم السفلي
-
-        // تركيب الشاشة النهائية
-        container.innerHTML = htmlStyles + topHtml + bottomHtml;
-
-    } catch (error) {
-        console.error(isAr ? "خطأ في عرض الترتيب:" : "Error displaying ranking:", error);
-        container.innerHTML = `<div style="text-align:center; color: var(--accent-red, #fd1d1d); padding: 25px; background: rgba(253, 29, 29, 0.05); border-radius: 16px; border: 1px solid rgba(253, 29, 29, 0.2); font-weight: bold;">
-            ${isAr ? 'تعذر تحميل الترتيب. يرجى المحاولة لاحقاً.' : 'Failed to load ranking. Please try again later.'}
-        </div>`;
+        container.innerHTML = htmlStyles + topHtml;
+    } catch (e) {
+        container.innerHTML = `<div style="text-align:center; color: #ff4d4d; padding: 20px;">${isAr ? 'حدث خطأ في تحميل البيانات' : 'Error loading ranking data'}</div>`;
     }
 };
