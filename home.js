@@ -1,6 +1,5 @@
 window.solPriceHistory = window.solPriceHistory || [];
 
-// 1. دالة جلب اللغة الحالية مع فحص جميع مفاتيح التخزين المحتملة
 function getCurrentLang() {
     return localStorage.getItem('app_lang') || 
            localStorage.getItem('lang') || 
@@ -10,12 +9,10 @@ function getCurrentLang() {
            'ar';
 }
 
-// 2. دالة الترجمة المساعدة مع نصوص افتراضية بالإنجليزية لتجنب خلط اللغات
 function t(key, fallback = '', params = {}) {
     const currentLang = getCurrentLang();
     let text = fallback || key;
 
-    // البحث في قاموس i18n المباشر أولاً
     if (window.i18n && window.i18n[currentLang] && window.i18n[currentLang][key] !== undefined) {
         text = window.i18n[currentLang][key];
     } else if (typeof window.getT === 'function') {
@@ -31,7 +28,6 @@ function t(key, fallback = '', params = {}) {
     return text;
 }
 
-// فتح الموقع الرسمي
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
@@ -41,7 +37,6 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// جلب سعر Solana المباشر وتحديث الرسم البياني
 window.updateHomeSolPrice = async function() {
     const elPriceHeader = document.getElementById('home-sol-price');
     const elPriceOracle = document.getElementById('home-sol-oracle-val');
@@ -134,7 +129,6 @@ window.updateHomeSolPrice = async function() {
     }
 };
 
-// 3. رسم الصفحة الرئيسية مع مطابقة الترجمات
 window.renderHomePage = function(container) {
     let target = container || document.getElementById('app') || document.getElementById('main-content') || document.body;
     if (!target) return;
@@ -155,7 +149,6 @@ window.renderHomePage = function(container) {
             userId: '1654537339' 
         };
 
-        // استخدام نصوص إنجليزية افتراضية لمنع ظهور العربية عند اختيار لغات أخرى
         const txtOfficialSite = t('officialSite', 'Official Website');
         const txtMarketFeed = t('marketFeed', 'Live Market Feed');
         const txtLiveMarket = t('liveMarket', 'Live Market');
@@ -445,7 +438,6 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // تشغيل تحديث سعر SOL المباشر وتكراره كل 5 ثوانٍ
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
