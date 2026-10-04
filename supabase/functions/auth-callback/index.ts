@@ -43,7 +43,6 @@ serve(async (req) => {
       twitter_username: userData.data.username 
     }).eq("telegram_id", state)
 
-    // التعديل الجذري: إرسال نص مباشر نظيف ومشفّر بالعربية بدون أي أكواد HTML
     return new Response("✅ تم ربط حساب X بنجاح! يمكنك الآن إغلاق هذه الصفحة والعودة إلى تيليجرام.", {
       status: 200,
       headers: new Headers({
