@@ -1,6 +1,4 @@
-// ==========================================
-// 🟣 Zelo Sport - Solana Module & Wallet Renderer (wallet-solana.js)
-// ==========================================
+
 
 const COINS_PER_ZELO_TOKEN = 100;
 const MIN_CLAIM_LIMIT = 1000; // 🎯 الحد الأدنى للسحب/المطالبة
@@ -15,7 +13,6 @@ if (!window.solanaWeb3 && !document.getElementById('solana-web3-script')) {
     document.head.appendChild(script);
 }
 
-// دالة مساعدة معززة للحصول على معرف التلجرام الصحيح
 function getTelegramId() {
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
         const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
@@ -39,22 +36,21 @@ function getTelegramId() {
     return 'guest';
 }
 
-// 2. دالة بناء الواجهة
+
 function renderWalletPage(container) {
     if (!container) return;
 
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    // قراءة البيانات من حالة المستخدم أولاً ثم LocalStorage
+
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
         : Number(localStorage.getItem('user_coins') || 0);
 
-    // 🎯 التحقق من شرط الحد الأدنى للسحب
     const canClaim = userCoins >= MIN_CLAIM_LIMIT;
     const neededCoins = MIN_CLAIM_LIMIT - userCoins;
 
-    // النصوص المترجمة
+
     const txtTonWallet = isAr ? 'محفظة TON' : 'TON Wallet';
     const txtSolanaWallet = isAr ? 'محفظة Solana (Devnet)' : 'Solana Wallet (Devnet)';
     const txtConnected = isAr ? '● متصل' : '● Connected';
@@ -69,7 +65,7 @@ function renderWalletPage(container) {
     const txtBalanceTitle = isAr ? `رصيد ${TOKEN_NAME}` : `${TOKEN_NAME} Balance`;
     const txtTotalEarned = isAr ? 'إجمالي المكتسب:' : 'Total Earned:';
 
-    // 🎯 نص الزر المترجم حسب الرصيد والحد الأدنى
+    
     let txtClaimBtn = '';
     if (canClaim) {
         txtClaimBtn = isAr ? `مطالبة برصيد رمزي ${TOKEN_NAME} ⚡` : `Claim ${TOKEN_NAME} Tokens ⚡`;
@@ -89,7 +85,7 @@ function renderWalletPage(container) {
 
     const isTonConnected = !!(tonWallet || (window.tonConnectUI && window.tonConnectUI.connected));
 
-    // مزامنة حالة التطبيق
+
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
         userState.solanaWallet = solanaWallet;
@@ -232,12 +228,12 @@ function renderWalletPage(container) {
 
 window.renderWalletPage = renderWalletPage;
 
-// 3. دالة جلب رصيد Solana الفعلي على الشبكة التجريبية (Devnet)
+
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
         if (window.solanaWeb3) {
-            // 🎯 تم التعديل إلى رابط Devnet التجريبي
+            
             const connection = new window.solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
             const pubKey = new window.solanaWeb3.PublicKey(address);
             const balance = await connection.getBalance(pubKey);
@@ -251,7 +247,6 @@ async function fetchRealSolanaBalance(address) {
     if (el) el.innerText = `0.0000 SOL`;
 }
 
-// 4. دالة حفظ المحفظة وإرسالها إلى قاعدة البيانات بالسيرفر (/api/save-wallet)
 async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     const saveBtn = document.getElementById('btn-save-sol-addr');
@@ -305,7 +300,6 @@ async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') 
     }
 }
 
-// 5. ربط محفظة Phantom تلقائياً
 window.connectPhantomWallet = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     if ("solana" in window && window.solana.isPhantom) {
@@ -333,7 +327,6 @@ window.saveSolanaWalletAddress = function() {
     }
 };
 
-// 7. دالة المطالبة بخصم النقاط وتحويل الرموز (/api/claim)
 window.claimCoinsToSolanaWallet = async function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
@@ -345,7 +338,6 @@ window.claimCoinsToSolanaWallet = async function() {
         ? Number(userState.points) 
         : Number(localStorage.getItem('user_coins') || 0);
 
-    // 🎯 حماية حاسمة: منع التنفيذ إذا كان الرصيد أقل من الحد الأدنى
     if (userCoins < MIN_CLAIM_LIMIT) {
         alert(isAr 
             ? `⚠️ الحد الأدنى للسحب هو ${MIN_CLAIM_LIMIT.toLocaleString('en-US')} نقطة. رصيدك الحالي لا يكفي.` 
@@ -417,7 +409,6 @@ window.claimCoinsToSolanaWallet = async function() {
     }
 };
 
-// 8. الفصل والنسخ
 window.disconnectSolanaWallet = function() {
     localStorage.removeItem('solana_wallet');
     if (typeof userState !== 'undefined') {
