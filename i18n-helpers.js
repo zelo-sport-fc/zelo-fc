@@ -1,13 +1,11 @@
 window.i18n = {
     ar: {
-        // Navigation (الشريط السفلي)
         navHome: "الرئيسية",
         navTasks: "المهام",
         navFriends: "الأصدقاء",
         navLeaderboard: "الترتيب",
         navWallet: "المحفظة",
 
-        // Home Screen (الرئيسية)
         officialSite: "الموقع الرسمي",
         marketFeed: "بث السوق المباشر",
         liveMarket: "السوق المباشر",
@@ -33,7 +31,6 @@ window.i18n = {
         maxEnergy: "أقصى طاقة",
         booster: "تعزيز",
 
-        // Tasks Screen (المهام والمكافآت)
         rewardsCenter: "مركز المكافآت",
         rewardsSub: "أكمل المهام اليومية لزيادة ثروتك من نقاط زيلو!",
         dailyReward: "المكافأة اليومية",
@@ -53,7 +50,6 @@ window.i18n = {
         xConnectedSuccess: "تم ربط الحساب وإضافة النقاط بنجاح:",
         xConnectError: "حدث خطأ أثناء الاتصال بـ X.",
 
-        // Task Titles (عناوين المهام)
         task_connect_x: "ربط حسابك في منصة X (مهمة خاصة)",
         task_pump_fun: "دعم وشراء عملة ZELO FC على Pump.fun",
         task_x_follow: "متابعة حساب Zelo Sport على X",
@@ -62,7 +58,6 @@ window.i18n = {
         task_tg_group_ar: "الانضمام للمجموعة العربية",
         task_tg_group_en: "الانضمام للمجموعة الأجنبية",
 
-        // Friends Screen (الأصدقاء والإحالة)
         inviteTitle: "دعوة الأصدقاء",
         inviteSub: "ادعُ أصدقاءك واحصل على %10 من أرباحهم للأبد!",
         referralLink: "رابط الدعوة الخاص بك",
@@ -72,7 +67,6 @@ window.i18n = {
         noFriendsYet: "لم تقم بدعوة أصدقاء بعد. ابدأ الآن!",
         referralBonus: "مكافأة الدعوة",
 
-        // Leaderboard Screen (قائمة المتصدرين)
         leaderboardTitle: "لائحة المتصدرين",
         topFans: "أفضل المشجعين",
         topClubs: "أفضل الأندية",
@@ -83,7 +77,6 @@ window.i18n = {
         fansLabel: "{count} مشجعين",
         viewFansLabel: "عرض المشجعين",
 
-        // Wallet Screen (المحفظة)
         walletTitle: "محفظتك",
         connectWallet: "ربط المحفظة",
         disconnectWallet: "قطع الاتصال",
@@ -95,7 +88,6 @@ window.i18n = {
         balance: "الرصيد",
         transactions: "المعاملات",
 
-        // Wallet Advanced & Claiming (تفاصيل المحفظة والمطالبة)
         txtTonWallet: "محفظة TON",
         txtSolanaWallet: "محفظة Solana (شبكة التطوير)",
         txtConnected: "● متصل",
@@ -125,7 +117,6 @@ window.i18n = {
         msgServerError: "❌ خطأ في الاتصال بالسيرفر:\n{error}",
         msgCopied: "تم نسخ العنوان إلى الحافظة!",
 
-        // General (عام والإعدادات)
         loading: "جاري التحميل...",
         error: "حدث خطأ غير متوقع",
         confirm: "تأكيد",
@@ -283,11 +274,6 @@ window.i18n = {
     }
 };
 
-// ==========================================
-// 🛠️ الدوال الرئيسية للتحكم باللغات
-// ==========================================
-
-// 1. جلب اللغة الحالية المعتمدة في التطبيق
 function getCurrentLang() {
     // الأولوية لـ LocalStorage ثم حالة المستخدم ثم كائن تليجرام ثم الافتراضي (ar)
     return localStorage.getItem('app_lang') || 
@@ -296,23 +282,21 @@ function getCurrentLang() {
            'ar';
 }
 
-// 2. الدالة الرئيسية لجلب النص المترجم وتمرير المتغيرات
 function t(key, params = {}) {
     const lang = getCurrentLang();
     let text = key;
 
-    // البحث في اللغة الحالية
     if (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key] !== undefined) {
         text = i18n[lang][key];
     } else {
-        // Fallback للغة الاحتياطية في حال عدم وجود المفتاح
+        
         const fallbackLang = lang === 'ar' ? 'en' : 'ar';
         if (typeof i18n !== 'undefined' && i18n[fallbackLang] && i18n[fallbackLang][key] !== undefined) {
             text = i18n[fallbackLang][key];
         }
     }
 
-    // استبدال المتغيرات الديناميكية مثل {name} أو {count}
+    //     {name}  {count}
     if (typeof params === 'object' && params !== null) {
         Object.keys(params).forEach(paramKey => {
             text = text.replace(new RegExp(`{${paramKey}}`, 'g'), params[paramKey]);
@@ -322,12 +306,10 @@ function t(key, params = {}) {
     return text;
 }
 
-// 3. دالة getT للتوافق مع الأكواد القديمة
 window.getT = function(key) {
     return t(key);
 };
 
-// 4. جلب اسم النادي حسب اللغة
 function getClubName(club) {
     if (!club) return '';
     const lang = getCurrentLang();
@@ -337,7 +319,6 @@ function getClubName(club) {
     return club.nameEn || club.name_en || club.nameAr || club.name_ar || club.name || '';
 }
 
-// 5. جلب اسم المهمة حسب اللغة (تم تصحيح خطأ title_en هنا)
 function getTaskName(task) {
     if (!task) return '';
     if (task.titleKey) {
@@ -347,21 +328,18 @@ function getTaskName(task) {
     if (lang === 'ar') {
         return task.textAr || task.text_ar || task.titleAr || task.title_ar || task.textEn || task.text_en || task.title || '';
     }
-    // ✅ تصحيح: الاعتماد على title_en وتجاهل title_ar في المسار الإنجليزي
+
     return task.textEn || task.text_en || task.titleEn || task.title_en || task.textAr || task.text_ar || task.titleAr || task.title_ar || task.title || '';
 }
 
-// 6. تغيير اللغة وتحديث التطبيق كاملاً
 function switchLanguage(newLang) {
     if (typeof userState !== 'undefined') {
         userState.lang = newLang;
     }
     localStorage.setItem('app_lang', newLang);
     
-    // تطبيق الاتجاه والنصوص الثابتة
     applyLanguageSettings();
 
-    // إعادة رسم الواجهات الديناميكية إذا كانت الدوال معرفة لديك
     if (typeof renderCurrentPage === 'function') {
         renderCurrentPage();
     } else {
@@ -371,13 +349,11 @@ function switchLanguage(newLang) {
     }
 }
 
-// 7. تطبيق إعدادات الاتجاه والترجمة على الواجهة (HTML)
 function applyLanguageSettings() {
     const lang = getCurrentLang();
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
     
-    // أ) ترجمة القائمة السفلى (Navbar)
     const navKeys = ['navHome', 'navTasks', 'navFriends', 'navLeaderboard', 'navWallet'];
     const navItems = document.querySelectorAll('.nav-item span:not(.icon)');
     
@@ -387,7 +363,6 @@ function applyLanguageSettings() {
         }
     });
 
-    // ب) ترجمة أي عنصر يحتوي على data-i18n
     const translatableElements = document.querySelectorAll('[data-i18n]');
     translatableElements.forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -396,7 +371,6 @@ function applyLanguageSettings() {
         }
     });
 
-    // ج) ترجمة النصوص التوضيحية للمدخلات (Placeholder)
     const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
     placeholderElements.forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
@@ -406,7 +380,6 @@ function applyLanguageSettings() {
     });
 }
 
-// تشغيل الترجـمة تلقائياً فور تحميل الملف
 document.addEventListener('DOMContentLoaded', () => {
     applyLanguageSettings();
 });
