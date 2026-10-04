@@ -23,7 +23,7 @@ function t(key, fallback = '', params = {}) {
     const style = document.createElement('style');
     style.id = 'wallet-core-styles';
     style.innerHTML = `
-        /* إلغاء النمط الافتراضي للأزرار في أندرويد */
+        
         .btn-glass-ton, .btn-action-sm, .btn-danger-sm {
             -webkit-appearance: none !important;
             -moz-appearance: none !important;
@@ -254,7 +254,6 @@ window.triggerDisconnect = async function() {
     }
 };
 
-// 5. دالة نسخ عنوان المحفظة
 window.copyWalletAddress = function(address) {
     const targetAddress = address || userState?.walletAddress || userState?.solanaWallet;
     if (!targetAddress) {
