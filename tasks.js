@@ -1,6 +1,4 @@
-// ==========================================
-// 🛠️ Tasks Module - Zelo Coin Dark Glass Theme
-// ==========================================
+
 
 (function() {
     // 1. Default tasks list
@@ -14,9 +12,6 @@
         { id: "tg_group_en", textAr: "الانضمام للمجموعة الأجنبية", textEn: "Join Global Group", points: 300, completed: false, url: "https://t.me/ZeloSport_Global" }
     ];
 
-    // ==========================================
-    // 🔄 API Database Functions
-    // ==========================================
 
     async function apiVerifyTask(taskId, points) {
         if (!supabaseClient) return { success: false, message: "No database connection" };
@@ -160,9 +155,6 @@
         }
     }
 
-    // ==========================================
-    // 🎨 UI Rendering - Sleek Compact Glass Theme
-    // ==========================================
 
     window.renderTasksPage = async function(container) {
         if (!userState.tasks || userState.tasks.length === 0) {
@@ -364,9 +356,6 @@
         `;
     };
 
-    // ==========================================
-    // 🌐 دالة ربط حساب منصة X (الخيار الثاني)
-    // ==========================================
     window.startXLogin = async function(taskId, points) {
         const task = userState.tasks.find(t => t.id === taskId);
         const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
@@ -375,7 +364,6 @@
 
         task.isProcessing = true;
 
-        // الرابط الذي سيتم فتحه للمستخدم (رابط التوثيق الخاص بك أو حساب X)
         const xAuthUrl = task.url && task.url !== '#' ? task.url : "https://x.com/Zelo_Sport";
 
         try {
