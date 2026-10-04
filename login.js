@@ -1,6 +1,4 @@
-// ==========================================
-// 📱 login.js - Glassmorphism Fixed Viewport ($ZELOFC Edition) 🚀
-// ==========================================
+
 
 window.tempSelectedClubs = window.tempSelectedClubs || [];
 
