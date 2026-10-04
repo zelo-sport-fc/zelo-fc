@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # هذا السطر يضيف زر "Run" يدوياً في صفحة Actions
+  workflow_dispatch: 
 
 jobs:
   deploy:
@@ -17,7 +17,7 @@ jobs:
           version: 1.191.0
 
       - name: Deploy Function
-        # تمت إضافة --no-verify-jwt هنا لإيقاف طلب كلمة المرور لهذه الدالة
+      
         run: supabase functions deploy auth-callback --no-verify-jwt --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
