@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121215">
     
+    <!-- Monetag Verification Tag -->
+    <meta name="monetag" content="fd32c4043058c1253eafb8f09c22be37">
+
+    <!-- Monetag In-App SDK -->
+    <script src="https://libtl.com/sdk.js" data-zone="12114810" data-sdk="show_12114810"></script>
+
+    <!-- vConsole Debugger (تتبع السجلات داخل التطبيق) -->
+    <script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
+    <script>
+        // تفعيل لوحة vConsole عند فتح التطبيق
+        window.vConsole = new window.VConsole();
+    </script>
+    
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
@@ -15,7 +28,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        
         (function() {
             var savedLang = localStorage.getItem('app_lang') || 
                             localStorage.getItem('lang') || 
@@ -329,6 +341,7 @@
     <script src="wallet-ton.js?v=11.0"></script>
     <script src="wallet-solana.js?v=12.0"></script>
     <script src="ton-connect.js?v=10.0"></script>
+    <script src="ads.js?v=1.0"></script>
     <script src="app.js?v=10.0"></script>
 
 </body>
