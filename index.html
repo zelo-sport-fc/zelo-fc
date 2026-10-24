@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121215">
     
-    <!-- Monetag Verification Tag -->
-    <meta name="monetag" content="fd32c4043058c1253eafb8f09c22be37">
-
-    <!-- Monetag In-App SDK -->
-    <script src="https://libtl.com/sdk.js" data-zone="12114810" data-sdk="show_12114810"></script>
-
-    <!-- vConsole Debugger (تتبع السجلات داخل التطبيق) -->
-    <script src="https://cdn.jsdelivr.net/npm/vconsole@3.15.1/dist/vconsole.min.js"></script>
-    <script>
-        // تفعيل لوحة vConsole عند فتح التطبيق
-        window.vConsole = new window.VConsole();
-    </script>
-    
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
@@ -28,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
+        
         (function() {
             var savedLang = localStorage.getItem('app_lang') || 
                             localStorage.getItem('lang') || 
@@ -335,13 +323,59 @@
     <script src="weekly_match_rankings.js?v=10.0"></script>
     <script src="predictions_ranking.js?v=10.0"></script> 
     <script src="home.js?v=15.0"></script>
+    <!-- ===== Monetag Rewarded Interstitial (zone 12114810) ===== -->
+    <!-- الصق هنا سكربت الـ SDK الذي يعطيه Monetag لهذه المنطقة (يُنشئ الدالة show_12114810) -->
+    <script src='//libtl.com/sdk.js' data-zone='12114810' data-sdk='show_12114810'></script>
+    <script>
+        // يستدعيه tasks.js. يحل الوعد بـ true فقط بعد اكتمال المشاهدة.
+        window.ZeloAds = {
+            isTest: false,
+            showRewarded: function () {
+                return new Promise(function (resolve) {
+                    try {
+                        if (typeof window.show_12114810 !== 'function') return resolve(false);
+                        window.show_12114810('pop')
+                            .then(function () { resolve(true); })
+                            .catch(function () { resolve(false); });
+                    } catch (e) {
+                        resolve(false);
+                    }
+                });
+            }
+        };
+    </script>
+    <!-- ===== Monetag In-App Interstitial (تلقائي، الصفحة الرئيسية فقط) ===== -->
+    <script>
+        (function () {
+            var shown = false;
+            var timer = setInterval(function () {
+                if (shown) return clearInterval(timer);
+                // يظهر الإعلان فقط عندما تكون الصفحة الرئيسية مفتوحة
+                if (!document.getElementById('challenges-card')) return;
+                if (typeof window.show_12114810 !== 'function') return;
+                shown = true;
+                clearInterval(timer);
+                try {
+                    window.show_12114810({
+                        type: 'inApp',
+                        inAppSettings: {
+                            frequency: 2,
+                            capping: 0.1,
+                            interval: 30,
+                            timeout: 5,
+                            everyPage: false
+                        }
+                    });
+                } catch (e) {}
+            }, 1000);
+        })();
+    </script>
     <script src="tasks.js?v=13.0"></script>
     <script src="leaderboard.js?v=10.0"></script>
     <script src="friends.js?v=10.0"></script>
     <script src="wallet-ton.js?v=11.0"></script>
     <script src="wallet-solana.js?v=12.0"></script>
     <script src="ton-connect.js?v=10.0"></script>
-    <script src="ads.js?v=1.0"></script>
     <script src="app.js?v=10.0"></script>
 
 </body>
